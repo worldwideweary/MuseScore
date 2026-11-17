@@ -6,6 +6,7 @@
 #include <QString>
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 #include "fraction.h"
 #include "gracespacing4.h"
@@ -240,6 +241,31 @@ void publishSpacingPlanGraces4(const SpacingPlan4&);
 // cannot be published. Returns target measure widths without changing layout.
 // An empty map lets collectSystem keep its legacy per-measure stretching.
 std::map<Measure*, qreal> systemSpacingWidths4(System*, qreal extraWidth);
+
+// Own the optional Studio final request and its borrowed grace-query factory
+// for the complete native final-width/publication phase. The scope must remain
+// alive until AFTER native measure placement and late grace publication.
+// The adapter prepares its own request and status; native layout still owns
+// measure widths, terminal fill policy, and spring distribution.
+class StudioFinalRequestScope4 {
+    std::unique_ptr<NativeGraceInputs4> _inputs;
+    SpacingGraceQueryScope4 _graceScope;
+    bool _observed;
+    bool _logFallback;
+    QString _decisionReason;
+    SpacingSystemRequest4 _request;
+public:
+    StudioFinalRequestScope4(Score*, System*, SpacingDirectionReadiness4*,
+                             const MeasureBase* next, qreal availableWidth,
+                             qreal fillLimit, bool retainedOverfullGroup);
+    StudioFinalRequestScope4(const StudioFinalRequestScope4&) = delete;
+    StudioFinalRequestScope4& operator=(const StudioFinalRequestScope4&) = delete;
+    bool selectAndPublish(System*, std::vector<GraceBeamPreparation4>&,
+                          SpacingPlan4& result,
+                          std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure);
+    void publishResult(Score*, System*, bool useStudioPlan,
+                       bool hasStudioWidths, qreal availableWidth) const;
+};
 
 // Studio-specific terminal justification and fallback spring targets.
 // The caller owns native terminal-fill logic and ordinary pooled springs.

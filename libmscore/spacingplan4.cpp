@@ -2704,6 +2704,43 @@ std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
 }
 
 
+// Keep final Studio request creation and its live grace-query scope together.
+// The scope's member order mirrors collectSystem's previous locals: inputs are
+// created before the scoped factory binding, and destroyed afterward.
+StudioFinalRequestScope4::StudioFinalRequestScope4(Score* score, System* system,
+        SpacingDirectionReadiness4* readiness, const MeasureBase* next,
+        qreal availableWidth, qreal fillLimit, bool retainedOverfullGroup)
+    : _inputs(readiness ? new NativeGraceInputs4(score, spacingMeasures4(system), readiness) : nullptr),
+      _graceScope(score, _inputs ? _inputs->factory() : nullptr),
+      _observed(spacingDecisionObserved4(score)),
+      _logFallback(MScore::showStudioSpacingFallbacks && !score->printing()
+            && score->styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch)
+{
+    _request.pass = SpacingPass4::FINAL;
+    _request.availableWidth = availableWidth;
+    _request.next = next;
+    _request.fillLimit = fillLimit;
+    _request.retainedOverfullGroup = retainedOverfullGroup;
+    if (_inputs)
+        _request.slurPolicy = _inputs->factory()->policy();
+}
+
+bool StudioFinalRequestScope4::selectAndPublish(System* system,
+        std::vector<GraceBeamPreparation4>& preparedBeams, SpacingPlan4& result,
+        std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure)
+{
+    QString* reason = _observed || _logFallback ? &_decisionReason : nullptr;
+    return selectAndPublishFinalSpacing4(system, _request, _inputs.get(), preparedBeams,
+                                         result, byMeasure, reason);
+}
+
+void StudioFinalRequestScope4::publishResult(Score* score, System* system,
+        bool useStudioPlan, bool hasStudioWidths, qreal availableWidth) const
+{
+    publishStudioSpacingResult4(score, system, useStudioPlan, _logFallback,
+        _observed, hasStudioWidths, availableWidth, _decisionReason);
+}
+
 // The Studio spacing fallback owns both its terminal-system justification
 // policy and the optional spring targets.  An empty target map leaves the
 // original per-measure distributor in charge, exactly as before.

@@ -4786,28 +4786,14 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // stretch incomplete row
       //
-      // Keep a producer factory for native publication callbacks, not an
-      // attachment/geometry cache. Every query captures fresh read-only input.
-      std::unique_ptr<NativeGraceInputs4> finalInputs;
-      if (lc.spacingDirections4)
-            finalInputs.reset(new NativeGraceInputs4(this, spacingMeasures4(system), lc.spacingDirections4.get()));
-      SpacingGraceQueryScope4 finalGraceScope(this, finalInputs ? finalInputs->factory() : nullptr);
-      const bool observeDecision = spacingDecisionObserved4(this);
-      const bool logFallback = MScore::showStudioSpacingFallbacks && !printing()
-            && styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch;
-      QString decisionReason;
-      QString* reason = observeDecision || logFallback ? &decisionReason : nullptr;
-      SpacingSystemRequest4 finalRequest;
-      finalRequest.pass = SpacingPass4::FINAL;
-      finalRequest.availableWidth = systemWidth;
-      finalRequest.next = lc.curMeasure;
-      finalRequest.fillLimit = styleD(Sid::lastSystemFillLimit);
-      finalRequest.retainedOverfullGroup = retainedOverfullGroup;
-      if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
+      // Keep the optional Studio request and fresh grace-query factory alive
+      // through native width placement and late grace publication.
+      StudioFinalRequestScope4 finalStudio(this, system, lc.spacingDirections4.get(),
+            lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit), retainedOverfullGroup);
       SpacingPlan4 studioPlan;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      const bool useStudioPlan = selectAndPublishFinalSpacing4(system, finalRequest, finalInputs.get(),
-            preparedBeams, studioPlan, studioMeasures, reason);
+      const bool useStudioPlan = finalStudio.selectAndPublish(system, preparedBeams,
+            studioPlan, studioMeasures);
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
       bool nativePooled = false;
@@ -4905,8 +4891,7 @@ System* Score::collectSystem(LayoutContext& lc)
       if (useStudioPlan)
             publishSpacingPlanGraces4(studioPlan);
 
-      publishStudioSpacingResult4(this, system, useStudioPlan, logFallback, observeDecision,
-            !studioWidths.empty(), systemWidth, decisionReason);
+      finalStudio.publishResult(this, system, useStudioPlan, !studioWidths.empty(), systemWidth);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();
