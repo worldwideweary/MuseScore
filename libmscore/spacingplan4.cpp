@@ -467,11 +467,12 @@ bool StudioCollectionState4::keepWithPrevious(System* system, qreal availableWid
     return keep;
 }
 
+// Keep Studio-specific lookahead eligibility with the collection-scope owner.
 // Legacy width reconstruction may discard Studio spacing at start repeats
-// or onsets with manual leading space. This query preserves collectSystem's
-// previous short-circuit and no-break scanning behavior, without mutation.
-bool studioLookaheadRequiresLayout4(const Score* score, const Measure* first,
-                                  const MeasureBase* lastTouched)
+// or onsets with manual leading space. Preserve the existing short-circuit
+// and no-break scan without changing native early-stop or beam restoration.
+bool StudioCollectionState4::lookaheadRequiresLayout(const Score* score,
+                               const Measure* first, const MeasureBase* lastTouched) const
 {
     bool nextNeedsStudioLayout = false;
     if (score && score->styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch) {

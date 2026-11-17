@@ -4639,7 +4639,7 @@ System* Score::collectSystem(LayoutContext& lc)
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
             // The optional Studio planner certifies whether preserving the
             // following system would discard its start-repeat/onset positions.
-            const bool nextNeedsStudioLayout = studioLookaheadRequiresLayout4(this, m,
+            const bool nextNeedsStudioLayout = studioCollection.lookaheadRequiresLayout(this, m,
                   breakMeasure ? breakMeasure : m);
             const bool stableBoundary = lc.prevMeasure == lc.systemOldMeasure
                   && !curMeasureMayHaveJoinedBeams && !nextNeedsStudioLayout;

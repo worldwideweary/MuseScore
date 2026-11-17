@@ -276,15 +276,13 @@ public:
     qreal replayCourtesy(System*, const MeasureBase* next, qreal availableWidth);
     bool keepWithPrevious(System*, qreal availableWidth, const MeasureBase* previous,
                           qreal& fittingWidth, qreal courtesyRefreshWidth);
+    // Studio-specific early-stop eligibility for the following system.
+    // Native layout remains responsible for the stable-boundary decision.
+    bool lookaheadRequiresLayout(const Score*, const Measure* first,
+                                 const MeasureBase* lastTouched) const;
     bool retainedOverfullGroup() const { return _retainedOverfullGroup; }
     std::vector<GraceBeamPreparation4>& preparedBeams() { return _preparedBeams; }
 };
-
-// Decide whether incremental layout must continue into the old next
-// system to preserve Studio placement at start repeats or manually shifted
-// rhythmic onsets. Does not change the native early-stop policy or geometry.
-bool studioLookaheadRequiresLayout4(const Score*, const Measure* first,
-                                   const MeasureBase* lastTouched);
 
 // Final Studio selection/segment publication keeps the prepared beam memo's
 // lifetime bounded.  Returned measure entries point into the caller-owned plan.
