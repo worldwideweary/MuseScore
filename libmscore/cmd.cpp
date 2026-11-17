@@ -15,6 +15,7 @@
  Handling of several GUI commands.
 */
 
+#include "spacingprofile4.h"
 #include "accidental.h"
 #include "articulation.h"
 #include "barline.h"
@@ -75,6 +76,7 @@ namespace Ms {
 
 void CmdState::reset()
       {
+      ++_generation4;
       layoutFlags         = LayoutFlag::NO_FLAGS;
       _updateMode         = UpdateMode::DoNothing;
       _startTick          = Fraction(-1,1);
@@ -87,6 +89,8 @@ void CmdState::reset()
       _mb = nullptr;
       _oneMeasureBase = true;
       _locked = false;
+      _slurOffset4 = nullptr;
+      _slurAnchor4 = nullptr;
       }
 
 //---------------------------------------------------------
@@ -97,6 +101,8 @@ void CmdState::setTick(const Fraction& t)
       {
       if (_locked)
             return;
+      _slurOffset4 = nullptr;
+      _slurAnchor4 = nullptr;
 
       if (_startTick == Fraction(-1,1) || t < _startTick)
             _startTick = t;
@@ -186,6 +192,8 @@ void CmdState::_setUpdateMode(UpdateMode m)
 
 void CmdState::setUpdateMode(UpdateMode m)
       {
+      if (m == UpdateMode::Layout)
+            cancelSlurEdit4();
       if (int(m) > int(_updateMode))
             _setUpdateMode(m);
       }
@@ -210,6 +218,7 @@ void Score::startCmd()
             return;
             }
       undoStack()->beginMacro(this);
+      beginSpacingProfile4();
       }
 
 //---------------------------------------------------------
@@ -220,14 +229,39 @@ void Score::undoRedo(bool undo, EditData* ed)
       {
       if (readOnly())
             return;
-      cmdState().reset();
-      if (undo)
-            undoStack()->undo(ed);
-      else
-            undoStack()->redo(ed);
-      update(false);
-      masterScore()->setPlaylistDirty();  // TODO: flag all individual operations
-      updateSelection();
+      const bool ownProfile = spacingProfileEnabled4() && !spacingProfileData4().collecting;
+      if (ownProfile) beginSpacingProfile4();
+      {
+            SpacingProfileScope4 profile(SpacingProfileStage4::UNDO_REDO);
+            cmdState().reset();
+            const SlurSegment* offset = styleB(Sid::spacingLayout4) && isMaster()
+                  && masterScore()->scoreList().size() == 1 ? undoStack()->slurOffset4(undo) : nullptr;
+            const Slur* slur = offset ? offset->slur() : nullptr;
+            const Element* start = slur ? slur->startElement() : nullptr;
+            const Element* end = slur ? slur->endElement() : nullptr;
+            const Fraction tick = slur ? slur->tick() : Fraction(0, 1);
+            const Fraction tick2 = slur ? slur->tick2() : Fraction(0, 1);
+            const int track = slur ? slur->track() : -1;
+            const int track2 = slur ? slur->track2() : -1;
+            const quint64 generation = cmdState().generation4();
+            const int index = undoStack()->getCurIdx();
+            if (undo)
+                  undoStack()->undo(ed);
+            else
+                  undoStack()->redo(ed);
+            // Confirm that the expected history entry ran and anchors stayed fixed.
+            // Normal property notifications have already populated the dirty range.
+            if (offset && offset->score() == this && !offset->links() && !slur->links()
+                && cmdState().generation4() == generation && undoStack()->getCurIdx() == index + (undo ? -1 : 1)
+                && slur->startElement() == start && slur->endElement() == end
+                && slur->tick() == tick && slur->tick2() == tick2 && slur->track() == track && slur->track2() == track2)
+                  cmdState().requestSlurOffset4(offset);
+            update(false);
+            cmdState().cancelSlurEdit4(); // Do not carry history proof into a later update.
+            masterScore()->setPlaylistDirty();  // TODO: flag all individual operations
+            updateSelection();
+      }
+      if (ownProfile) endSpacingProfile4();
       }
 
 //---------------------------------------------------------
@@ -261,6 +295,7 @@ void Score::endCmd(bool rollback)
             masterScore()->setAutosaveDirty(true);
             }
       MuseScoreCore::mscoreCore->endCmd();
+      endSpacingProfile4();
       cmdState().reset();
       }
 
@@ -285,13 +320,18 @@ void CmdState::dump()
 
 void Score::update(bool resetCmdState)
       {
+      SpacingProfileScope4 profile(SpacingProfileStage4::UPDATE);
       bool updateAll = false;
       for (MasterScore* ms : *movements()) {
             CmdState& cs = ms->cmdState();
             ms->deletePostponed();
             if (cs.layoutRange()) {
-                  for (Score*& s : ms->scoreList())
-                        s->doLayoutRange(cs.startTick(), cs.endTick());
+                  for (Score*& s : ms->scoreList()) {
+                        const bool retained = cs.slurOffset4() ? s->doLayoutSlurOffset4(cs.slurOffset4())
+                              : cs.slurAnchor4() && s->doLayoutSlurAnchor4(cs.slurAnchor4());
+                        if (!retained) s->doLayoutRange(cs.startTick(), cs.endTick());
+                        }
+                  cs.cancelSlurEdit4(); // A proof belongs to one update only.
                   updateAll = true;
                   }
             }

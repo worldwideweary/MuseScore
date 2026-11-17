@@ -27,6 +27,7 @@
 #include "sym.h"
 
 namespace Ms {
+struct SpacingShape4;
 
 class Tie;
 class Chord;
@@ -556,6 +557,7 @@ class Note final : public Element {
       QString accessibleExtraInfo() const override;
 
       Shape shape() const override;
+      Shape shapeWithItems4(SpacingShape4*) const;
       std::vector<Note*> tiedNotes() const;
 
       void setOffTimeType(int v) { _offTimeType = v; }

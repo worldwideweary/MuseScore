@@ -84,6 +84,13 @@ void Breath::layout()
                   }
             }
       setbbox(symBbox(_symId));
+      if (!palette) {
+            // Studio 4.7.5 TLayout::layoutBreath aligns the glyph's right edge.
+            // Restore native derived x when switching back; user offsets are
+            // separate from this position and remain untouched.
+            const bool studio = score()->styleB(Sid::spacingLayout4) && staff()->isPitchedStaff(tick());
+            rxpos() = studio ? -bbox().right() : 0.0;
+            }
       }
 
 //---------------------------------------------------------

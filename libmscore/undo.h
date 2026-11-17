@@ -161,6 +161,9 @@ class UndoMacro : public UndoCommand {
       virtual void redo(EditData*) override;
       bool empty() const { return childCount() == 0; }
       void append(UndoMacro&& other);
+      // Flat, exact ChangeProperty operations on one unlinked slur segment.
+      // Returns null for anchors, mixed commands or generated-state changes alone.
+      const SlurSegment* slurOffset4() const;
 
       static bool canRecordSelectedElement(const Element* e);
 
@@ -199,6 +202,7 @@ class UndoStack {
       int getCurIdx() const         { return curIdx; }
       bool empty() const            { return !canUndo() && !canRedo();  }
       UndoMacro* current() const    { return curCmd;               }
+      const SlurSegment* slurOffset4(bool undo) const;
       UndoMacro* last() const       { return curIdx > 0 ? list[curIdx-1] : 0; }
       UndoMacro* prev() const       { return curIdx > 1 ? list[curIdx-2] : 0; }
       void undo(EditData*);

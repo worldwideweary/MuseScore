@@ -23,6 +23,8 @@
 */
 
 #include "global/log.h"
+#include "slur.h"
+#include <typeinfo>
 
 #include "accidental.h"
 #include "arpeggio.h"
@@ -491,6 +493,13 @@ void UndoStack::setClean()
 //   undo
 //---------------------------------------------------------
 
+const SlurSegment* UndoStack::slurOffset4(bool undo) const
+      {
+      if (active()) return nullptr;
+      const int index = undo ? curIdx - 1 : curIdx;
+      return index >= 0 && index < list.size() ? list[index]->slurOffset4() : nullptr;
+      }
+
 void UndoStack::undo(EditData* ed)
       {
       qCDebug(undoRedo) << "===";
@@ -599,6 +608,37 @@ void UndoMacro::redo(EditData* ed)
             score->deselectAll();
             applySelectionInfo(redoSelectionInfo, score->selection());
             }
+      }
+
+const SlurSegment* UndoMacro::slurOffset4() const
+      {
+      const SlurSegment* target = nullptr;
+      bool hasOffset = false;
+      for (const UndoCommand* command : commands()) {
+            // A subclass may override execution or have additional effects.
+            // Nested commands are deliberately outside this initial proof.
+            if (typeid(*command) != typeid(ChangeProperty) || command->childCount()) return nullptr;
+            const ChangeProperty* change = static_cast<const ChangeProperty*>(command);
+            const ScoreElement* element = change->getElement();
+            if (!element || !element->isSlurSegment()) return nullptr;
+            const SlurSegment* segment = static_cast<const SlurSegment*>(element);
+            if ((target && target != segment) || segment->links() || !segment->slur() || segment->slur()->links()) return nullptr;
+            target = segment;
+            switch (change->getId()) {
+                  case Pid::OFFSET:
+                  case Pid::SLUR_UOFF1:
+                  case Pid::SLUR_UOFF2:
+                  case Pid::SLUR_UOFF3:
+                  case Pid::SLUR_UOFF4:
+                        hasOffset = true;
+                        break;
+                  case Pid::GENERATED:
+                        break;
+                  default:
+                        return nullptr;
+                  }
+            }
+      return hasOffset ? target : nullptr;
       }
 
 void UndoMacro::append(UndoMacro&& other)

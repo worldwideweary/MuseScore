@@ -165,6 +165,8 @@ enum class Sid : short {
 
       clefLeftMargin,
       keysigLeftMargin,
+      keysigAccidentalDistance,
+      keysigNaturalDistance,
       ambitusMargin,
       timesigLeftMargin,
       timesigScale,
@@ -220,6 +222,7 @@ enum class Sid : short {
       articulationAnchorLuteFingering,
       articulationAnchorOther,
       lastSystemFillLimit,
+      spacingLayout4,                 // independent opt-in Studio 4 spacing
 
       hairpinPlacement,
       hairpinPosAbove,
@@ -388,6 +391,7 @@ enum class Sid : short {
       measureNumberAllStaves,
 
       smallNoteMag,
+      scaleRythmicSpacingForSmallNotes,
       graceNoteMag,
       smallStaffMag,
       smallClefMag,

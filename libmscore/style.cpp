@@ -179,6 +179,8 @@ static const StyleType styleTypes[] {
 
       { Sid::clefLeftMargin,          "clefLeftMargin",          Spatium(0.8) },     // 0.64 (gould: <= 1)
       { Sid::keysigLeftMargin,        "keysigLeftMargin",        Spatium(0.5) },
+      { Sid::keysigAccidentalDistance, "keysigAccidentalDistance", Spatium(0.3) },
+      { Sid::keysigNaturalDistance,   "keysigNaturalDistance",   Spatium(0.4) },
       { Sid::ambitusMargin,           "ambitusMargin",           Spatium(0.5) },
 
       { Sid::timesigLeftMargin,       "timesigLeftMargin",       Spatium(0.63) },
@@ -235,6 +237,7 @@ static const StyleType styleTypes[] {
       { Sid::articulationAnchorLuteFingering, "articulationAnchorLuteFingering", int(ArticulationAnchor::BOTTOM_CHORD) },
       { Sid::articulationAnchorOther, "articulationAnchorOther", int(ArticulationAnchor::TOP_STAFF) },
       { Sid::lastSystemFillLimit,     "lastSystemFillLimit",     QVariant(0.3) },
+      { Sid::spacingLayout4,          "spacingLayout4",          QVariant(false) },
 
       { Sid::hairpinPlacement,        "hairpinPlacement",        int(Placement::BELOW)  },
       { Sid::hairpinPosAbove,         "hairpinPosAbove",         QPointF(0.0, -2.0) },
@@ -402,6 +405,7 @@ static const StyleType styleTypes[] {
       { Sid::measureNumberSystem,     "measureNumberSystem",     QVariant(true) },
       { Sid::measureNumberAllStaves,  "measureNumberAllStaffs",  QVariant(false) }, // need to keep staffs and not staves here for backward compatibility
       { Sid::smallNoteMag,            "smallNoteMag",            QVariant(.7) },
+      { Sid::scaleRythmicSpacingForSmallNotes, "scaleRythmicSpacingForSmallNotes", QVariant(true) },
       { Sid::graceNoteMag,            "graceNoteMag",            QVariant(0.7) },
       { Sid::smallStaffMag,           "smallStaffMag",           QVariant(0.7) },
       { Sid::smallClefMag,            "smallClefMag",            QVariant(0.8) },
@@ -3370,8 +3374,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
             || tag == "stemSlashPosition"                                         // Mu4 only, let's skip
             || tag == "stemSlashAngle"                                            // Mu4 only, let's skip
             || tag == "stemSlashThickness"                                        // Mu4 only, let's skip
-            || tag == "keysigAccidentalDistance"                                  // Mu4 only, let's skip
-            || tag == "keysigNaturalDistance"                                     // Mu4 only, let's skip
             || tag == "useWideBeams")                                             // Mu4 for beamDistance, default depends on font's `engravingDefaults`! Maybe better skip?
             e.skipCurrentElement();
       else if (tag == "beamMinLen") {                                             // 1.3 -> 1.1
@@ -3937,8 +3939,6 @@ bool  MStyle::readProperties450(XmlReader& e, int mscVersion)
       else if (tag.startsWith("timeSig"))                           // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "trillAlwaysShowCueNote")                     // Mu4.5+ only, let's skip
-            e.skipCurrentElement();
-      else if (tag == "scaleRythmicSpacingForSmallNotes")           // Mu4.5+ only, let's skip
             e.skipCurrentElement();
       else if (tag == "mergeMatchingRests")                         // Mu4.5+ only, let's skip
             e.skipCurrentElement();

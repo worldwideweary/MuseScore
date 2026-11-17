@@ -716,9 +716,9 @@ void Measure::sortRepeatSegments()
                       && s->isType(SegmentType::Clef | SegmentType::HeaderClef | SegmentType::KeySig | SegmentType::TimeSig))
                         return int(SegmentType::StartRepeatBarLine)
                               + (s->isType(SegmentType::Clef | SegmentType::HeaderClef) ? 1 : s->isKeySigType() ? 2 : 3);
-                  // At the score start a second clef follows the meter so the
-                  // legacy reader can distinguish it from the initial header.
-                  if (s->isClefType() && tick().isNotZero())
+                  // Preserve the legacy clef-before-key order away from score start.
+                  if (s->isClefType() && tick().isNotZero()
+                      && !score()->styleB(Sid::spacingLayout4))
                         return int(SegmentType::KeySig) - 1;
                   }
             return value;

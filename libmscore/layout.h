@@ -14,10 +14,12 @@
 #define __LAYOUT_H__
 
 #include "system.h"
+#include <memory>
 
 namespace Ms {
 
 class Segment;
+class SpacingDirectionReadiness4;
 class Page;
 
 //---------------------------------------------------------
@@ -88,6 +90,8 @@ struct LayoutContext {
 
       QList<System*> systemList;          // reusable systems
       std::set<Spanner*> processedSpanners;
+      // Constructed only for experimental spacing; never retained across commands.
+      std::unique_ptr<SpacingDirectionReadiness4> spacingDirections4;
 
       System* prevSystem       { 0 };     // used during page layout
       System* curSystem        { 0 };

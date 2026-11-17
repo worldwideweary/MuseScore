@@ -206,70 +206,68 @@ void KeySig::layout()
 
       const signed char* lines = ClefInfo::lines(clef);
 
-      // add prefixed naturals, if any
+      const bool studio = !isCustom() && !isAtonal() && score()->styleB(Sid::spacingLayout4);
+      const auto append = [&](SymId sym, qreal legacyX, int line) {
+            qreal x = studio ? 0.0 : legacyX;
+            const auto& symbols = _sig.keySymbols();
+            if (studio && !symbols.isEmpty()) {
+                  // Studio places each glyph using the previous glyph's ink width.
+                  // Mixed pairs separate more; staggered pairs can share a cutout.
+                  const KeySym& previous = symbols.back();
+                  qreal gap = score()->styleS(Sid::keysigAccidentalDistance).val();
+                  if (previous.sym != sym)
+                        gap *= 2.0;
+                  else if (sym == SymId::accidentalNatural)
+                        gap = score()->styleS(Sid::keysigNaturalDistance).val();
+                  x = previous.spos.x() + symWidth(previous.sym) / _spatium + gap;
+                  const qreal y = line * (staff() ? staff()->lineDistance(tick()) * 0.5 : 0.5);
+                  const bool rising = y < previous.spos.y();
+                  const QPointF left = rising ? symCutOutSW(sym) : symCutOutNW(sym);
+                  const QPointF right = rising ? symCutOutNE(previous.sym) : symCutOutSE(previous.sym);
+                  const qreal leftY = y * _spatium + left.y();
+                  const qreal rightY = previous.spos.y() * _spatium + right.y();
+                  if (rising ? leftY < rightY : leftY > rightY)
+                        x -= left.x() / _spatium;
+                  }
+            addLayout(sym, x, line);
+            };
 
       qreal xo = 0.0;
-      if (prefixNaturals) {
+      const auto appendNaturals = [&]() {
             for (int i = 0; i < 7; ++i) {
                   if (naturals & (1 << i)) {
-                        addLayout(SymId::accidentalNatural, xo, lines[i + coffset]);
+                        append(SymId::accidentalNatural, xo, lines[i + coffset]);
                         xo += 1.0;
                         }
                   }
-            }
-      // add accidentals
-      static const qreal sspread = 1.0;
-      static const qreal fspread = 1.0;
+            };
 
-      switch(t1) {
-            case 7:  addLayout(SymId::accidentalSharp, xo + 6.0 * sspread, lines[6]);
-                     // fall through
-            case 6:  addLayout(SymId::accidentalSharp, xo + 5.0 * sspread, lines[5]);
-                     // fall through
-            case 5:  addLayout(SymId::accidentalSharp, xo + 4.0 * sspread, lines[4]);
-                     // fall through
-            case 4:  addLayout(SymId::accidentalSharp, xo + 3.0 * sspread, lines[3]);
-                     // fall through
-            case 3:  addLayout(SymId::accidentalSharp, xo + 2.0 * sspread, lines[2]);
-                     // fall through
-            case 2:  addLayout(SymId::accidentalSharp, xo + 1.0 * sspread, lines[1]);
-                     // fall through
-            case 1:  addLayout(SymId::accidentalSharp, xo,                 lines[0]);
-                     break;
-            case -7: addLayout(SymId::accidentalFlat, xo + 6.0 * fspread, lines[13]);
-                     // fall through
-            case -6: addLayout(SymId::accidentalFlat, xo + 5.0 * fspread, lines[12]);
-                     // fall through
-            case -5: addLayout(SymId::accidentalFlat, xo + 4.0 * fspread, lines[11]);
-                     // fall through
-            case -4: addLayout(SymId::accidentalFlat, xo + 3.0 * fspread, lines[10]);
-                     // fall through
-            case -3: addLayout(SymId::accidentalFlat, xo + 2.0 * fspread, lines[9]);
-                     // fall through
-            case -2: addLayout(SymId::accidentalFlat, xo + 1.0 * fspread, lines[8]);
-                     // fall through
-            case -1: addLayout(SymId::accidentalFlat, xo,                 lines[7]);
-            case 0:
-                  break;
-            default:
-                  qDebug("illegal t1 key %d", t1);
-                  break;
-            }
-      // add suffixed naturals, if any
-      if (suffixNaturals) {
-            xo += qAbs(t1);               // skip accidentals
-            if (t1 > 0) {                 // after sharps, add a little more space
-                  xo += 0.15;
-                  // if last sharp (t1) is above next natural (t1+1)...
-                  if (lines[t1] < lines[t1+1])
-                        xo += 0.2;        // ... add more space
+      if (prefixNaturals)
+            appendNaturals();
+
+      const int count = qAbs(t1);
+      if (count <= 7) {
+            const SymId sym = t1 > 0 ? SymId::accidentalSharp : SymId::accidentalFlat;
+            const int offset = t1 > 0 ? 0 : 7;
+            for (int i = 0; i < count; ++i) {
+                  // Preserve legacy storage/draw order when Studio spacing is off.
+                  const int index = studio ? i : count - 1 - i;
+                  append(sym, xo + index, lines[offset + index]);
                   }
-            for (int i = 0; i < 7; ++i) {
-                  if (naturals & (1 << i)) {
-                        addLayout(SymId::accidentalNatural, xo, lines[i + coffset]);
-                        xo += 1.0;
+            }
+      else
+            qDebug("illegal t1 key %d", t1);
+
+      if (suffixNaturals) {
+            if (!studio) {
+                  xo += count;
+                  if (t1 > 0 && count <= 7) {
+                        xo += 0.15;
+                        if (lines[t1] < lines[t1 + 1])
+                              xo += 0.2;
                         }
                   }
+            appendNaturals();
             }
 
       // Follow stepOffset

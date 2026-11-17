@@ -156,6 +156,7 @@ class Clef final : public Element {
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;
       void layout() override;
+      Shape shape() const override;
       void draw(QPainter*) const override;
       void read(XmlReader&) override;
       void write(XmlWriter&) const override;

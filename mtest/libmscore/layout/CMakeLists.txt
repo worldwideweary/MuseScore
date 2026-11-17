@@ -16,3 +16,6 @@ include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
 set(TARGET tst_benchmark)
 
 include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
+
+set(TARGET tst_spacing)
+include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)

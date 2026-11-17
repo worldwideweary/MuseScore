@@ -29,6 +29,8 @@
 #include "synthesizerstate.h"
 
 namespace Ms {
+class SpacingGraceQueryFactory4;
+class SpacingGraceQueryScope4;
 
 namespace Avs {
       class AvsOmr;
@@ -75,6 +77,7 @@ class Segment;
 class Selection;
 class SigEvent;
 class Slur;
+class SlurSegment;
 class Spanner;
 class Staff;
 class System;
@@ -282,6 +285,10 @@ class CmdState {
       bool _oneMeasureBase = true;
 
       bool _locked = false;
+      const SlurSegment* _slurOffset4 = nullptr;
+      const SlurSegment* _slurAnchor4 = nullptr;
+      // An edit's proof must not survive a command-state reset.
+      quint64 _generation4 = 0;
 
       void setMeasureBase(const MeasureBase* mb);
 
@@ -307,6 +314,18 @@ class CmdState {
       int startStaff() const { return _startStaff; }
       int endStaff() const { return _endStaff; }
       const Element* element() const;
+      const SlurSegment* slurOffset4() const { return _slurOffset4; }
+      quint64 generation4() const { return _generation4; }
+      const SlurSegment* slurAnchor4() const { return _slurAnchor4; }
+      void requestSlurOffset4(const SlurSegment* s) {
+            if (!_locked) { _slurOffset4 = s; _slurAnchor4 = nullptr; }
+            }
+      void requestSlurAnchor4(const SlurSegment* s) {
+            if (!_locked) { _slurAnchor4 = s; _slurOffset4 = nullptr; }
+            }
+      void cancelSlurEdit4() {
+            if (!_locked) { _slurOffset4 = nullptr; _slurAnchor4 = nullptr; }
+            }
 
       void lock() { _locked = true; }
       void unlock() { _locked = false; }
@@ -400,8 +419,9 @@ class Movements : public std::vector<MasterScore*> {
 //---------------------------------------------------------------------------------------
 
 class Score : public QObject, public ScoreElement {
-      std::map<int, std::vector<int>> _repeatCourtesyDestinations;
+      friend class SpacingGraceQueryScope4;
 
+      std::map<int, std::vector<int>> _repeatCourtesyDestinations;
       Q_OBJECT
 
    public:
@@ -572,6 +592,7 @@ class Score : public QObject, public ScoreElement {
    protected:
       int _fileDivision; ///< division of current loading *.msc file
       LayoutMode _layoutMode { LayoutMode::PAGE };
+      const SpacingGraceQueryFactory4* _spacingGraceQuery4 = nullptr; // Scoped, never serialized.
       SynthesizerState _synthesizerState;
 
       void createPlayEvents(Chord*);
@@ -1093,6 +1114,9 @@ class Score : public QObject, public ScoreElement {
 
       void doLayout();
       void doLayoutRange(const Fraction&, const Fraction&);
+      bool doLayoutSlurOffset4(const SlurSegment*);
+      bool doLayoutSlurAnchor4(const SlurSegment*);
+      bool doLayoutSlurEdit4(const SlurSegment*, bool anchor);
       void layoutLinear(bool layoutAll, LayoutContext& lc);
 
       void layoutChords1(Segment* segment, int staffIdx, bool preserveMeasureRestX = false);
@@ -1142,6 +1166,7 @@ class Score : public QObject, public ScoreElement {
       void removeViewer(MuseScoreView* v)   { viewer.removeAll(v); }
       const QList<MuseScoreView*>& getViewer() const { return viewer;       }
 
+      const SpacingGraceQueryFactory4* graceQueryFactory4() const { return _spacingGraceQuery4; }
       LayoutMode layoutMode() const         { return _layoutMode; }
       void setLayoutMode(LayoutMode lm)     { _layoutMode = lm;   }
 

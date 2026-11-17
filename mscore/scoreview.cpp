@@ -1417,6 +1417,17 @@ void ScoreView::paint(const QRect& r, QPainter& p)
                                           }
                                     }
                               }
+                        if (MScore::showStudioSpacingFallbacks && score()->styleB(Sid::spacingLayout4)) {
+                              p.save();
+                              p.setPen(Qt::NoPen);
+                              p.setBrush(QColor(210, 125, 0));
+                              const qreal sp = score()->spatium();
+                              for (const System* system : qAsConst(page->systems())) {
+                                    if (system->studioSpacingFallback())
+                                          p.drawEllipse(system->ipos() + QPointF(-2 * sp, sp), 0.65 * sp, 0.65 * sp);
+                                    }
+                              p.restore();
+                              }
                         if (MScore::showCorruptedMeasures) {
                               double _spatium = score()->spatium();
                               QPen pen;

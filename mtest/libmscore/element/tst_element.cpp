@@ -74,6 +74,7 @@ class TestElement : public QObject, public MTest
    private slots:
       void initTestCase() { initMTest(); }
       void testIds();
+      void legacySymbolNames();
       void testPartialSlur();
       void testPartialLyrics();
       void testTiePlacementRoundTrip();
@@ -2989,6 +2990,27 @@ void TestElement::arpeggioLivePlayEvents()
       QCOMPARE(a->endTrack(), 2);
       QCOMPARE(n->playEvents().front().ontime(), 0);
       delete s;
+      }
+
+void TestElement::legacySymbolNames()
+      {
+      MasterScore score(MScore::baseStyle());
+      const struct { const char* name; SymId id; } cases[] = {
+            {"dot", SymId::augmentationDot},
+            {"pedalasterisk", SymId::keyboardPedalUp},
+            {"pedal ped", SymId::keyboardPedalPed},
+            {"keyboardPedalPed", SymId::keyboardPedalPed},
+            {"noSym", SymId::noSym},
+            {"notARecognizedSymbolName", SymId::noSym},
+            };
+      for (const auto& c : cases) {
+            XmlReader reader(QByteArray("<Symbol><name>") + c.name + "</name></Symbol>");
+            QVERIFY(reader.readNextStartElement());
+            Symbol symbol(&score);
+            symbol.read(reader);
+            QVERIFY2(!reader.hasError(), qPrintable(reader.errorString()));
+            QVERIFY2(symbol.sym() == c.id, c.name);
+            }
       }
 
 QTEST_MAIN(TestElement)

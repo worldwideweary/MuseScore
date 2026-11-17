@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacinggeometry4.h"
 #include "articulation.h"
 #include "chord.h"
 #include "icon.h"
@@ -1150,27 +1151,28 @@ Element* Rest::prevElement()
 
 Shape Rest::shape() const
       {
+      return shapeWithItems4(nullptr);
+      }
+
+Shape Rest::shapeWithItems4(SpacingShape4* items) const
+      {
       Shape shape;
+      SpacingShapeBuilder4 builder(shape, items);
       if (!_gap) {
-            shape.add(ChordRest::shape());
+            builder.addChordRest(this);
             if (measure() && measure()->isMMRest()) {
                   qreal _spatium = spatium();
-                  shape.add(QRectF(0.0, -_spatium, _mmWidth, 2.0 * _spatium));
-
-                  shape.add(mmRestNumberRect());
+                  builder.add(QRectF(0.0, -_spatium, _mmWidth, 2.0 * _spatium));
+                  builder.add(mmRestNumberRect());
                   }
             else
-#ifndef NDEBUG
-                  shape.add(bbox(), name());
-#else
-                  shape.add(bbox());
-#endif
+                  builder.add(bbox(), this);
             for (NoteDot* dot : _dots)
-                  shape.add(symBbox(SymId::augmentationDot).translated(dot->pos()));
+                  builder.add(symBbox(SymId::augmentationDot).translated(dot->pos()), dot);
             }
       for (Element* e : el()) {
             if (e->addToSkyline())
-                  shape.add(e->shape().translated(e->pos()));
+                  builder.addElement(e, e->pos());
             }
       return shape;
       }

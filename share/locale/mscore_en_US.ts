@@ -18430,7 +18430,7 @@ please choose a different name:</source>
         <location filename="../../mscore/menus.cpp" line="1701"/>
         <source>Open</source>
         <extracomment>For brass and plucked string instruments: staff text that prescribes to play without mute, see https://en.wikipedia.org/wiki/Mute_(music)</extracomment>
-        <translation type="unfinished">Unfingered</translation>
+        <translation>Open</translation>
     </message>
     <message>
         <location filename="../../mscore/menus.cpp" line="1704"/>
@@ -34578,7 +34578,7 @@ This score already has part scores. Changing local time signatures while part sc
     <message>
         <location filename="../../libmscore/sym.cpp" line="3742"/>
         <source>Open</source>
-        <translation type="unfinished">Unfingered</translation>
+        <translation>Open</translation>
     </message>
     <message>
         <location filename="../../libmscore/sym.cpp" line="3747"/>

@@ -95,6 +95,7 @@ class System final : public Element {
       QList<SpannerSegment*> _spannerSegments;
 
       qreal _leftMargin              { 0.0   };     ///< left margin for instrument name, brackets etc.
+      bool _studioSpacingFallback   { false }; // Final layout result, for the editor overlay.
       mutable bool fixedDownDistance { false };
       qreal _distance                { 0.0   };     // temp. variable used during layout
       qreal _systemHeight            { 0.0   };
@@ -136,6 +137,8 @@ public:
 
       void layout2();                     ///< Called after Measure layout.
       void restoreLayout2();
+      bool studioSpacingFallback() const { return _studioSpacingFallback; }
+      void setStudioSpacingFallback(bool fallback) { _studioSpacingFallback = fallback; }
       void clear();                       ///< Clear measure list.
 
       QRectF bboxStaff(int staff) const      { return _staves[staff]->bbox(); }

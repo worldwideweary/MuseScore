@@ -30,6 +30,17 @@ qreal beam4InsetTremoloSpan(qreal anchorDistance, qreal spatium);
 // Coordinates are page Y and beam-relative X, matching the Studio engine.
 bool layoutBeam4(Beam*, const std::vector<ChordRest*>&, QPointF& start,
                  QPointF& end, qreal& beamDistance);
+// Read-only comparison of ordinary grace beams: current* retains the v0.104
+// scaled-anchor baseline; separated* uses Studio's nominal anchor magnitude.
+// Neither result is published; failure leaves output untouched.
+struct GraceBeamAnchorProbe4 {
+    QPointF currentStart, currentEnd;
+    QPointF separatedStart, separatedEnd;
+    qreal currentWidth = 0;
+    qreal separatedWidth = 0;
+    std::vector<qreal> defaultStemLengths;
+};
+bool beam4ProbeGraceAnchors(Beam*, GraceBeamAnchorProbe4&);
 // Studio's tie-break rule for the distinct note positions of a beam.
 // Line numbers increase downwards; middleLine is the staff's center line.
 bool beam4AutoStemUp(std::vector<int> noteLines, int middleLine);

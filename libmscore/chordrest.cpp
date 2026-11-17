@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "spacinggeometry4.h"
 #include "chordrest.h"
 #include "chord.h"
 #include "xml.h"
@@ -1271,7 +1272,13 @@ void ChordRest::setMelismaEnd(bool v)
 
 Shape ChordRest::shape() const
       {
+      return shapeWithItems4(nullptr);
+      }
+
+Shape ChordRest::shapeWithItems4(SpacingShape4* items) const
+      {
       Shape shape;
+      SpacingShapeBuilder4 builder(shape, items);
       {
       qreal x1 = DBL_MAX;
       qreal x2 = -DBL_MAX;
@@ -1292,7 +1299,7 @@ Shape ChordRest::shape() const
             adjustWidth = true;
             }
       if (adjustWidth)
-            shape.addHorizontalSpacing(Shape::SPACING_LYRICS, x1, x2);
+            builder.addHorizontalSpacing(Shape::SPACING_LYRICS, x1, x2);
       }
 
       {
@@ -1304,8 +1311,9 @@ Shape ChordRest::shape() const
                   continue;
             if (e->isHarmony() && e->staffIdx() == staffIdx()) {
                   Harmony* h = toHarmony(e);
-                  // calculate bbox only (do not reset position)
-                  if (h->bbox().isEmpty()) h->layout1();
+                  // Prepare missing bounds only during normal layout
+                  if (!items && h->bbox().isEmpty())
+                        h->layout1();
                   const qreal margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
                   x1 = qMin(x1, e->bbox().x() - margin + e->pos().x());
                   x2 = qMax(x2, e->bbox().x() + e->bbox().width() + margin + e->pos().x());
@@ -1315,9 +1323,9 @@ Shape ChordRest::shape() const
                   FretDiagram* fd = toFretDiagram(e);
                   qreal margin = styleP(Sid::fretMinDistance) * 0.5;
                   bool firstBeat = tick() == measure()->tick();
-                  if (fd->pos().x() == 0)
+                  if (!items && fd->pos().x() == 0)
                         fd->layoutHorizontal();
-                  else if (fd->bbox().isEmpty())
+                  else if (!items && fd->bbox().isEmpty())
                         fd->calculateBoundingRect();
                   qreal leftX = firstBeat ? 0 : e->bbox().x() - margin + e->pos().x();
                   qreal rightX = e->bbox().x() + e->bbox().width() + margin + e->pos().x();
@@ -1327,7 +1335,7 @@ Shape ChordRest::shape() const
                   if (fd->harmony()) {
                         Harmony* h = fd->harmony();
                         margin = styleP(Sid::harmonyHarmonyDistance) * 0.5;
-                        if (h->bbox().isEmpty())
+                        if (!items && h->bbox().isEmpty())
                               h->layout1();
                         leftX = firstBeat ? 0 : h->bbox().x() - margin + h->pos().x() + e->pos().x();
                         rightX = h->bbox().x() + h->bbox().width() + margin + h->pos().x() + e->pos().x();
@@ -1338,12 +1346,12 @@ Shape ChordRest::shape() const
                   }
             }
       if (adjustWidth)
-            shape.addHorizontalSpacing(Shape::SPACING_HARMONY, x1, x2);
+            builder.addHorizontalSpacing(Shape::SPACING_HARMONY, x1, x2);
       }
 
       if (isMelismaEnd()) {
             qreal right = rightEdge();
-            shape.addHorizontalSpacing(Shape::SPACING_LYRICS, right, right);
+            builder.addHorizontalSpacing(Shape::SPACING_LYRICS, right, right);
             }
 
       return shape;

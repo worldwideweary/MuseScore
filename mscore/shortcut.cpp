@@ -4281,6 +4281,16 @@ Shortcut Shortcut::_sc[] = {
          },
       {
          MsWidget::MAIN_WINDOW,
+         STATE_ALL,
+         "show-studio-spacing-fallbacks",
+         QT_TRANSLATE_NOOP("action", "Show Studio Spacing Fallbacks"),
+         QT_TRANSLATE_NOOP("action", "Mark systems that fell back from Studio spacing"),
+         0,
+         Icons::Invalid_ICON,
+         Qt::ApplicationShortcut
+         },
+      {
+         MsWidget::MAIN_WINDOW,
          STATE_ALL & ~STATE_TEXT_EDIT,
          "relayout",
          QT_TRANSLATE_NOOP("action", "Re-Layout"),
