@@ -3751,54 +3751,6 @@ QString Measure::accessibleInfo() const
       return QString("%1: %2").arg(Element::accessibleInfo(), QString::number(no() + 1));
       }
 
-// Studio Segment::shortestChordRest, using Evolution's voice visibility API.
-// actualTicks includes tuplet ratios and local time stretch.
-static Fraction shortestSpacingChordRest4(const Segment* segment)
-{
-    Fraction shortest = segment->measure()->ticks();
-    for (const Element* element : segment->elist()) {
-        if (!element || !element->isChordRest() || !element->staff()->show()
-            || (element->isRest() && toRest(element)->isGap())
-            || (!element->visible() && segment->measure()->hasVoices(element->staffIdx())))
-            continue;
-        const Fraction duration = toChordRest(element)->actualTicks();
-        if (duration > Fraction(0, 1) && duration < shortest)
-            shortest = duration;
-    }
-    return shortest;
-}
-
-// Studio 4.7.5 needsCueSizeSpacing: a normal-size item ending at the
-// next onset prevents cue rhythm scaling; a longer held item does not.
-static bool needsCueSizeSpacing4(const Segment* segment)
-{
-    bool small = false;
-    for (const Element* item : segment->elist()) {
-        if (!item || !item->isChordRest()) continue;
-        const ChordRest* cr = toChordRest(item);
-        if (cr->isSmall()) small = true;
-        else if (cr->actualTicks() == segment->ticks()) return false;
-    }
-    return small;
-}
-
-double segmentSpacingStretch4(const Segment* segment)
-{
-    const Segment* previous = segment->prev(SegmentType::ChordRest);
-    const qreal slope = segment->score()->styleD(Sid::measureSpacing);
-    const qreal rhythm = spacing4DurationStretch(slope, segment->ticks().toDouble(),
-        shortestSpacingChordRest4(segment).toDouble(), previous ? previous->ticks().toDouble() : 0,
-        previous ? shortestSpacingChordRest4(previous).toDouble() : 0);
-    // Studio clamps per-measure user stretch; apply it once, to natural widths
-    // and springs, rather than also multiplying the whole measure afterwards.
-    qreal scale = 1;
-    if (segment->score()->styleB(Sid::scaleRythmicSpacingForSmallNotes) && needsCueSizeSpacing4(segment)) {
-        scale = segment->score()->styleD(Sid::smallNoteMag);
-        if (!(scale > 0) || !std::isfinite(scale)) return 0;
-    }
-    return rhythm * scale * qBound(qreal(0.1), segment->measure()->userStretch(), qreal(10));
-}
-
 // Select one beamed stream, allowing un-beamed chord voices as constraints.
 // Studio permits an outgoing adjustment beside a longer sounding value, but
 // an un-beamed chord at the following onset blocks the signed adjustment.
