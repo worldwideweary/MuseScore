@@ -3,6 +3,8 @@
 #include "spacingprofile4.h"
 #include "spacingplan4.h"
 #include "spacinginput4.h"
+#include "slurdirection4.h"
+#include "slur.h"
 #include "spacinggeometry4.h"
 #include "spacingcollision4.h"
 #include "spacinglayout4.h"
@@ -36,6 +38,71 @@
 #include <set>
 
 namespace Ms {
+
+// Own native producer certificates for a bounded domain, never a physical
+// query cache. Each callback builds and destroys a fresh read-only owner.
+std::vector<const Measure*> spacingMeasures4(const System* system)
+{
+    std::vector<const Measure*> result;
+    if (system) for (const MeasureBase* mb : system->measures())
+        if (mb && mb->isMeasure()) result.push_back(toMeasure(mb));
+    return result;
+}
+
+std::vector<const Slur*> NativeGraceInputs4::roots(const std::vector<const Measure*>& measures) const
+{
+    std::vector<const Slur*> result;
+    if (!_score || measures.empty()) return result;
+    const auto overlaps = _score->spannerMap().findOverlappingInMapOrder(
+        measures.front()->tick().ticks(), measures.back()->endTick().ticks());
+    for (const Spanner* item : overlaps)
+        if (item && item->isSlur()) result.push_back(toSlur(item));
+    return result;
+}
+
+std::vector<SpacingPreparedSlur4> NativeGraceInputs4::declarations(const std::vector<const Measure*>& measures) const
+{
+    std::vector<SpacingPreparedSlur4> result;
+    if (!_readiness) return result;
+    for (const Slur* root : roots(measures)) {
+        if (!_readiness->rootPrepared(root)) continue;
+        Direction direction = Direction::AUTO;
+        resolvePreparedSlurDirection4(root, direction); // Read-only; AUTO on failure.
+        result.emplace_back(root, direction);
+    }
+    return result;
+}
+
+bool NativeGraceInputs4::capture(const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) const
+{
+    if (!_readiness || !chord || chord->score() != _score
+        || std::find(_measures.begin(), _measures.end(), chord->measure()) == _measures.end()) return false;
+    const std::vector<const Measure*> local { chord->measure() };
+    const auto directions = _readiness->declarations(chord->measure());
+    const auto rootDirections = declarations(local);
+    return captureMeasureSpacingAttachments4(chord->measure(), directions, owner, reason, &rootDirections);
+}
+
+NativeGraceInputs4::NativeGraceInputs4(Score* score, std::vector<const Measure*> measures, SpacingDirectionReadiness4* readiness)
+    : _score(score), _readiness(readiness), _measures(std::move(measures)),
+      _factory([this](const Chord* chord, SpacingAttachmentPreparation4& owner, QString* reason) {
+          return capture(chord, owner, reason);
+      }, SpacingSlurPolicy4::PREPARED)
+{
+    // Outside every read-only query. A successful root is produced at most
+    // once per LayoutContext, then only its current direction is resolved.
+    if (_readiness) for (const Slur* root : roots(_measures))
+        _readiness->prepareRoot(const_cast<Slur*>(root));
+}
+
+bool NativeGraceInputs4::captureSystem(System* system, SpacingAttachmentPreparation4& owner, QString* reason) const
+{
+    if (!_readiness || spacingMeasures4(system) != _measures) return false;
+    const auto directions = _readiness->declarations(system);
+    const auto rootDirections = declarations(_measures);
+    return captureSystemSpacingAttachments4(system, directions, owner, reason, &rootDirections);
+}
+
 namespace {
 SpacingDecisionScope4*& activeSpacingDecision4()
 {

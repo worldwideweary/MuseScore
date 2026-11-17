@@ -180,6 +180,28 @@ bool spacingPlanPublicationValid4(const System*, const SpacingPlan4&, QString* r
 // grace finalization keeps its native order in collectSystem. Failure is atomic.
 bool publishSpacingPlanSegments4(System*, const SpacingPlan4&, QString* reason = nullptr);
 
+// Studio spacing preparation for one native producer/layout phase. Kept here
+// instead of layout.cpp so an adapter-free native layout need not own the
+// prepared grace-input implementation. A factory borrows this object only
+// during the surrounding native publication/plan scope.
+class Slur;
+class SpacingDirectionReadiness4;
+struct SpacingPreparedSlur4;
+std::vector<const Measure*> spacingMeasures4(const System*);
+class NativeGraceInputs4 {
+    Score* _score;
+    SpacingDirectionReadiness4* _readiness;
+    std::vector<const Measure*> _measures;
+    SpacingGraceQueryFactory4 _factory;
+    std::vector<const Slur*> roots(const std::vector<const Measure*>&) const;
+    std::vector<SpacingPreparedSlur4> declarations(const std::vector<const Measure*>&) const;
+    bool capture(const Chord*, SpacingAttachmentPreparation4&, QString*) const;
+public:
+    NativeGraceInputs4(Score*, std::vector<const Measure*>, SpacingDirectionReadiness4*);
+    const SpacingGraceQueryFactory4* factory() const { return &_factory; }
+    bool captureSystem(System*, SpacingAttachmentPreparation4&, QString* reason = nullptr) const;
+};
+
 // Studio-only fallback for a retained system when the full placement plan
 // cannot be published. Returns target measure widths without changing layout.
 // An empty map lets collectSystem keep its legacy per-measure stretching.
