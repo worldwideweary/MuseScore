@@ -273,7 +273,7 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // width accumulator intact for unsupported-context fallback/backtracking.
 static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
                                SpacingDirectionReadiness4* readiness, SpacingPlan4& result,
-                               const SpacingPlan4* prefix, QString* reason)
+                               const SpacingPlan4* prefix = nullptr, QString* reason = nullptr)
 {
     const auto fail = [reason](const char* text) {
         if (reason) *reason = QString::fromLatin1(text);
