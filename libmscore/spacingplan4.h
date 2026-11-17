@@ -252,15 +252,23 @@ struct GraceBeamPreparation4 {
 // controls system breaks, while this owner retains the trial-only prefix and
 // grace-beam preparation memo without exposing either at each call site.
 class StudioCollectionState4 {
+    // Borrow LayoutContext's pass-local owner; the certificate map is never
+    // retained by a score, a system, or a candidate plan.
+    StudioDirectionState4* _directionState;
     std::vector<GraceBeamPreparation4> _preparedBeams;
     SpacingPlan4 _previousCandidate;
     bool _retainedOverfullGroup = false;
-public:
-    qreal replayCourtesy(System*, const MeasureBase* next, qreal availableWidth,
-                         SpacingDirectionReadiness4*);
-    bool evaluateCandidate(System*, qreal availableWidth, SpacingDirectionReadiness4*,
+    bool evaluateCandidate(System*, qreal availableWidth,
                            qreal& fittingWidth, qreal courtesyRefreshWidth);
-    void noteRetainedOverfullGroup(bool retained) { _retainedOverfullGroup |= retained; }
+public:
+    explicit StudioCollectionState4(StudioDirectionState4* directionState)
+        : _directionState(directionState) {}
+    SpacingDirectionReadiness4* readiness() const {
+        return _directionState ? _directionState->readiness() : nullptr;
+    }
+    qreal replayCourtesy(System*, const MeasureBase* next, qreal availableWidth);
+    bool keepWithPrevious(System*, qreal availableWidth, const MeasureBase* previous,
+                          qreal& fittingWidth, qreal courtesyRefreshWidth);
     bool retainedOverfullGroup() const { return _retainedOverfullGroup; }
     std::vector<GraceBeamPreparation4>& preparedBeams() { return _preparedBeams; }
 };
@@ -292,6 +300,9 @@ std::map<Measure*, qreal> systemSpacingWidths4(System*, qreal extraWidth);
 // The adapter prepares its own request and status; native layout still owns
 // measure widths, terminal fill policy, and spring distribution.
 class StudioFinalRequestScope4 {
+    // The collection scope precedes this final scope in collectSystem and
+    // outlives all optional grace publication and candidate-beam queries.
+    StudioCollectionState4& _collection;
     std::unique_ptr<NativeGraceInputs4> _inputs;
     SpacingGraceQueryScope4 _graceScope;
     bool _observed;
@@ -304,12 +315,12 @@ class StudioFinalRequestScope4 {
     std::map<Measure*, const SpacingMeasurePlan4*> _byMeasure;
     bool _selected = false;
 public:
-    StudioFinalRequestScope4(Score*, System*, SpacingDirectionReadiness4*,
+    StudioFinalRequestScope4(Score*, System*, StudioCollectionState4&,
                              const MeasureBase* next, qreal availableWidth,
-                             qreal fillLimit, bool retainedOverfullGroup);
+                             qreal fillLimit);
     StudioFinalRequestScope4(const StudioFinalRequestScope4&) = delete;
     StudioFinalRequestScope4& operator=(const StudioFinalRequestScope4&) = delete;
-    bool selectAndPublish(System*, std::vector<GraceBeamPreparation4>&);
+    bool selectAndPublish(System*);
     // Valid only after a successful selection; preserves the old at() check.
     qreal plannedWidth(Measure*) const;
     // Call after native measure positions and widths have been finalized.

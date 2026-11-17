@@ -4380,7 +4380,9 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
 
 System* Score::collectSystem(LayoutContext& lc)
       {
-      StudioCollectionState4 studioCollection;
+      // All optional candidate state, including its borrowed pass-local
+      // direction certificates, stays inside the Studio collection scope.
+      StudioCollectionState4 studioCollection(lc.studioDirectionState4.get());
       SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
@@ -4393,10 +4395,6 @@ System* Score::collectSystem(LayoutContext& lc)
             lc.startWithLongNames = lc.firstSystem && measure->sectionBreakElement()->startWithLongNames();
             }
       System* system = getNextSystem(lc);
-      // Borrow the adapter's pass-local direction certificates only during
-      // this system collection. Native layout never owns the certificate map.
-      SpacingDirectionReadiness4* studioDirections = lc.studioDirectionState4
-            ? lc.studioDirectionState4->readiness() : nullptr;
       Fraction lcmTick = lc.curMeasure->tick();
       system->setInstrumentNames(lc.startWithLongNames, lcmTick);
 
@@ -4440,7 +4438,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
       while (lc.curMeasure) {    // collect measure for system
             const qreal courtesyRefreshWidth = studioCollection.replayCourtesy(system, lc.curMeasure,
-                  systemWidth, studioDirections);
+                  systemWidth);
             System* oldSystem = lc.curMeasure->system();
             if (oldSystem && lc.curMeasure->isMeasure()
                 && lc.curMeasure->tick() > lc.endTick) {
@@ -4516,14 +4514,11 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
-            const bool planned = studioCollection.evaluateCandidate(system, systemWidth,
-                  studioDirections, fittingWidth, courtesyRefreshWidth);
-            // Studio accepts an overfull trial at a keep-with-next boundary,
-            // then squeezes the retained system. Use this rule only when the
-            // Studio candidate succeeded; native fallback keeps its rollback.
-            const bool keepWithPrevious = planned && lc.prevMeasure && lc.prevMeasure->system() == system
-                  && lc.prevMeasure->noBreak();
-            studioCollection.noteRetainedOverfullGroup(keepWithPrevious && fittingWidth > systemWidth);
+            // The optional planner alone decides whether a planned no-break
+            // group may retain an overfull trial. Native collection still
+            // performs the actual break or rollback.
+            const bool keepWithPrevious = studioCollection.keepWithPrevious(system, systemWidth,
+                  lc.prevMeasure, fittingWidth, courtesyRefreshWidth);
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth) && !keepWithPrevious;
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4771,10 +4766,9 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // Keep the optional Studio request and fresh grace-query factory alive
       // through native width placement and late grace publication.
-      StudioFinalRequestScope4 finalStudio(this, system, studioDirections,
-            lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit),
-            studioCollection.retainedOverfullGroup());
-      const bool useStudioPlan = finalStudio.selectAndPublish(system, studioCollection.preparedBeams());
+      StudioFinalRequestScope4 finalStudio(this, system, studioCollection,
+            lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit));
+      const bool useStudioPlan = finalStudio.selectAndPublish(system);
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
       bool nativePooled = false;

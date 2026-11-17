@@ -383,9 +383,9 @@ static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector
 // consumes its seed even when the next object is not an ordinary measure.
 // Keep the previous two-attempt fallback and report width only on success.
 qreal StudioCollectionState4::replayCourtesy(System* system, const MeasureBase* next,
-                                               qreal availableWidth,
-                                               SpacingDirectionReadiness4* readiness)
+                                               qreal availableWidth)
 {
+    SpacingDirectionReadiness4* readiness = this->readiness();
     auto& preparedBeams = _preparedBeams;
     auto& previousCandidate = _previousCandidate;
     if (!previousCandidate.trialOnly)
@@ -409,9 +409,9 @@ qreal StudioCollectionState4::replayCourtesy(System* system, const MeasureBase* 
 // collection. This helper owns the seed's one-shot lifetime and the optional
 // candidate decision event; callers retain all native overflow/group rules.
 bool StudioCollectionState4::evaluateCandidate(System* system, qreal availableWidth,
-                                                SpacingDirectionReadiness4* readiness,
                                                 qreal& fittingWidth, qreal courtesyRefreshWidth)
 {
+    SpacingDirectionReadiness4* readiness = this->readiness();
     auto& preparedBeams = _preparedBeams;
     auto& previousCandidate = _previousCandidate;
     bool planned = false;
@@ -439,6 +439,19 @@ bool StudioCollectionState4::evaluateCandidate(System* system, qreal availableWi
         recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
               fittingWidth, availableWidth);
     return planned;
+}
+
+// Only a successfully planned Studio candidate can retain an overfull
+// no-break group. Keep this Studio-specific exception and its final-request
+// state together; native collection still owns system breaks and rollback.
+bool StudioCollectionState4::keepWithPrevious(System* system, qreal availableWidth,
+                                                const MeasureBase* previous,
+                                                qreal& fittingWidth, qreal courtesyRefreshWidth)
+{
+    const bool planned = evaluateCandidate(system, availableWidth, fittingWidth, courtesyRefreshWidth);
+    const bool keep = planned && previous && previous->system() == system && previous->noBreak();
+    _retainedOverfullGroup |= keep && fittingWidth > availableWidth;
+    return keep;
 }
 
 // Legacy width reconstruction may discard Studio spacing at start repeats
@@ -2790,9 +2803,11 @@ std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
 // The scope's member order mirrors collectSystem's previous locals: inputs are
 // created before the scoped factory binding, and destroyed afterward.
 StudioFinalRequestScope4::StudioFinalRequestScope4(Score* score, System* system,
-        SpacingDirectionReadiness4* readiness, const MeasureBase* next,
-        qreal availableWidth, qreal fillLimit, bool retainedOverfullGroup)
-    : _inputs(readiness ? new NativeGraceInputs4(score, spacingMeasures4(system), readiness) : nullptr),
+        StudioCollectionState4& collection, const MeasureBase* next,
+        qreal availableWidth, qreal fillLimit)
+    : _collection(collection),
+      _inputs(collection.readiness() ? new NativeGraceInputs4(score, spacingMeasures4(system),
+                                                              collection.readiness()) : nullptr),
       _graceScope(score, _inputs ? _inputs->factory() : nullptr),
       _observed(spacingDecisionObserved4(score)),
       _logFallback(MScore::showStudioSpacingFallbacks && !score->printing()
@@ -2802,16 +2817,16 @@ StudioFinalRequestScope4::StudioFinalRequestScope4(Score* score, System* system,
     _request.availableWidth = availableWidth;
     _request.next = next;
     _request.fillLimit = fillLimit;
-    _request.retainedOverfullGroup = retainedOverfullGroup;
+    _request.retainedOverfullGroup = _collection.retainedOverfullGroup();
     if (_inputs)
         _request.slurPolicy = _inputs->factory()->policy();
 }
 
-bool StudioFinalRequestScope4::selectAndPublish(System* system,
-        std::vector<GraceBeamPreparation4>& preparedBeams)
+bool StudioFinalRequestScope4::selectAndPublish(System* system)
 {
     QString* reason = _observed || _logFallback ? &_decisionReason : nullptr;
-    _selected = selectAndPublishFinalSpacing4(system, _request, _inputs.get(), preparedBeams,
+    _selected = selectAndPublishFinalSpacing4(system, _request, _inputs.get(),
+                                              _collection.preparedBeams(),
                                               _plan, _byMeasure, reason);
     return _selected;
 }

@@ -3810,6 +3810,11 @@ void TestSpacing::spacingInputSnapshot4()
       // Certificate ownership is now adapter-local; the pass handle still
       // exists exactly when Studio horizontal spacing is enabled.
       QCOMPARE(bool(context.studioDirectionState4), score->styleB(Sid::spacingLayout4));
+      // The collection owns no certificate map of its own; it borrows the
+      // same adapter-owned readiness state through the system pass.
+      StudioCollectionState4 collection(context.studioDirectionState4.get());
+      QVERIFY(collection.readiness() == (context.studioDirectionState4
+            ? context.studioDirectionState4->readiness() : nullptr));
       }
       const auto state = [score]() {
             auto values = graceLayoutSnapshot4(score);
