@@ -13,7 +13,6 @@
 #include <QByteArray>
 #include <map>
 
-#include "spacingprofile4.h"
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -4383,7 +4382,6 @@ System* Score::collectSystem(LayoutContext& lc)
       // All optional candidate state, including its borrowed pass-local
       // direction certificates, stays inside the Studio collection scope.
       StudioCollectionState4 studioCollection(lc.studioDirectionState4.get());
-      SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
       const MeasureBase* measure  = _systems.empty() ? 0 : _systems.back()->measures().back();

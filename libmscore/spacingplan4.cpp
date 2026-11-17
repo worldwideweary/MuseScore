@@ -378,6 +378,19 @@ static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector
     return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
 }
 
+// Own the optional system timing inside the bounded collection scope.
+// As before, it begins before getNextSystem() and ends on every return from
+// collectSystem(), including an empty collection. The inactive path does
+// not allocate a timing object or access a clock.
+StudioCollectionState4::StudioCollectionState4(StudioDirectionState4* directionState)
+    : _directionState(directionState)
+{
+    if (spacingProfileEnabled4() && spacingProfileData4().collecting)
+        _systemProfile.reset(new SpacingProfileScope4(SpacingProfileStage4::SYSTEM));
+}
+
+StudioCollectionState4::~StudioCollectionState4() = default;
+
 // After native collection has finalized the previous measure's trailer,
 // replay a trial-only courtesy prefix with fresh derived geometry. The replay
 // consumes its seed even when the next object is not an ordinary measure.

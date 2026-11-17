@@ -20,6 +20,7 @@ class Beam;
 class Chord;
 class SpacingInput4;
 class SpacingAttachmentPreparation4;
+class SpacingProfileScope4;
 class Score;
 
 // Value-only evidence of the path actually selected by native system layout.
@@ -258,11 +259,17 @@ class StudioCollectionState4 {
     std::vector<GraceBeamPreparation4> _preparedBeams;
     SpacingPlan4 _previousCandidate;
     bool _retainedOverfullGroup = false;
+    // Lifetime matches the native collection call, but the optional
+    // profiler's implementation stays in spacingplan4.cpp. Declared last
+    // so its timer stops before candidate state is destroyed.
+    std::unique_ptr<SpacingProfileScope4> _systemProfile;
     bool evaluateCandidate(System*, qreal availableWidth,
                            qreal& fittingWidth, qreal courtesyRefreshWidth);
 public:
-    explicit StudioCollectionState4(StudioDirectionState4* directionState)
-        : _directionState(directionState) {}
+    explicit StudioCollectionState4(StudioDirectionState4* directionState);
+    ~StudioCollectionState4();
+    StudioCollectionState4(const StudioCollectionState4&) = delete;
+    StudioCollectionState4& operator=(const StudioCollectionState4&) = delete;
     SpacingDirectionReadiness4* readiness() const {
         return _directionState ? _directionState->readiness() : nullptr;
     }
