@@ -4531,30 +4531,9 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
-            bool planned = false;
-            if (styleB(Sid::spacingLayout4)) {
-                  const bool observed = spacingDecisionObserved4(this);
-                  QString reason;
-                  SpacingPlan4 candidate;
-                  planned = systemFittingPlan4(system, systemWidth, preparedBeams,
-                        lc.spacingDirections4.get(), candidate, &previousCandidate, observed ? &reason : nullptr);
-                  // Consume the seed once, including on fallback. A trial-only
-                  // plan can seed only the replay after native finalization.
-                  previousCandidate = {};
-                  if (planned) {
-                        fittingWidth = candidate.width;
-                        if (system->lastMeasure()->trailer())
-                              previousCandidate = std::move(candidate);
-                        }
-                  if (observed)
-                        recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
-                              MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
-                              : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
-                              fittingWidth, systemWidth, reason, courtesyRefreshWidth);
-                  }
-            else if (spacingDecisionObserved4(this))
-                  recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
-                        fittingWidth, systemWidth);
+            const bool planned = evaluateStudioFittingCandidate4(system, systemWidth,
+                  preparedBeams, lc.spacingDirections4.get(), previousCandidate,
+                  fittingWidth, courtesyRefreshWidth);
             // Studio accepts an overfull trial at a keep-with-next boundary,
             // then squeezes the retained system. Use this rule only when the
             // Studio candidate succeeded; native fallback keeps its rollback.

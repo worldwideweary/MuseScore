@@ -217,6 +217,14 @@ bool systemFittingPlan4(System*, qreal availableWidth, std::vector<GraceBeamPrep
                         SpacingDirectionReadiness4*, SpacingPlan4& result,
                         const SpacingPlan4* prefix = nullptr, QString* reason = nullptr);
 
+// Optional candidate evaluation and diagnostic publication. The native
+// collector still owns fittingWidth's initial native width, break decisions,
+// and the retained no-break group. Consumes the accepted-prefix seed once.
+bool evaluateStudioFittingCandidate4(System*, qreal availableWidth,
+                                    std::vector<GraceBeamPreparation4>&,
+                                    SpacingDirectionReadiness4*, SpacingPlan4& previousCandidate,
+                                    qreal& fittingWidth, qreal courtesyRefreshWidth);
+
 // Final Studio selection/segment publication keeps the prepared beam memo's
 // lifetime bounded.  Returned measure entries point into the caller-owned plan.
 // Grace publication is delayed until native layout has placed measure widths.

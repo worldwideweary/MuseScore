@@ -323,6 +323,42 @@ bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceB
     return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
 }
 
+// Evaluate the optional Studio candidate in the same phase as native measure
+// collection. This helper owns the seed's one-shot lifetime and the optional
+// candidate decision event; callers retain all native overflow/group rules.
+bool evaluateStudioFittingCandidate4(System* system, qreal availableWidth,
+                                   std::vector<GraceBeamPreparation4>& preparedBeams,
+                                   SpacingDirectionReadiness4* readiness,
+                                   SpacingPlan4& previousCandidate,
+                                   qreal& fittingWidth, qreal courtesyRefreshWidth)
+{
+    bool planned = false;
+    if (system->score()->styleB(Sid::spacingLayout4)) {
+        const bool observed = spacingDecisionObserved4(system->score());
+        QString reason;
+        SpacingPlan4 candidate;
+        planned = systemFittingPlan4(system, availableWidth, preparedBeams,
+              readiness, candidate, &previousCandidate, observed ? &reason : nullptr);
+        // Consume the seed once, including on fallback. A trial-only
+        // plan can seed only the replay after native finalization.
+        previousCandidate = {};
+        if (planned) {
+            fittingWidth = candidate.width;
+            if (system->lastMeasure()->trailer())
+                previousCandidate = std::move(candidate);
+        }
+        if (observed)
+            recordSpacingDecision4(system, SpacingPass4::CANDIDATE,
+                  MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                  : planned ? SpacingPath4::FULL_PLAN : SpacingPath4::NATIVE_WIDTHS,
+                  fittingWidth, availableWidth, reason, courtesyRefreshWidth);
+    }
+    else if (spacingDecisionObserved4(system->score()))
+        recordSpacingDecision4(system, SpacingPass4::CANDIDATE, SpacingPath4::STYLE_OFF,
+              fittingWidth, availableWidth);
+    return planned;
+}
+
 namespace {
 SpacingDecisionScope4*& activeSpacingDecision4()
 {
