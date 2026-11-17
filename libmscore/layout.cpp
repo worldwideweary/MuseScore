@@ -4840,20 +4840,9 @@ System* Score::collectSystem(LayoutContext& lc)
       finalRequest.retainedOverfullGroup = retainedOverfullGroup;
       if (finalInputs) finalRequest.slurPolicy = finalInputs->factory()->policy();
       SpacingPlan4 studioPlan;
-      bool useStudioPlan = nativeSystemSpacingPlan4(system, finalRequest, finalInputs.get(), preparedBeams,
-                                                   studioPlan, reason);
-      // Collection revalidates this preparation memo against fresh projections.
-      // It has no role after selection and must not cross publication writes.
-      preparedBeams.clear();
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      // The shared helper has released its attachment owner and physical shape
-      // views before this first publication write. Candidate/final requests use
-      // the same prepared policy and retain only the selected placement plan.
-      if (useStudioPlan) {
-            useStudioPlan = publishSpacingPlanSegments4(system, studioPlan, reason);
-            if (useStudioPlan) for (const SpacingMeasurePlan4& m : studioPlan.measures)
-                  studioMeasures[m.measure] = &m;
-            }
+      const bool useStudioPlan = selectAndPublishFinalSpacing4(system, finalRequest, finalInputs.get(),
+            preparedBeams, studioPlan, studioMeasures, reason);
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
       bool nativePooled = false;
@@ -4953,29 +4942,8 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
-      if (useStudioPlan) {
-            // Segment widths are now final. Publish the plan's target-relative
-            // graces directly, including compressed plans, without applying an
-            // unsqueezed local clearance test to an already solved interval.
-            for (const GraceAfterPlan4& after : studioPlan.afterGraces) {
-                  const qreal dx = after.target->x() - after.owner->segment()->x() - after.owner->x();
-                  const auto graces = after.owner->graceNotesAfter();
-                  for (int i = 0; i < graces.size(); ++i)
-                        graces[i]->rxpos() = dx + after.positions[i].x;
-                  after.owner->segment()->createShape(after.owner->vStaffIdx());
-            }
-            for (const GraceMergedPlan4& joint : studioPlan.mergedGraces) {
-                  auto members = joint.owner->graceNotesAfter();
-                  for (Chord* grace : joint.target->graceNotesBefore()) members.push_back(grace);
-                  for (int i = 0; i < members.size(); ++i) {
-                        Chord* parent = toChord(members[i]->parent());
-                        const qreal dx = joint.target->segment()->x() - parent->segment()->x() - parent->x();
-                        members[i]->rxpos() = dx + joint.positions[i].x;
-                  }
-                  joint.owner->segment()->createShape(joint.owner->vStaffIdx());
-                  joint.target->segment()->createShape(joint.target->vStaffIdx());
-            }
-      }
+      if (useStudioPlan)
+            publishSpacingPlanGraces4(studioPlan);
 
       system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
             && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());

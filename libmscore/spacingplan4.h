@@ -211,17 +211,21 @@ struct GraceBeamPreparation4 {
     std::vector<const Beam*> beams;
 };
 
-// Capture fresh native inputs and prepare grace beams before selecting an
-// optional Studio spacing plan. The result and failure handling are unchanged.
-bool nativeSystemSpacingPlan4(System*, const SpacingSystemRequest4&,
-                              NativeGraceInputs4*, std::vector<GraceBeamPreparation4>&,
-                              SpacingPlan4& result, QString* reason = nullptr);
-
 // Candidate fitting for the optional Studio spacing path. Native collection
 // retains its existing group/overflow decisions and passes the same prefix.
 bool systemFittingPlan4(System*, qreal availableWidth, std::vector<GraceBeamPreparation4>&,
                         SpacingDirectionReadiness4*, SpacingPlan4& result,
                         const SpacingPlan4* prefix = nullptr, QString* reason = nullptr);
+
+// Final Studio selection/segment publication keeps the prepared beam memo's
+// lifetime bounded.  Returned measure entries point into the caller-owned plan.
+// Grace publication is delayed until native layout has placed measure widths.
+bool selectAndPublishFinalSpacing4(System*, const SpacingSystemRequest4&,
+                                   NativeGraceInputs4*, std::vector<GraceBeamPreparation4>&,
+                                   SpacingPlan4& result,
+                                   std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure,
+                                   QString* reason = nullptr);
+void publishSpacingPlanGraces4(const SpacingPlan4&);
 
 // Studio-only fallback for a retained system when the full placement plan
 // cannot be published. Returns target measure widths without changing layout.

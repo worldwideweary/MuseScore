@@ -245,7 +245,7 @@ static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPr
 // Native beam/root production may write derived geometry. Capture one fresh
 // attachment owner only after it completes; destroy all query views on return.
 // The factory itself can remain bound for later native publication callbacks.
-bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
+static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
                                      NativeGraceInputs4* inputs, std::vector<GraceBeamPreparation4>& preparedBeams,
                                      SpacingPlan4& result, QString* reason)
 {
@@ -2497,6 +2497,50 @@ bool publishSpacingPlanSegments4(System* system, const SpacingPlan4& plan, QStri
         previous = &s;
     }
     return true;
+}
+
+// Select and publish a final Studio spacing plan.  The input factory has
+// released all transient attachment views before segment geometry is written.
+// Keep the beam-preparation memo disposal before the first publication write.
+bool selectAndPublishFinalSpacing4(System* system, const SpacingSystemRequest4& request,
+                                   NativeGraceInputs4* inputs, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                   SpacingPlan4& result,
+                                   std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure,
+                                   QString* reason)
+{
+    const bool selected = nativeSystemSpacingPlan4(system, request, inputs, preparedBeams, result, reason);
+    // Collection revalidates this memo against fresh projections.  It has no
+    // role after selection and must not cross publication writes.
+    preparedBeams.clear();
+    if (!selected || !publishSpacingPlanSegments4(system, result, reason)) return false;
+    for (const SpacingMeasurePlan4& m : result.measures)
+        byMeasure[m.measure] = &m;
+    return true;
+}
+
+// Apply planned grace positions only after the system's final measure widths
+// have been placed.  Compressed plans are already solved and must not receive
+// another unsqueezed local clearance check.
+void publishSpacingPlanGraces4(const SpacingPlan4& plan)
+{
+    for (const GraceAfterPlan4& after : plan.afterGraces) {
+        const qreal dx = after.target->x() - after.owner->segment()->x() - after.owner->x();
+        const auto graces = after.owner->graceNotesAfter();
+        for (int i = 0; i < graces.size(); ++i)
+            graces[i]->rxpos() = dx + after.positions[i].x;
+        after.owner->segment()->createShape(after.owner->vStaffIdx());
+    }
+    for (const GraceMergedPlan4& joint : plan.mergedGraces) {
+        auto members = joint.owner->graceNotesAfter();
+        for (Chord* grace : joint.target->graceNotesBefore()) members.push_back(grace);
+        for (int i = 0; i < members.size(); ++i) {
+            Chord* parent = toChord(members[i]->parent());
+            const qreal dx = joint.target->segment()->x() - parent->segment()->x() - parent->x();
+            members[i]->rxpos() = dx + joint.positions[i].x;
+        }
+        joint.owner->segment()->createShape(joint.owner->vStaffIdx());
+        joint.target->segment()->createShape(joint.target->vStaffIdx());
+    }
 }
 
 bool spacingPlanMatches4(const SpacingPlan4& plan, QString* reason)
