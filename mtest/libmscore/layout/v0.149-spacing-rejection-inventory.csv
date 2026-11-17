@@ -1,0 +1,102 @@
+file,line_at_v0_148,review_family,literal_failure_reason
+libmscore/spacingplan4.cpp,78,adapter representation/feature scope,Cross-staff placement currently requires a grand staff
+libmscore/spacingplan4.cpp,84,adapter representation/feature scope,Cross-staff placement requires a complete measure stream
+libmscore/spacingplan4.cpp,93,adapter representation/feature scope,Cross-staff companions currently require chords
+libmscore/spacingplan4.cpp,98,adapter representation/feature scope,Unadapted moving cross-staff companion
+libmscore/spacingplan4.cpp,102,adapter representation/feature scope,Unadapted moving cross-staff companion note
+libmscore/spacingplan4.cpp,109,adapter representation/feature scope,Cross-staff companions need at most two complete sixteenth-note streams
+libmscore/spacingplan4.cpp,115,integrity/readiness,Incomplete moving cross-staff companion
+libmscore/spacingplan4.cpp,432,adapter representation/feature scope,Cross-staff context needs a prepared automatic beam
+libmscore/spacingplan4.cpp,441,adapter representation/feature scope,Cross-staff context does not yet support beamed rests
+libmscore/spacingplan4.cpp,451,adapter representation/feature scope,"Unadapted cross-staff chord, rhythm or manual context"
+libmscore/spacingplan4.cpp,455,adapter representation/feature scope,Cross-staff context needs visible ordinary five-line staves
+libmscore/spacingplan4.cpp,461,adapter representation/feature scope,Unadapted cross-staff note context
+libmscore/spacingplan4.cpp,465,adapter representation/feature scope,Cross-staff context needs one adjacent stream within one measure
+libmscore/spacingplan4.cpp,475,adapter representation/feature scope,Cross-staff context needs exactly two adjacent staves
+libmscore/spacingplan4.cpp,482,adapter representation/feature scope,Interstaff note positions need a later stem-side adapter
+libmscore/spacingplan4.cpp,495,integrity/readiness,Invalid cross-staff stem anchor
+libmscore/spacingplan4.cpp,500,adapter representation/feature scope,Unadapted companion voice in cross-staff context
+libmscore/spacingplan4.cpp,504,adapter representation/feature scope,Independent moving or decorated voices need a later cross-staff adapter
+libmscore/spacingplan4.cpp,508,adapter representation/feature scope,Unadapted companion note context
+libmscore/spacingplan4.cpp,518,integrity/readiness,Invalid cross-staff spacing dimensions
+libmscore/spacingplan4.cpp,560,integrity/readiness,No system measures
+libmscore/spacingplan4.cpp,563,integrity/readiness,Invalid spacing factors
+libmscore/spacingplan4.cpp,566,integrity/readiness,No score
+libmscore/spacingplan4.cpp,569,adapter representation/feature scope,Hidden staves require a later adapter
+libmscore/spacingplan4.cpp,587,adapter representation/feature scope,Frames and MMRest measures are outside the common plan
+libmscore/spacingplan4.cpp,594,adapter representation/feature scope,Inactive rhythmic segments require a later adapter
+libmscore/spacingplan4.cpp,599,adapter representation/feature scope,Courtesy signatures require a terminal measure-end trailer
+libmscore/spacingplan4.cpp,603,adapter representation/feature scope,"Unadapted segment type, trailer, manual space or cross-beam offset"
+libmscore/spacingplan4.cpp,609,adapter representation/feature scope,Annotations require a later adapter
+libmscore/spacingplan4.cpp,614,adapter representation/feature scope,"Gap, cue and centered measure rests require a later adapter"
+libmscore/spacingplan4.cpp,619,adapter representation/feature scope,Tremolo spacing requires a later adapter
+libmscore/spacingplan4.cpp,622,adapter representation/feature scope,Cross-staff geometry requires its later stem constraints
+libmscore/spacingplan4.cpp,624,adapter representation/feature scope,Cue and grace-note rhythm requires a later adapter
+libmscore/spacingplan4.cpp,628,adapter representation/feature scope,"Unadapted note visibility, cue or decoration context"
+libmscore/spacingplan4.cpp,635,integrity/readiness,Chord/rest duration is not ready
+libmscore/spacingplan4.cpp,638,integrity/readiness,Invalid rhythmic stretch
+libmscore/spacingplan4.cpp,691,adapter representation/feature scope,Unsupported segment distance
+libmscore/spacingplan4.cpp,729,fitting/coverage limit,Cross-staff advance needs stronger compression support
+libmscore/spacingplan4.cpp,734,integrity/readiness,No active segments
+libmscore/spacingplan4.cpp,764,integrity/readiness,Invalid reconstructed segment width
+libmscore/spacingplan4.cpp,789,adapter representation/feature scope,Minimum-width springs cannot be solved
+libmscore/spacingplan4.cpp,792,adapter representation/feature scope,Minimum-width reconstruction lost space
+libmscore/spacingplan4.cpp,800,integrity/readiness,Invalid reconstructed measure width
+libmscore/gracespacing4.cpp,201,adapter representation/feature scope,Before-grace adapter needs one ordinary main chord
+libmscore/gracespacing4.cpp,204,query applicability (not necessarily a fallback),No before-grace group
+libmscore/gracespacing4.cpp,209,adapter representation/feature scope,Unadapted simultaneous voice
+libmscore/gracespacing4.cpp,213,adapter representation/feature scope,Unadapted segment attachment
+libmscore/gracespacing4.cpp,230,adapter representation/feature scope,Unadapted main chord
+libmscore/gracespacing4.cpp,237,adapter representation/feature scope,Unadapted before-grace chord or beam
+libmscore/gracespacing4.cpp,241,adapter representation/feature scope,Grace beam extends outside group
+libmscore/gracespacing4.cpp,244,adapter representation/feature scope,Grace beam extends outside group
+libmscore/gracespacing4.cpp,250,adapter representation/feature scope,Unadapted main shape
+libmscore/gracespacing4.cpp,261,adapter representation/feature scope,Unadapted grace shape
+libmscore/gracespacing4.cpp,269,adapter representation/feature scope,Unadapted group-to-main constraint
+libmscore/gracespacing4.cpp,274,integrity/readiness,Nonfinite grace placement
+libmscore/gracespacing4.cpp,281,integrity/readiness,Nonfinite grace extent
+libmscore/gracespacing4.cpp,301,query applicability (not necessarily a fallback),After-grace adapter needs an ordinary owner with only after-graces
+libmscore/gracespacing4.cpp,319,adapter representation/feature scope,Unadapted after-grace owner
+libmscore/gracespacing4.cpp,322,adapter representation/feature scope,After-grace target needs one voice on this staff
+libmscore/gracespacing4.cpp,331,adapter representation/feature scope,After-grace target is not the requested same-measure segment type
+libmscore/gracespacing4.cpp,335,adapter representation/feature scope,After-grace target is not the requested item in the same voice
+libmscore/gracespacing4.cpp,341,adapter representation/feature scope,Unadapted or merged after-grace target
+libmscore/gracespacing4.cpp,351,adapter representation/feature scope,After-grace rest target needs an ordinary visible undotted rest
+libmscore/gracespacing4.cpp,361,adapter representation/feature scope,After-grace barline target needs an ordinary visible unedited single-staff barline
+libmscore/gracespacing4.cpp,363,adapter representation/feature scope,Merged grace target needs an ordinary chord
+libmscore/gracespacing4.cpp,366,adapter representation/feature scope,After-grace owner/target segment is inactive
+libmscore/gracespacing4.cpp,369,adapter representation/feature scope,Unadapted simultaneous after-grace target voice
+libmscore/gracespacing4.cpp,373,adapter representation/feature scope,Unadapted after-grace segment attachment
+libmscore/gracespacing4.cpp,383,adapter representation/feature scope,Unadapted after-grace group
+libmscore/gracespacing4.cpp,387,adapter representation/feature scope,After-grace beam extends outside group
+libmscore/gracespacing4.cpp,390,adapter representation/feature scope,After-grace beam extends outside group
+libmscore/gracespacing4.cpp,403,adapter representation/feature scope,Merged query needs unedited same-direction grace groups
+libmscore/gracespacing4.cpp,406,adapter representation/feature scope,Before beam extends outside merged group
+libmscore/gracespacing4.cpp,409,adapter representation/feature scope,Before beam extends outside merged group
+libmscore/gracespacing4.cpp,420,adapter representation/feature scope,Unadapted after-grace target shape
+libmscore/gracespacing4.cpp,434,adapter representation/feature scope,Unadapted after-grace component shape
+libmscore/gracespacing4.cpp,443,adapter representation/feature scope,Unadapted after-grace group-to-target constraint
+libmscore/gracespacing4.cpp,446,integrity/readiness,Nonfinite after-grace group position
+libmscore/gracespacing4.cpp,455,integrity/readiness,Nonfinite after-grace extent
+libmscore/gracespacing4.cpp,563,adapter representation/feature scope,Unadapted merged-grace source projection
+libmscore/gracespacing4.cpp,569,integrity/readiness,Incomplete merged-grace packed components
+libmscore/gracespacing4.cpp,577,integrity/readiness,Incomplete merged-grace projection identity
+libmscore/gracespacing4.cpp,606,adapter representation/feature scope,Combined grace obstacles need chord anchors
+libmscore/gracespacing4.cpp,610,adapter representation/feature scope,Combined grace obstacles need the incoming after-grace anchor
+libmscore/gracespacing4.cpp,614,adapter representation/feature scope,Unadapted combined grace slur obstacles
+libmscore/gracespacing4.cpp,643,adapter representation/feature scope,Unadapted published combined grace obstacle
+libmscore/gracespacing4.cpp,646,integrity/readiness,Incomplete combined grace slur obstacles
+libmscore/gracespacing4.cpp,666,adapter representation/feature scope,Merged beam preparation needs both complete groups
+libmscore/gracespacing4.cpp,706,integrity/readiness,Merged grace membership changed during beam preparation
+libmscore/gracespacing4.cpp,709,integrity/readiness,Merged grace order changed during beam preparation
+libmscore/gracespacing4.cpp,717,integrity/readiness,Merged grace beam geometry did not stabilize
+libmscore/gracespacing4.cpp,732,adapter representation/feature scope,Unadapted after-grace source projection
+libmscore/gracespacing4.cpp,736,adapter representation/feature scope,Unadapted after-grace target projection
+libmscore/gracespacing4.cpp,741,adapter representation/feature scope,Unadapted after-grace member projection
+libmscore/gracespacing4.cpp,746,integrity/readiness,Incomplete after-grace projection identity
+libmscore/gracespacing4.cpp,762,integrity/readiness,Nonfinite after-grace publication offset
+libmscore/gracespacing4.cpp,766,adapter representation/feature scope,Unadapted after-grace source shape
+libmscore/gracespacing4.cpp,770,integrity/readiness,Nonfinite after-grace member position
+libmscore/gracespacing4.cpp,773,adapter representation/feature scope,Unadapted after-grace publication shape
+libmscore/gracespacing4.cpp,781,adapter representation/feature scope,Unadapted source-to-after-grace constraint
+libmscore/gracespacing4.cpp,784,fitting/coverage limit,Native segment interval is too narrow for after-grace plan

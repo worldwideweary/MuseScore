@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <beamLayout4>1</beamLayout4>
+      <spacingLayout4>1</spacingLayout4>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched"><name>stdNormal</name></StaffType>
+        <defaultClef>F</defaultClef>
+      </Staff>
+      <Instrument id="piano">
+        <trackName>Piano</trackName>
+        <Channel><program value="0"/></Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig><sigN>6</sigN><sigD>8</sigD></TimeSig>
+          <Chord><durationType>eighth</durationType><Note><pitch>48</pitch><tpc>14</tpc></Note></Chord>
+          <Chord><durationType>eighth</durationType><Note><pitch>52</pitch><tpc>18</tpc></Note></Chord>
+          <Chord><durationType>eighth</durationType><Note><pitch>55</pitch><tpc>15</tpc></Note></Chord>
+          <Chord><durationType>eighth</durationType><Note><pitch>60</pitch><tpc>14</tpc></Note></Chord>
+          <Chord><durationType>eighth</durationType><Note><pitch>59</pitch><tpc>19</tpc></Note></Chord>
+          <Chord><durationType>eighth</durationType><Note><pitch>57</pitch><tpc>17</tpc></Note></Chord>
+        </voice>
+        <voice>
+          <Rest>
+            <visible>0</visible>
+            <dots>1</dots>
+            <durationType>quarter</durationType>
+            <NoteDot><visible>0</visible></NoteDot>
+          </Rest>
+          <Chord>
+            <dots>1</dots>
+            <durationType>quarter</durationType>
+            <Note>
+              <Fingering><text>3</text></Fingering>
+              <pitch>55</pitch>
+              <tpc>15</tpc>
+            </Note>
+            <Note>
+              <visible>0</visible>
+              <NoteDot><visible>0</visible></NoteDot>
+              <pitch>55</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>
