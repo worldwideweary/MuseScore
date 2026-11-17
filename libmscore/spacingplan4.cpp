@@ -327,10 +327,12 @@ static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector
 // replay a trial-only courtesy prefix with fresh derived geometry. The replay
 // consumes its seed even when the next object is not an ordinary measure.
 // Keep the previous two-attempt fallback and report width only on success.
-qreal replayStudioCourtesyPrefix4(System* system, const MeasureBase* next,
-                                  qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
-                                  SpacingDirectionReadiness4* readiness, SpacingPlan4& previousCandidate)
+qreal StudioCollectionState4::replayCourtesy(System* system, const MeasureBase* next,
+                                               qreal availableWidth,
+                                               SpacingDirectionReadiness4* readiness)
 {
+    auto& preparedBeams = _preparedBeams;
+    auto& previousCandidate = _previousCandidate;
     if (!previousCandidate.trialOnly)
         return 0;
 
@@ -351,12 +353,12 @@ qreal replayStudioCourtesyPrefix4(System* system, const MeasureBase* next,
 // Evaluate the optional Studio candidate in the same phase as native measure
 // collection. This helper owns the seed's one-shot lifetime and the optional
 // candidate decision event; callers retain all native overflow/group rules.
-bool evaluateStudioFittingCandidate4(System* system, qreal availableWidth,
-                                   std::vector<GraceBeamPreparation4>& preparedBeams,
-                                   SpacingDirectionReadiness4* readiness,
-                                   SpacingPlan4& previousCandidate,
-                                   qreal& fittingWidth, qreal courtesyRefreshWidth)
+bool StudioCollectionState4::evaluateCandidate(System* system, qreal availableWidth,
+                                                SpacingDirectionReadiness4* readiness,
+                                                qreal& fittingWidth, qreal courtesyRefreshWidth)
 {
+    auto& preparedBeams = _preparedBeams;
+    auto& previousCandidate = _previousCandidate;
     bool planned = false;
     if (system->score()->styleB(Sid::spacingLayout4)) {
         const bool observed = spacingDecisionObserved4(system->score());

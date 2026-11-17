@@ -212,20 +212,23 @@ struct GraceBeamPreparation4 {
     std::vector<const Beam*> beams;
 };
 
-// Replay an accepted trial-only courtesy prefix once, before appending the
-// next measure. The optional planner owns its seed and fallback attempts;
-// native collection keeps its normal width/break decisions.
-qreal replayStudioCourtesyPrefix4(System*, const MeasureBase* next,
-                                 qreal availableWidth, std::vector<GraceBeamPreparation4>&,
-                                 SpacingDirectionReadiness4*, SpacingPlan4& previousCandidate);
-
-// Optional candidate evaluation and diagnostic publication. The native
-// collector still owns fittingWidth's initial native width, break decisions,
-// and the retained no-break group. Consumes the accepted-prefix seed once.
-bool evaluateStudioFittingCandidate4(System*, qreal availableWidth,
-                                    std::vector<GraceBeamPreparation4>&,
-                                    SpacingDirectionReadiness4*, SpacingPlan4& previousCandidate,
-                                    qreal& fittingWidth, qreal courtesyRefreshWidth);
+// One ephemeral state for the optional Studio candidate phase of a single
+// native collectSystem call. Native layout supplies candidate widths and
+// controls system breaks, while this owner retains the trial-only prefix and
+// grace-beam preparation memo without exposing either at each call site.
+class StudioCollectionState4 {
+    std::vector<GraceBeamPreparation4> _preparedBeams;
+    SpacingPlan4 _previousCandidate;
+    bool _retainedOverfullGroup = false;
+public:
+    qreal replayCourtesy(System*, const MeasureBase* next, qreal availableWidth,
+                         SpacingDirectionReadiness4*);
+    bool evaluateCandidate(System*, qreal availableWidth, SpacingDirectionReadiness4*,
+                           qreal& fittingWidth, qreal courtesyRefreshWidth);
+    void noteRetainedOverfullGroup(bool retained) { _retainedOverfullGroup |= retained; }
+    bool retainedOverfullGroup() const { return _retainedOverfullGroup; }
+    std::vector<GraceBeamPreparation4>& preparedBeams() { return _preparedBeams; }
+};
 
 // Decide whether incremental layout must continue into the old next
 // system to preserve Studio placement at start repeats or manually shifted

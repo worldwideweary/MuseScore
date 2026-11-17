@@ -4383,7 +4383,7 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
 
 System* Score::collectSystem(LayoutContext& lc)
       {
-      std::vector<GraceBeamPreparation4> preparedBeams;
+      StudioCollectionState4 studioCollection;
       SpacingProfileScope4 profile(SpacingProfileStage4::SYSTEM);
       if (!lc.curMeasure)
             return 0;
@@ -4412,8 +4412,6 @@ System* Score::collectSystem(LayoutContext& lc)
       MeasureBase* breakMeasure = nullptr;
 
       QList<System *> brokenSystems;
-      SpacingPlan4 previousCandidate;
-      bool retainedOverfullGroup = false;
 
       // A measure provisionally tried at the end of a system can already
       // have a valid layout in its original next system.  Save its exact
@@ -4440,8 +4438,8 @@ System* Score::collectSystem(LayoutContext& lc)
       std::map<Measure*, LookaheadMeasureGeometry> lookaheadGeometry;
 
       while (lc.curMeasure) {    // collect measure for system
-            const qreal courtesyRefreshWidth = replayStudioCourtesyPrefix4(system, lc.curMeasure,
-                  systemWidth, preparedBeams, lc.spacingDirections4.get(), previousCandidate);
+            const qreal courtesyRefreshWidth = studioCollection.replayCourtesy(system, lc.curMeasure,
+                  systemWidth, lc.spacingDirections4.get());
             System* oldSystem = lc.curMeasure->system();
             if (oldSystem && lc.curMeasure->isMeasure()
                 && lc.curMeasure->tick() > lc.endTick) {
@@ -4517,15 +4515,14 @@ System* Score::collectSystem(LayoutContext& lc)
             // collect at least one measure and the break
 
             qreal fittingWidth = minWidth + ww;
-            const bool planned = evaluateStudioFittingCandidate4(system, systemWidth,
-                  preparedBeams, lc.spacingDirections4.get(), previousCandidate,
-                  fittingWidth, courtesyRefreshWidth);
+            const bool planned = studioCollection.evaluateCandidate(system, systemWidth,
+                  lc.spacingDirections4.get(), fittingWidth, courtesyRefreshWidth);
             // Studio accepts an overfull trial at a keep-with-next boundary,
             // then squeezes the retained system. Use this rule only when the
             // Studio candidate succeeded; native fallback keeps its rollback.
             const bool keepWithPrevious = planned && lc.prevMeasure && lc.prevMeasure->system() == system
                   && lc.prevMeasure->noBreak();
-            retainedOverfullGroup = retainedOverfullGroup || (keepWithPrevious && fittingWidth > systemWidth);
+            studioCollection.noteRetainedOverfullGroup(keepWithPrevious && fittingWidth > systemWidth);
             bool doBreak = (system->measures().size() > 1) && (fittingWidth > systemWidth) && !keepWithPrevious;
             if (doBreak) {
                   breakMeasure = lc.curMeasure;
@@ -4774,10 +4771,11 @@ System* Score::collectSystem(LayoutContext& lc)
       // Keep the optional Studio request and fresh grace-query factory alive
       // through native width placement and late grace publication.
       StudioFinalRequestScope4 finalStudio(this, system, lc.spacingDirections4.get(),
-            lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit), retainedOverfullGroup);
+            lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit),
+            studioCollection.retainedOverfullGroup());
       SpacingPlan4 studioPlan;
       std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      const bool useStudioPlan = finalStudio.selectAndPublish(system, preparedBeams,
+      const bool useStudioPlan = finalStudio.selectAndPublish(system, studioCollection.preparedBeams(),
             studioPlan, studioMeasures);
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
