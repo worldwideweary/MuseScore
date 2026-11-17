@@ -3427,7 +3427,8 @@ void Score::getNextMeasure(LayoutContext& lc)
       //-----------------------------------------
 
       Measure* measure = toMeasure(lc.curMeasure);
-      if (lc.spacingDirections4) lc.spacingDirections4->invalidate(measure);
+      if (lc.studioDirectionState4)
+            lc.studioDirectionState4->invalidate(measure);
       measure->moveTicks(lc.tick - measure->tick());
 
       if (lineMode() && (measure->tick() < lc.startTick || measure->tick() > lc.endTick)) {
@@ -3537,7 +3538,8 @@ void Score::getNextMeasure(LayoutContext& lc)
 
       // Studio-only grace evidence is owned by the optional module. Construct
       // it before beam creation, preserving its identity-certificate timing.
-      StudioMeasureGracePreparation4 studioGrace(score(), measure, lc.spacingDirections4.get());
+      StudioMeasureGracePreparation4 studioGrace(score(), measure,
+            lc.studioDirectionState4 ? lc.studioDirectionState4->readiness() : nullptr);
 
       createBeams(lc, measure);
 
@@ -4391,6 +4393,10 @@ System* Score::collectSystem(LayoutContext& lc)
             lc.startWithLongNames = lc.firstSystem && measure->sectionBreakElement()->startWithLongNames();
             }
       System* system = getNextSystem(lc);
+      // Borrow the adapter's pass-local direction certificates only during
+      // this system collection. Native layout never owns the certificate map.
+      SpacingDirectionReadiness4* studioDirections = lc.studioDirectionState4
+            ? lc.studioDirectionState4->readiness() : nullptr;
       Fraction lcmTick = lc.curMeasure->tick();
       system->setInstrumentNames(lc.startWithLongNames, lcmTick);
 
@@ -4434,7 +4440,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
       while (lc.curMeasure) {    // collect measure for system
             const qreal courtesyRefreshWidth = studioCollection.replayCourtesy(system, lc.curMeasure,
-                  systemWidth, lc.spacingDirections4.get());
+                  systemWidth, studioDirections);
             System* oldSystem = lc.curMeasure->system();
             if (oldSystem && lc.curMeasure->isMeasure()
                 && lc.curMeasure->tick() > lc.endTick) {
@@ -4511,7 +4517,7 @@ System* Score::collectSystem(LayoutContext& lc)
 
             qreal fittingWidth = minWidth + ww;
             const bool planned = studioCollection.evaluateCandidate(system, systemWidth,
-                  lc.spacingDirections4.get(), fittingWidth, courtesyRefreshWidth);
+                  studioDirections, fittingWidth, courtesyRefreshWidth);
             // Studio accepts an overfull trial at a keep-with-next boundary,
             // then squeezes the retained system. Use this rule only when the
             // Studio candidate succeeded; native fallback keeps its rollback.
@@ -4765,7 +4771,7 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // Keep the optional Studio request and fresh grace-query factory alive
       // through native width placement and late grace publication.
-      StudioFinalRequestScope4 finalStudio(this, system, lc.spacingDirections4.get(),
+      StudioFinalRequestScope4 finalStudio(this, system, studioDirections,
             lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit),
             studioCollection.retainedOverfullGroup());
       const bool useStudioPlan = finalStudio.selectAndPublish(system, studioCollection.preparedBeams());
@@ -6078,7 +6084,7 @@ LayoutContext::LayoutContext(Score* s)
       : score(s)
       {
       firstSystemIndent = score && score->styleB(Sid::enableIndentationOnFirstSystem);
-      if (score && score->styleB(Sid::spacingLayout4)) spacingDirections4.reset(new SpacingDirectionReadiness4);
+      studioDirectionState4 = createStudioDirectionState4(score);
       }
 
 //---------------------------------------------------------

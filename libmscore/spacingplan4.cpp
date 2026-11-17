@@ -45,6 +45,32 @@
 
 namespace Ms {
 
+// Keep Studio's direction-certificate allocation, invalidation and lifetime
+// in the optional spacing module. An inactive style creates no state, as before.
+StudioDirectionState4::StudioDirectionState4()
+    : _readiness(new SpacingDirectionReadiness4)
+{
+}
+
+StudioDirectionState4::~StudioDirectionState4() = default;
+
+SpacingDirectionReadiness4* StudioDirectionState4::readiness() const
+{
+    return _readiness.get();
+}
+
+void StudioDirectionState4::invalidate(const Measure* measure)
+{
+    _readiness->invalidate(measure);
+}
+
+std::unique_ptr<StudioDirectionState4> createStudioDirectionState4(const Score* score)
+{
+    if (!score || !score->styleB(Sid::spacingLayout4))
+        return nullptr;
+    return std::unique_ptr<StudioDirectionState4>(new StudioDirectionState4);
+}
+
 // Own native producer certificates for a bounded domain, never a physical
 // query cache. Each callback builds and destroys a fresh read-only owner.
 std::vector<const Measure*> spacingMeasures4(const System* system)

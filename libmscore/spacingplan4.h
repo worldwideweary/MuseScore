@@ -187,6 +187,22 @@ bool publishSpacingPlanSegments4(System*, const SpacingPlan4&, QString* reason =
 // during the surrounding native publication/plan scope.
 class Slur;
 class SpacingDirectionReadiness4;
+
+// Opaque LayoutContext-owned handle for optional Studio direction certificates.
+// The backing certificate map and its allocation stay in this adapter module.
+// Native layout borrows it for one pass; no score-owned state is introduced.
+class StudioDirectionState4 {
+    std::unique_ptr<SpacingDirectionReadiness4> _readiness;
+public:
+    StudioDirectionState4();
+    ~StudioDirectionState4();
+    StudioDirectionState4(const StudioDirectionState4&) = delete;
+    StudioDirectionState4& operator=(const StudioDirectionState4&) = delete;
+    SpacingDirectionReadiness4* readiness() const;
+    void invalidate(const Measure*);
+};
+std::unique_ptr<StudioDirectionState4> createStudioDirectionState4(const Score*);
+
 struct SpacingPreparedSlur4;
 std::vector<const Measure*> spacingMeasures4(const System*);
 class NativeGraceInputs4 {

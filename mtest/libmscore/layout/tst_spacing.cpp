@@ -3807,7 +3807,9 @@ void TestSpacing::spacingInputSnapshot4()
       score->doLayout();
       {
       LayoutContext context(score);
-      QCOMPARE(bool(context.spacingDirections4), score->styleB(Sid::spacingLayout4));
+      // Certificate ownership is now adapter-local; the pass handle still
+      // exists exactly when Studio horizontal spacing is enabled.
+      QCOMPARE(bool(context.studioDirectionState4), score->styleB(Sid::spacingLayout4));
       }
       const auto state = [score]() {
             auto values = graceLayoutSnapshot4(score);

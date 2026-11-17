@@ -20,7 +20,7 @@ namespace Ms {
 
 class Segment;
 class Measure;
-class SpacingDirectionReadiness4;
+class StudioDirectionState4;
 class Page;
 
 //---------------------------------------------------------
@@ -91,8 +91,9 @@ struct LayoutContext {
 
       QList<System*> systemList;          // reusable systems
       std::set<Spanner*> processedSpanners;
-      // Constructed only for experimental spacing; never retained across commands.
-      std::unique_ptr<SpacingDirectionReadiness4> spacingDirections4;
+      // Optional Studio producer-certificate state lives in the spacing module.
+      // This pass-local handle is null when Studio horizontal spacing is off.
+      std::unique_ptr<StudioDirectionState4> studioDirectionState4;
 
       System* prevSystem       { 0 };     // used during page layout
       System* curSystem        { 0 };
