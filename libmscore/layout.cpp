@@ -3535,13 +3535,9 @@ void Score::getNextMeasure(LayoutContext& lc)
                   }
             }
 
-      std::unique_ptr<NativeGraceInputs4> graceInputs;
-      if (lc.spacingDirections4) {
-            // Initial native directions are ready. The certificate stores
-            // identities; createBeams may still change their live values.
-            lc.spacingDirections4->produced(measure);
-            graceInputs.reset(new NativeGraceInputs4(score(), { measure }, lc.spacingDirections4.get()));
-            }
+      // Studio-only grace evidence is owned by the optional module. Construct
+      // it before beam creation, preserving its identity-certificate timing.
+      StudioMeasureGracePreparation4 studioGrace(score(), measure, lc.spacingDirections4.get());
 
       createBeams(lc, measure);
 
@@ -3627,9 +3623,9 @@ void Score::getNextMeasure(LayoutContext& lc)
       else if (seg)
             score()->undoRemoveElement(seg);
 
-      // The initial identity certificate already exists; read current
-      // post-beam directions when each query captures its inputs.
-      SpacingGraceQueryScope4 graceScope(score(), graceInputs ? graceInputs->factory() : nullptr);
+      // Enter the post-beam grace-query scope at the original publication
+      // boundary, after native preparation and before chord/shape layout.
+      studioGrace.enterGraceLayout();
 
       for (Segment& s : measure->segments()) {
             // TODO? maybe we do need to process it here to make it possible to enable later
@@ -3658,10 +3654,9 @@ void Score::getNextMeasure(LayoutContext& lc)
             s.createShapes();
             }
 
-      // Notes, beam membership, initial directions and local shapes have now
-      // completed native production. Subsequent beam writes may update values;
-      // the pass-local record certifies identities, not a stale up() snapshot.
-      if (lc.spacingDirections4) lc.spacingDirections4->produced(measure);
+      // Preserve the post-shape production certificate and leave scope teardown
+      // at the end of this measure's native layout phase.
+      studioGrace.finishNativeProduction();
       lc.tick += measure->ticks();
       }
 

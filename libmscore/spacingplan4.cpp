@@ -109,6 +109,32 @@ bool NativeGraceInputs4::captureSystem(System* system, SpacingAttachmentPreparat
     return captureSystemSpacingAttachments4(system, directions, owner, reason, &rootDirections);
 }
 
+StudioMeasureGracePreparation4::StudioMeasureGracePreparation4(
+        Score* score, Measure* measure, SpacingDirectionReadiness4* readiness)
+    : _score(score), _measure(measure), _readiness(readiness)
+{
+    if (_readiness) {
+        // Match the original producer boundary: certify initial directions
+        // before createBeams(), then retain the identity-only grace factory.
+        _readiness->produced(_measure);
+        _inputs.reset(new NativeGraceInputs4(_score, { _measure }, _readiness));
+    }
+}
+
+void StudioMeasureGracePreparation4::enterGraceLayout()
+{
+    // Always install an inner scope, even with a null factory: this retains
+    // the original nesting/previous-binding restoration semantics.
+    _queryScope.reset(new SpacingGraceQueryScope4(
+        _score, _inputs ? _inputs->factory() : nullptr));
+}
+
+void StudioMeasureGracePreparation4::finishNativeProduction()
+{
+    if (_readiness)
+        _readiness->produced(_measure);
+}
+
 // After-grace beams are normally laid out after system spacing. Prepare their
 // stem geometry at the planned intra-group distances first, so the planner and
 // the final beam pass see the same shapes. Preserve native chord positions here.

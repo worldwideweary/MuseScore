@@ -203,6 +203,25 @@ public:
     bool captureSystem(System*, SpacingAttachmentPreparation4&, QString* reason = nullptr) const;
 };
 
+// Own Studio grace preparation for one native measure phase. The initial
+// direction certificate and read-only factory precede createBeams(); the
+// borrowed factory is installed only after native beam/chord preparation and
+// remains active through chord and shape layout. Declare _queryScope AFTER
+// _inputs so the borrowed factory outlives the scope during destruction.
+class StudioMeasureGracePreparation4 {
+    Score* _score;
+    Measure* _measure;
+    SpacingDirectionReadiness4* _readiness;
+    std::unique_ptr<NativeGraceInputs4> _inputs;
+    std::unique_ptr<SpacingGraceQueryScope4> _queryScope;
+public:
+    StudioMeasureGracePreparation4(Score*, Measure*, SpacingDirectionReadiness4*);
+    StudioMeasureGracePreparation4(const StudioMeasureGracePreparation4&) = delete;
+    StudioMeasureGracePreparation4& operator=(const StudioMeasureGracePreparation4&) = delete;
+    void enterGraceLayout();
+    void finishNativeProduction();
+};
+
 // Per-collection mutable grace-beam preparation belongs to the optional
 // Studio spacing module, not to the native system collector.
 // Local to one collectSystem call. A fresh validated projection must match
