@@ -217,6 +217,12 @@ bool nativeSystemSpacingPlan4(System*, const SpacingSystemRequest4&,
                               NativeGraceInputs4*, std::vector<GraceBeamPreparation4>&,
                               SpacingPlan4& result, QString* reason = nullptr);
 
+// Candidate fitting for the optional Studio spacing path. Native collection
+// retains its existing group/overflow decisions and passes the same prefix.
+bool systemFittingPlan4(System*, qreal availableWidth, std::vector<GraceBeamPreparation4>&,
+                        SpacingDirectionReadiness4*, SpacingPlan4& result,
+                        const SpacingPlan4* prefix = nullptr, QString* reason = nullptr);
+
 // Studio-only fallback for a retained system when the full placement plan
 // cannot be published. Returns target measure widths without changing layout.
 // An empty map lets collectSystem keep its legacy per-measure stretching.

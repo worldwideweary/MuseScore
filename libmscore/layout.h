@@ -19,6 +19,7 @@
 namespace Ms {
 
 class Segment;
+class Measure;
 class SpacingDirectionReadiness4;
 class Page;
 
@@ -137,6 +138,10 @@ extern bool isTopBeam(ChordRest* cr);
 extern bool notTopBeam(ChordRest* cr);
 extern bool isTopTuplet(ChordRest* cr);
 extern bool notTopTuplet(ChordRest* cr);
+
+// Native system-collection beam-boundary check; also reused by the optional
+// Studio candidate planner without duplicating the beam-mode rules.
+bool measureMayHaveBeamsJoinedIntoNext(const Measure* measure);
 
 }     // namespace Ms
 #endif

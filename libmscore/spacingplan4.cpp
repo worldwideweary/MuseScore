@@ -2,6 +2,7 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "spacingprofile4.h"
 #include "spacingplan4.h"
+#include "layout.h"
 #include "spacinginput4.h"
 #include "slurdirection4.h"
 #include "slur.h"
@@ -264,6 +265,62 @@ bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& reque
     return selectSystemSpacingPlan4(system, request, attachments, result, reason, &readyMerged);
 }
 
+
+// Fit ordinary prefixes after checking the native trial-boundary preparation.
+// Repeat end/start transitions may change when the predecessor is accepted;
+// each candidate rebuilds from that phase's fresh geometry. Keep the native
+// width accumulator intact for unsupported-context fallback/backtracking.
+bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
+                               SpacingDirectionReadiness4* readiness, SpacingPlan4& result,
+                               const SpacingPlan4* prefix, QString* reason)
+{
+    const auto fail = [reason](const char* text) {
+        if (reason) *reason = QString::fromLatin1(text);
+        return false;
+    };
+    if (MScore::noHorizontalStretch || system->score()->styleB(Sid::hideEmptyStaves))
+        return fail("Candidate stretch/hidden-staff boundary");
+    bool keepTogether = false;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure())
+            return fail("Candidate contains a frame");
+        const Measure* m = toMeasure(mb);
+        if (measureMayHaveBeamsJoinedIntoNext(m))
+            return fail("Candidate joined-beam boundary");
+        keepTogether = keepTogether || m->noBreak();
+    }
+    const auto& measures = system->measures();
+    if (keepTogether) {
+        // Admit plain groups first. Signatures and repeats can change their
+        // barline/trailer phase when a group crosses a system boundary.
+        for (const MeasureBase* mb : measures) {
+            const Measure* m = toMeasure(mb);
+            if (m->repeatStart() || m->repeatEnd() || m->sectionBreak()
+                || m->trailer() || m->hasCourtesyKeySig())
+                return fail("Candidate no-break group with repeat, section or courtesy");
+            for (const Segment& s : m->segments()) {
+                if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                    continue;
+                if (s.isClefType() || (mb != measures.front() && (s.isKeySigType() || s.isTimeSigType())))
+                    return fail("Candidate no-break group with an interior signature");
+            }
+        }
+    }
+    const bool carryTrailer = prefix && !prefix->trialOnly
+        && measures.size() > 1 && prefix->measures.size() == measures.size() - 1
+        && prefix->measures.back().measure == measures[measures.size() - 2]
+        && prefix->measures.back().measure->trailer();
+    const bool refresh = prefix && prefix->trialOnly;
+    if (!spacingCandidateSignaturesReady4(system, reason, carryTrailer || refresh)) return false;
+    if (!spacingRepeatBarlinesReady4(system, SpacingPass4::CANDIDATE, reason)) return false;
+    NativeGraceInputs4 inputs(system->score(), spacingMeasures4(system), readiness);
+    SpacingGraceQueryScope4 graceScope(system->score(), inputs.factory());
+    SpacingSystemRequest4 request;
+    request.availableWidth = availableWidth;
+    request.slurPolicy = inputs.factory()->policy();
+    if (carryTrailer || refresh) request.previousPrefix = prefix;
+    return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
+}
 
 namespace {
 SpacingDecisionScope4*& activeSpacingDecision4()
