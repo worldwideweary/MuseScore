@@ -71,6 +71,24 @@ std::unique_ptr<StudioDirectionState4> createStudioDirectionState4(const Score* 
     return std::unique_ptr<StudioDirectionState4>(new StudioDirectionState4);
 }
 
+StudioMeasureEntry4::StudioMeasureEntry4(const Score* score, Measure* measure,
+                                         StudioDirectionState4* directionState)
+    : _score(score), _measure(measure)
+{
+    if (directionState)
+        directionState->invalidate(measure);
+}
+
+void StudioMeasureEntry4::prepareSignatures() const
+{
+    // The preceding clef must be laid out before a key signature at the same
+    // tick. Keep the style guard and the original segment-presence criteria.
+    if (_score && _score->styleB(Sid::spacingLayout4)
+        && _measure->findSegmentR(SegmentType::Clef, Fraction(0, 1))
+        && _measure->findSegmentR(SegmentType::KeySig, Fraction(0, 1)))
+        _measure->sortRepeatSegments();
+}
+
 // Own native producer certificates for a bounded domain, never a physical
 // query cache. Each callback builds and destroys a fresh read-only owner.
 std::vector<const Measure*> spacingMeasures4(const System* system)

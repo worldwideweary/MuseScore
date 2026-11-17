@@ -204,6 +204,17 @@ public:
 };
 std::unique_ptr<StudioDirectionState4> createStudioDirectionState4(const Score*);
 
+// A per-measure Studio preparation boundary. Invalidate direction evidence
+// before native moveTicks(), then apply the Studio-only clef/key ordering after
+// the native line-mode range check. Neither operation changes native spacing.
+class StudioMeasureEntry4 {
+    const Score* _score;
+    Measure* _measure;
+public:
+    StudioMeasureEntry4(const Score*, Measure*, StudioDirectionState4*);
+    void prepareSignatures() const;
+};
+
 struct SpacingPreparedSlur4;
 std::vector<const Measure*> spacingMeasures4(const System*);
 class NativeGraceInputs4 {

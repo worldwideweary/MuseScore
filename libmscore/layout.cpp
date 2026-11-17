@@ -3426,8 +3426,9 @@ void Score::getNextMeasure(LayoutContext& lc)
       //-----------------------------------------
 
       Measure* measure = toMeasure(lc.curMeasure);
-      if (lc.studioDirectionState4)
-            lc.studioDirectionState4->invalidate(measure);
+      // Studio certificates must be invalidated before moving the measure's
+      // ticks. Keep the following signature ordering after the line-mode exit.
+      StudioMeasureEntry4 studioEntry(this, measure, lc.studioDirectionState4.get());
       measure->moveTicks(lc.tick - measure->tick());
 
       if (lineMode() && (measure->tick() < lc.startTick || measure->tick() > lc.endTick)) {
@@ -3438,11 +3439,7 @@ void Score::getNextMeasure(LayoutContext& lc)
             return;
             }
 
-      // KeySig::layout() uses the preceding clef at the same tick.
-      if (styleB(Sid::spacingLayout4)
-          && measure->findSegmentR(SegmentType::Clef, Fraction(0, 1))
-          && measure->findSegmentR(SegmentType::KeySig, Fraction(0, 1)))
-            measure->sortRepeatSegments();
+      studioEntry.prepareSignatures();
 
       measure->connectTremolo();
 
