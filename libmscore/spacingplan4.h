@@ -194,12 +194,16 @@ class SpacingDirectionReadiness4;
 // Native layout borrows it for one pass; no score-owned state is introduced.
 class StudioDirectionState4 {
     std::unique_ptr<SpacingDirectionReadiness4> _readiness;
+    // Only adapter-owned scopes may borrow the underlying certificate map.
+    // Native layout passes this opaque handle without examining its storage.
+    friend class StudioMeasureGracePreparation4;
+    friend class StudioCollectionState4;
+    SpacingDirectionReadiness4* readiness() const;
 public:
     StudioDirectionState4();
     ~StudioDirectionState4();
     StudioDirectionState4(const StudioDirectionState4&) = delete;
     StudioDirectionState4& operator=(const StudioDirectionState4&) = delete;
-    SpacingDirectionReadiness4* readiness() const;
     void invalidate(const Measure*);
 };
 std::unique_ptr<StudioDirectionState4> createStudioDirectionState4(const Score*);
@@ -243,7 +247,7 @@ class StudioMeasureGracePreparation4 {
     std::unique_ptr<NativeGraceInputs4> _inputs;
     std::unique_ptr<SpacingGraceQueryScope4> _queryScope;
 public:
-    StudioMeasureGracePreparation4(Score*, Measure*, SpacingDirectionReadiness4*);
+    StudioMeasureGracePreparation4(Score*, Measure*, StudioDirectionState4*);
     StudioMeasureGracePreparation4(const StudioMeasureGracePreparation4&) = delete;
     StudioMeasureGracePreparation4& operator=(const StudioMeasureGracePreparation4&) = delete;
     void enterGraceLayout();
@@ -264,6 +268,7 @@ struct GraceBeamPreparation4 {
 // controls system breaks, while this owner retains the trial-only prefix and
 // grace-beam preparation memo without exposing either at each call site.
 class StudioCollectionState4 {
+    friend class StudioFinalRequestScope4;
     // Borrow LayoutContext's pass-local owner; the certificate map is never
     // retained by a score, a system, or a candidate plan.
     StudioDirectionState4* _directionState;
@@ -276,14 +281,15 @@ class StudioCollectionState4 {
     std::unique_ptr<SpacingProfileScope4> _systemProfile;
     bool evaluateCandidate(System*, qreal availableWidth,
                            qreal& fittingWidth, qreal courtesyRefreshWidth);
+    // Used only by adapter-owned collection and final publication scopes.
+    SpacingDirectionReadiness4* readiness() const {
+        return _directionState ? _directionState->readiness() : nullptr;
+    }
 public:
     explicit StudioCollectionState4(StudioDirectionState4* directionState);
     ~StudioCollectionState4();
     StudioCollectionState4(const StudioCollectionState4&) = delete;
     StudioCollectionState4& operator=(const StudioCollectionState4&) = delete;
-    SpacingDirectionReadiness4* readiness() const {
-        return _directionState ? _directionState->readiness() : nullptr;
-    }
     qreal replayCourtesy(System*, const MeasureBase* next, qreal availableWidth);
     bool keepWithPrevious(System*, qreal availableWidth, const MeasureBase* previous,
                           qreal& fittingWidth, qreal courtesyRefreshWidth);

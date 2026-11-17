@@ -154,8 +154,9 @@ bool NativeGraceInputs4::captureSystem(System* system, SpacingAttachmentPreparat
 }
 
 StudioMeasureGracePreparation4::StudioMeasureGracePreparation4(
-        Score* score, Measure* measure, SpacingDirectionReadiness4* readiness)
-    : _score(score), _measure(measure), _readiness(readiness)
+        Score* score, Measure* measure, StudioDirectionState4* directionState)
+    : _score(score), _measure(measure),
+      _readiness(directionState ? directionState->readiness() : nullptr)
 {
     if (_readiness) {
         // Match the original producer boundary: certify initial directions

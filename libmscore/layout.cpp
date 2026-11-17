@@ -3535,7 +3535,7 @@ void Score::getNextMeasure(LayoutContext& lc)
       // Studio-only grace evidence is owned by the optional module. Construct
       // it before beam creation, preserving its identity-certificate timing.
       StudioMeasureGracePreparation4 studioGrace(score(), measure,
-            lc.studioDirectionState4 ? lc.studioDirectionState4->readiness() : nullptr);
+            lc.studioDirectionState4.get());
 
       createBeams(lc, measure);
 
