@@ -14,6 +14,7 @@
 #include "articulation.h"
 #include "sym.h"
 #include "symbol.h"
+#include <QRegularExpression>
 #include <QStringList>
 #include <QDebug>
 #include "clef.h"
@@ -2639,6 +2640,64 @@ std::map<Measure*, qreal> systemSpacingWidths4(System* system, qreal extraWidth)
     for (const Spring& spring : springs)
         targets[spring.measure] += qMax(qreal(0), force * spring.stretch - spring.width);
     return targets;
+}
+
+
+// The Studio spacing fallback owns both its terminal-system justification
+// policy and the optional spring targets.  An empty target map leaves the
+// original per-measure distributor in charge, exactly as before.
+void prepareStudioFallbackStretch4(System* system, const MeasureBase* next,
+                                   qreal naturalWidth, qreal availableWidth, qreal fillLimit,
+                                   qreal& rest, std::map<Measure*, qreal>& widths)
+{
+    // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
+    // terminal/section system at its natural width. Frames may follow it;
+    // only a later measure or HBox requires filling.
+    if (!spacingSystemJustified4(system->lastMeasure(), next, naturalWidth, availableWidth, fillLimit))
+        rest = 0;
+    if (rest > 0)
+        widths = systemSpacingWidths4(system, rest);
+}
+
+// Report final optional-allocator status only after native measure placement.
+// This function also clears the indicator when Studio spacing is disabled,
+// so edits cannot retain the previous system's fallback UI state.
+void publishStudioSpacingResult4(Score* score, System* system, bool useStudioPlan,
+                                 bool logFallback, bool observeDecision, bool hasStudioWidths,
+                                 qreal availableWidth, const QString& decisionReason)
+{
+    system->setStudioSpacingFallback(score->styleB(Sid::spacingLayout4)
+          && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
+
+    if (Measure* first = system->firstMeasure()) {
+          const QString message = logFallback && system->studioSpacingFallback()
+                ? (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason) : QString();
+          if (first->updateSpacingFallbackLog(message) && !message.isEmpty()) {
+                // Keep the original reason for deduplication and observers;
+                // move its location to the front only in the debug log.
+                static const QRegularExpression location(QStringLiteral(
+                      R"( \[measure (-?[0-9]+)(?:, ([^\]]+))?\]$)"));
+                const auto match = location.match(message);
+                if (match.hasMatch()) {
+                      QString reason = message.left(match.capturedStart());
+                      if (!match.captured(2).isEmpty())
+                            reason += QStringLiteral(" (%1)").arg(match.captured(2));
+                      qDebug().noquote() << QStringLiteral("Studio spacing fallback at measure %1: %2")
+                            .arg(match.captured(1), reason);
+                      }
+                else
+                      qDebug().noquote() << "Studio spacing fallback: system starts at measure"
+                            << first->no() + 1 << "-" << message;
+                }
+          }
+
+    if (observeDecision)
+          recordSpacingDecision4(system, SpacingPass4::FINAL,
+                !score->styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
+                : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
+                : useStudioPlan ? SpacingPath4::FULL_PLAN
+                : hasStudioWidths ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
+                system->width(), availableWidth, decisionReason);
 }
 
 

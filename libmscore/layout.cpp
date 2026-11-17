@@ -10,7 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
-#include <QRegularExpression>
+#include <QByteArray>
 #include <map>
 
 #include "spacingprofile4.h"
@@ -4873,27 +4873,22 @@ System* Score::collectSystem(LayoutContext& lc)
             // don’t stretch last system of a section (or the last of the piece),
             // if accumulated minWidth is <= lastSystemFillLimit
             //
-            if (styleB(Sid::spacingLayout4)) {
-                  // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
-                  // terminal/section system at its natural width. Frames may
-                  // follow it; only a later measure or HBox requires filling.
-                  if (!spacingSystemJustified4(lm, lc.curMeasure, minWidth, systemWidth,
-                                      styleD(Sid::lastSystemFillLimit)))
-                        rest = 0;
-                  }
-            else if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
-               && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
-                  if (minWidth > rest)
-                        rest = rest * .5;
-                  else
-                        rest = minWidth;
-                  }
-            if (styleB(Sid::spacingLayout4)) {
-                  if (rest > 0)
-                        studioWidths = systemSpacingWidths4(system, rest);
-                  }
-            else
+            // Keep adapter-specific justification and fallback springs in the
+            // optional planner; native terminal fill and pooled springs are
+            // otherwise unchanged.
+            if (styleB(Sid::spacingLayout4))
+                  prepareStudioFallbackStretch4(system, lc.curMeasure, minWidth, systemWidth,
+                        styleD(Sid::lastSystemFillLimit), rest, studioWidths);
+            else {
+                  if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
+                     && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
+                        if (minWidth > rest)
+                              rest = rest * .5;
+                        else
+                              rest = minWidth;
+                        }
                   nativePooled = applyNativePooledSprings(system, rest);
+                  }
             rest /= totalWeight;
             }
 
@@ -4945,38 +4940,8 @@ System* Score::collectSystem(LayoutContext& lc)
       if (useStudioPlan)
             publishSpacingPlanGraces4(studioPlan);
 
-      system->setStudioSpacingFallback(styleB(Sid::spacingLayout4)
-            && !MScore::noHorizontalStretch && !useStudioPlan && system->firstMeasure());
-
-      if (Measure* first = system->firstMeasure()) {
-            const QString message = logFallback && system->studioSpacingFallback()
-                  ? (decisionReason.isEmpty() ? QStringLiteral("No reason reported") : decisionReason) : QString();
-            if (first->updateSpacingFallbackLog(message) && !message.isEmpty()) {
-                  // Keep the original reason for deduplication and observers;
-                  // move its location to the front only in the debug log.
-                  static const QRegularExpression location(QStringLiteral(
-                        R"( \[measure (-?[0-9]+)(?:, ([^\]]+))?\]$)"));
-                  const auto match = location.match(message);
-                  if (match.hasMatch()) {
-                        QString reason = message.left(match.capturedStart());
-                        if (!match.captured(2).isEmpty())
-                              reason += QStringLiteral(" (%1)").arg(match.captured(2));
-                        qDebug().noquote() << QStringLiteral("Studio spacing fallback at measure %1: %2")
-                              .arg(match.captured(1), reason);
-                        }
-                  else
-                        qDebug().noquote() << "Studio spacing fallback: system starts at measure"
-                              << first->no() + 1 << "-" << message;
-                  }
-            }
-
-      if (observeDecision)
-            recordSpacingDecision4(system, SpacingPass4::FINAL,
-                  !styleB(Sid::spacingLayout4) ? SpacingPath4::STYLE_OFF
-                  : MScore::noHorizontalStretch ? SpacingPath4::NO_STRETCH
-                  : useStudioPlan ? SpacingPath4::FULL_PLAN
-                  : !studioWidths.empty() ? SpacingPath4::POOLED_WIDTHS : SpacingPath4::NATIVE_WIDTHS,
-                  system->width(), systemWidth, decisionReason);
+      publishStudioSpacingResult4(this, system, useStudioPlan, logFallback, observeDecision,
+            !studioWidths.empty(), systemWidth, decisionReason);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();

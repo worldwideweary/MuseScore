@@ -232,6 +232,18 @@ void publishSpacingPlanGraces4(const SpacingPlan4&);
 // An empty map lets collectSystem keep its legacy per-measure stretching.
 std::map<Measure*, qreal> systemSpacingWidths4(System*, qreal extraWidth);
 
+// Studio-specific terminal justification and fallback spring targets.
+// The caller owns native terminal-fill logic and ordinary pooled springs.
+void prepareStudioFallbackStretch4(System*, const MeasureBase* next,
+                                   qreal naturalWidth, qreal availableWidth, qreal fillLimit,
+                                   qreal& rest, std::map<Measure*, qreal>& widths);
+
+// Publish the optional fallback marker and bounded diagnostics only after
+// final measure widths are committed (also clears prior status with style off).
+void publishStudioSpacingResult4(Score*, System*, bool useStudioPlan,
+                                 bool logFallback, bool observeDecision, bool hasStudioWidths,
+                                 qreal availableWidth, const QString& decisionReason);
+
 // Try natural width, then Studio's first three positive-duration squeeze
 // passes. Publish only a fitting whole-system plan; stronger compression and
 // unsupported contexts leave result untouched for the existing fallback.
