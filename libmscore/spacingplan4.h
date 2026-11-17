@@ -227,6 +227,12 @@ bool evaluateStudioFittingCandidate4(System*, qreal availableWidth,
                                     SpacingDirectionReadiness4*, SpacingPlan4& previousCandidate,
                                     qreal& fittingWidth, qreal courtesyRefreshWidth);
 
+// Decide whether incremental layout must continue into the old next
+// system to preserve Studio placement at start repeats or manually shifted
+// rhythmic onsets. Does not change the native early-stop policy or geometry.
+bool studioLookaheadRequiresLayout4(const Score*, const Measure* first,
+                                   const MeasureBase* lastTouched);
+
 // Final Studio selection/segment publication keeps the prepared beam memo's
 // lifetime bounded.  Returned measure entries point into the caller-owned plan.
 // Grace publication is delayed until native layout has placed measure widths.

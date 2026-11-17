@@ -4646,25 +4646,10 @@ System* Score::collectSystem(LayoutContext& lc)
             MeasureBase* curMB = lc.curMeasure;
             Measure* m = curMB && curMB->isMeasure() ? toMeasure(curMB) : nullptr;
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
-            // Legacy width restoration loses Studio placement at a start
-            // repeat or an edited onset in the measures touched by lookahead.
-            bool nextNeedsStudioLayout = false;
-            if (styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch) {
-                  const MeasureBase* lastTouched = breakMeasure ? breakMeasure : m;
-                  for (const Measure* touched = m; touched; touched = touched->nextMeasure()) {
-                        nextNeedsStudioLayout = touched->repeatStart();
-                        if (!nextNeedsStudioLayout) {
-                              for (const Segment& s : touched->segments()) {
-                                    if (s.enabled() && s.isChordRestType() && s.extraLeadingSpace().val() != 0) {
-                                          nextNeedsStudioLayout = true;
-                                          break;
-                                          }
-                                    }
-                              }
-                        if (nextNeedsStudioLayout || touched == lastTouched || !touched->noBreak())
-                              break;
-                        }
-                  }
+            // The optional Studio planner certifies whether preserving the
+            // following system would discard its start-repeat/onset positions.
+            const bool nextNeedsStudioLayout = studioLookaheadRequiresLayout4(this, m,
+                  breakMeasure ? breakMeasure : m);
             const bool stableBoundary = lc.prevMeasure == lc.systemOldMeasure
                   && !curMeasureMayHaveJoinedBeams && !nextNeedsStudioLayout;
             // If the following measure was not re-fitted into this system, its

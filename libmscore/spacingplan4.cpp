@@ -384,6 +384,31 @@ bool evaluateStudioFittingCandidate4(System* system, qreal availableWidth,
     return planned;
 }
 
+// Legacy width reconstruction may discard Studio spacing at start repeats
+// or onsets with manual leading space. This query preserves collectSystem's
+// previous short-circuit and no-break scanning behavior, without mutation.
+bool studioLookaheadRequiresLayout4(const Score* score, const Measure* first,
+                                  const MeasureBase* lastTouched)
+{
+    bool nextNeedsStudioLayout = false;
+    if (score && score->styleB(Sid::spacingLayout4) && !MScore::noHorizontalStretch) {
+        for (const Measure* touched = first; touched; touched = touched->nextMeasure()) {
+            nextNeedsStudioLayout = touched->repeatStart();
+            if (!nextNeedsStudioLayout) {
+                for (const Segment& s : touched->segments()) {
+                    if (s.enabled() && s.isChordRestType() && s.extraLeadingSpace().val() != 0) {
+                        nextNeedsStudioLayout = true;
+                        break;
+                    }
+                }
+            }
+            if (nextNeedsStudioLayout || touched == lastTouched || !touched->noBreak())
+                break;
+        }
+    }
+    return nextNeedsStudioLayout;
+}
+
 namespace {
 SpacingDecisionScope4*& activeSpacingDecision4()
 {
