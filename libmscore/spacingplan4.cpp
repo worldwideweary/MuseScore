@@ -271,7 +271,7 @@ static bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4
 // Repeat end/start transitions may change when the predecessor is accepted;
 // each candidate rebuilds from that phase's fresh geometry. Keep the native
 // width accumulator intact for unsupported-context fallback/backtracking.
-bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
+static bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
                                SpacingDirectionReadiness4* readiness, SpacingPlan4& result,
                                const SpacingPlan4* prefix, QString* reason)
 {
@@ -321,6 +321,31 @@ bool systemFittingPlan4(System* system, qreal availableWidth, std::vector<GraceB
     request.slurPolicy = inputs.factory()->policy();
     if (carryTrailer || refresh) request.previousPrefix = prefix;
     return nativeSystemSpacingPlan4(system, request, &inputs, preparedBeams, result, reason);
+}
+
+// After native collection has finalized the previous measure's trailer,
+// replay a trial-only courtesy prefix with fresh derived geometry. The replay
+// consumes its seed even when the next object is not an ordinary measure.
+// Keep the previous two-attempt fallback and report width only on success.
+qreal replayStudioCourtesyPrefix4(System* system, const MeasureBase* next,
+                                  qreal availableWidth, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                  SpacingDirectionReadiness4* readiness, SpacingPlan4& previousCandidate)
+{
+    if (!previousCandidate.trialOnly)
+        return 0;
+
+    SpacingPlan4 accepted = std::move(previousCandidate);
+    previousCandidate = {};
+    if (!next || !next->isMeasure())
+        return 0;
+
+    if (systemFittingPlan4(system, availableWidth, preparedBeams, readiness,
+                           previousCandidate, &accepted))
+        return previousCandidate.width;
+
+    systemFittingPlan4(system, availableWidth, preparedBeams, readiness,
+                       previousCandidate);
+    return 0;
 }
 
 // Evaluate the optional Studio candidate in the same phase as native measure

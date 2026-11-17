@@ -4440,22 +4440,8 @@ System* Score::collectSystem(LayoutContext& lc)
       std::map<Measure*, LookaheadMeasureGeometry> lookaheadGeometry;
 
       while (lc.curMeasure) {    // collect measure for system
-            qreal courtesyRefreshWidth = 0;
-            if (previousCandidate.trialOnly) {
-                  // The accepted trial's predecessor trailer and end barline
-                  // have been finalized. Replay the last pair before appending
-                  // another measure, keeping the older coordinates and widths.
-                  SpacingPlan4 accepted = std::move(previousCandidate);
-                  previousCandidate = {};
-                  if (lc.curMeasure->isMeasure()) {
-                        if (systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
-                              previousCandidate, &accepted))
-                              courtesyRefreshWidth = previousCandidate.width;
-                        else
-                              systemFittingPlan4(system, systemWidth, preparedBeams, lc.spacingDirections4.get(),
-                                    previousCandidate);
-                        }
-                  }
+            const qreal courtesyRefreshWidth = replayStudioCourtesyPrefix4(system, lc.curMeasure,
+                  systemWidth, preparedBeams, lc.spacingDirections4.get(), previousCandidate);
             System* oldSystem = lc.curMeasure->system();
             if (oldSystem && lc.curMeasure->isMeasure()
                 && lc.curMeasure->tick() > lc.endTick) {

@@ -211,11 +211,12 @@ struct GraceBeamPreparation4 {
     std::vector<const Beam*> beams;
 };
 
-// Candidate fitting for the optional Studio spacing path. Native collection
-// retains its existing group/overflow decisions and passes the same prefix.
-bool systemFittingPlan4(System*, qreal availableWidth, std::vector<GraceBeamPreparation4>&,
-                        SpacingDirectionReadiness4*, SpacingPlan4& result,
-                        const SpacingPlan4* prefix = nullptr, QString* reason = nullptr);
+// Replay an accepted trial-only courtesy prefix once, before appending the
+// next measure. The optional planner owns its seed and fallback attempts;
+// native collection keeps its normal width/break decisions.
+qreal replayStudioCourtesyPrefix4(System*, const MeasureBase* next,
+                                 qreal availableWidth, std::vector<GraceBeamPreparation4>&,
+                                 SpacingDirectionReadiness4*, SpacingPlan4& previousCandidate);
 
 // Optional candidate evaluation and diagnostic publication. The native
 // collector still owns fittingWidth's initial native width, break decisions,
