@@ -2756,18 +2756,25 @@ StudioFinalRequestScope4::StudioFinalRequestScope4(Score* score, System* system,
 }
 
 bool StudioFinalRequestScope4::selectAndPublish(System* system,
-        std::vector<GraceBeamPreparation4>& preparedBeams, SpacingPlan4& result,
-        std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure)
+        std::vector<GraceBeamPreparation4>& preparedBeams)
 {
     QString* reason = _observed || _logFallback ? &_decisionReason : nullptr;
-    return selectAndPublishFinalSpacing4(system, _request, _inputs.get(), preparedBeams,
-                                         result, byMeasure, reason);
+    _selected = selectAndPublishFinalSpacing4(system, _request, _inputs.get(), preparedBeams,
+                                              _plan, _byMeasure, reason);
+    return _selected;
 }
 
-void StudioFinalRequestScope4::publishResult(Score* score, System* system,
-        bool useStudioPlan, bool hasStudioWidths, qreal availableWidth) const
+qreal StudioFinalRequestScope4::plannedWidth(Measure* measure) const
 {
-    publishStudioSpacingResult4(score, system, useStudioPlan, _logFallback,
+    return _byMeasure.at(measure)->width;
+}
+
+void StudioFinalRequestScope4::publishAfterPlacement(Score* score, System* system,
+        bool hasStudioWidths, qreal availableWidth) const
+{
+    if (_selected)
+        publishSpacingPlanGraces4(_plan);
+    publishStudioSpacingResult4(score, system, _selected, _logFallback,
         _observed, hasStudioWidths, availableWidth, _decisionReason);
 }
 

@@ -4773,10 +4773,7 @@ System* Score::collectSystem(LayoutContext& lc)
       StudioFinalRequestScope4 finalStudio(this, system, lc.spacingDirections4.get(),
             lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit),
             studioCollection.retainedOverfullGroup());
-      SpacingPlan4 studioPlan;
-      std::map<Measure*, const SpacingMeasurePlan4*> studioMeasures;
-      const bool useStudioPlan = finalStudio.selectAndPublish(system, studioCollection.preparedBeams(),
-            studioPlan, studioMeasures);
+      const bool useStudioPlan = finalStudio.selectAndPublish(system, studioCollection.preparedBeams());
       qreal rest;
       std::map<Measure*, qreal> studioWidths;
       bool nativePooled = false;
@@ -4842,7 +4839,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   int weight = m->layoutWeight();
                   auto studioWidth = studioWidths.find(m);
                   if (useStudioPlan)
-                        ww = studioMeasures.at(m)->width;
+                        ww = finalStudio.plannedWidth(m);
                   else if (studioWidth != studioWidths.end())
                         ww = studioWidth->second;
                   else if (!nativePooled)
@@ -4871,10 +4868,9 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
-      if (useStudioPlan)
-            publishSpacingPlanGraces4(studioPlan);
-
-      finalStudio.publishResult(this, system, useStudioPlan, !studioWidths.empty(), systemWidth);
+      // The optional planner owns its late grace writes and result reporting.
+      // Native placement still owns the final measure positions and widths.
+      finalStudio.publishAfterPlacement(this, system, !studioWidths.empty(), systemWidth);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();

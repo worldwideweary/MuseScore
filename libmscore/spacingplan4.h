@@ -263,17 +263,23 @@ class StudioFinalRequestScope4 {
     bool _logFallback;
     QString _decisionReason;
     SpacingSystemRequest4 _request;
+    // The measure pointers refer to entries in this pass-local plan.
+    // Keep both owned here through native measure placement and grace writes.
+    SpacingPlan4 _plan;
+    std::map<Measure*, const SpacingMeasurePlan4*> _byMeasure;
+    bool _selected = false;
 public:
     StudioFinalRequestScope4(Score*, System*, SpacingDirectionReadiness4*,
                              const MeasureBase* next, qreal availableWidth,
                              qreal fillLimit, bool retainedOverfullGroup);
     StudioFinalRequestScope4(const StudioFinalRequestScope4&) = delete;
     StudioFinalRequestScope4& operator=(const StudioFinalRequestScope4&) = delete;
-    bool selectAndPublish(System*, std::vector<GraceBeamPreparation4>&,
-                          SpacingPlan4& result,
-                          std::map<Measure*, const SpacingMeasurePlan4*>& byMeasure);
-    void publishResult(Score*, System*, bool useStudioPlan,
-                       bool hasStudioWidths, qreal availableWidth) const;
+    bool selectAndPublish(System*, std::vector<GraceBeamPreparation4>&);
+    // Valid only after a successful selection; preserves the old at() check.
+    qreal plannedWidth(Measure*) const;
+    // Call after native measure positions and widths have been finalized.
+    void publishAfterPlacement(Score*, System*, bool hasStudioWidths,
+                               qreal availableWidth) const;
 };
 
 // Studio-specific terminal justification and fallback spring targets.
