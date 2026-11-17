@@ -2831,34 +2831,40 @@ bool StudioFinalRequestScope4::selectAndPublish(System* system)
     return _selected;
 }
 
-qreal StudioFinalRequestScope4::plannedWidth(Measure* measure) const
-{
-    return _byMeasure.at(measure)->width;
-}
-
-void StudioFinalRequestScope4::publishAfterPlacement(Score* score, System* system,
-        bool hasStudioWidths, qreal availableWidth) const
-{
-    if (_selected)
-        publishSpacingPlanGraces4(_plan);
-    publishStudioSpacingResult4(score, system, _selected, _logFallback,
-        _observed, hasStudioWidths, availableWidth, _decisionReason);
-}
-
-// The Studio spacing fallback owns both its terminal-system justification
-// policy and the optional spring targets.  An empty target map leaves the
-// original per-measure distributor in charge, exactly as before.
-void prepareStudioFallbackStretch4(System* system, const MeasureBase* next,
-                                   qreal naturalWidth, qreal availableWidth, qreal fillLimit,
-                                   qreal& rest, std::map<Measure*, qreal>& widths)
+// The fallback uses the final request's existing geometry and terminal
+// justification policy. It cannot publish widths into the native collector.
+void StudioFinalRequestScope4::prepareFallbackStretch(System* system,
+        qreal naturalWidth, qreal& rest)
 {
     // Studio 4.7.5 SystemLayout::shouldBeJustified: leave a short
     // terminal/section system at its natural width. Frames may follow it;
     // only a later measure or HBox requires filling.
-    if (!spacingSystemJustified4(system->lastMeasure(), next, naturalWidth, availableWidth, fillLimit))
+    if (!spacingSystemJustified4(system->lastMeasure(), _request.next, naturalWidth,
+                                 _request.availableWidth, _request.fillLimit))
         rest = 0;
     if (rest > 0)
-        widths = systemSpacingWidths4(system, rest);
+        _fallbackWidths = systemSpacingWidths4(system, rest);
+}
+
+bool StudioFinalRequestScope4::measureWidth(Measure* measure, qreal& width) const
+{
+    if (_selected) {
+        width = _byMeasure.at(measure)->width;
+        return true;
+    }
+    const auto found = _fallbackWidths.find(measure);
+    if (found == _fallbackWidths.end())
+        return false;
+    width = found->second;
+    return true;
+}
+
+void StudioFinalRequestScope4::publishAfterPlacement(Score* score, System* system) const
+{
+    if (_selected)
+        publishSpacingPlanGraces4(_plan);
+    publishStudioSpacingResult4(score, system, _selected, _logFallback,
+        _observed, !_fallbackWidths.empty(), _request.availableWidth, _decisionReason);
 }
 
 // Report final optional-allocator status only after native measure placement.

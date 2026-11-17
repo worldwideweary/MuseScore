@@ -297,8 +297,8 @@ std::map<Measure*, qreal> systemSpacingWidths4(System*, qreal extraWidth);
 // Own the optional Studio final request and its borrowed grace-query factory
 // for the complete native final-width/publication phase. The scope must remain
 // alive until AFTER native measure placement and late grace publication.
-// The adapter prepares its own request and status; native layout still owns
-// measure widths, terminal fill policy, and spring distribution.
+// The adapter owns full-plan and optional fallback width targets; native
+// layout still owns measure positions and native spring distribution.
 class StudioFinalRequestScope4 {
     // The collection scope precedes this final scope in collectSystem and
     // outlives all optional grace publication and candidate-beam queries.
@@ -313,6 +313,8 @@ class StudioFinalRequestScope4 {
     // Keep both owned here through native measure placement and grace writes.
     SpacingPlan4 _plan;
     std::map<Measure*, const SpacingMeasurePlan4*> _byMeasure;
+    // Optional Studio pooled-width targets; empty when unsupported or inactive.
+    std::map<Measure*, qreal> _fallbackWidths;
     bool _selected = false;
 public:
     StudioFinalRequestScope4(Score*, System*, StudioCollectionState4&,
@@ -321,18 +323,15 @@ public:
     StudioFinalRequestScope4(const StudioFinalRequestScope4&) = delete;
     StudioFinalRequestScope4& operator=(const StudioFinalRequestScope4&) = delete;
     bool selectAndPublish(System*);
-    // Valid only after a successful selection; preserves the old at() check.
-    qreal plannedWidth(Measure*) const;
+    // Called only on the Studio fallback path. The final request already owns
+    // the next measure, available width and terminal-fill threshold.
+    void prepareFallbackStretch(System*, qreal naturalWidth, qreal& rest);
+    // Returns false without writing width when neither Studio source owns it.
+    // A selected plan retains the existing checked lookup for each measure.
+    bool measureWidth(Measure*, qreal& width) const;
     // Call after native measure positions and widths have been finalized.
-    void publishAfterPlacement(Score*, System*, bool hasStudioWidths,
-                               qreal availableWidth) const;
+    void publishAfterPlacement(Score*, System*) const;
 };
-
-// Studio-specific terminal justification and fallback spring targets.
-// The caller owns native terminal-fill logic and ordinary pooled springs.
-void prepareStudioFallbackStretch4(System*, const MeasureBase* next,
-                                   qreal naturalWidth, qreal availableWidth, qreal fillLimit,
-                                   qreal& rest, std::map<Measure*, qreal>& widths);
 
 // Publish the optional fallback marker and bounded diagnostics only after
 // final measure widths are committed (also clears prior status with style off).

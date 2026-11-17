@@ -4770,7 +4770,6 @@ System* Score::collectSystem(LayoutContext& lc)
             lc.curMeasure, systemWidth, styleD(Sid::lastSystemFillLimit));
       const bool useStudioPlan = finalStudio.selectAndPublish(system);
       qreal rest;
-      std::map<Measure*, qreal> studioWidths;
       bool nativePooled = false;
       if (MScore::noHorizontalStretch || useStudioPlan)
             rest = 0;
@@ -4803,8 +4802,7 @@ System* Score::collectSystem(LayoutContext& lc)
             // optional planner; native terminal fill and pooled springs are
             // otherwise unchanged.
             if (styleB(Sid::spacingLayout4))
-                  prepareStudioFallbackStretch4(system, lc.curMeasure, minWidth, systemWidth,
-                        styleD(Sid::lastSystemFillLimit), rest, studioWidths);
+                  finalStudio.prepareFallbackStretch(system, minWidth, rest);
             else {
                   if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
                      && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
@@ -4832,12 +4830,9 @@ System* Score::collectSystem(LayoutContext& lc)
                   Measure* m = toMeasure(mb);
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
-                  auto studioWidth = studioWidths.find(m);
-                  if (useStudioPlan)
-                        ww = finalStudio.plannedWidth(m);
-                  else if (studioWidth != studioWidths.end())
-                        ww = studioWidth->second;
-                  else if (!nativePooled)
+                  // The optional final request owns both full-plan and
+                  // fallback target widths; otherwise use native stretching.
+                  if (!finalStudio.measureWidth(m, ww) && !nativePooled)
                         ww += rest * weight * stretch;
                   if (useStudioPlan) {
                         m->bbox().setWidth(ww);
@@ -4865,7 +4860,7 @@ System* Score::collectSystem(LayoutContext& lc)
       system->setWidth(pos.x());
       // The optional planner owns its late grace writes and result reporting.
       // Native placement still owns the final measure positions and widths.
-      finalStudio.publishAfterPlacement(this, system, !studioWidths.empty(), systemWidth);
+      finalStudio.publishAfterPlacement(this, system);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();
