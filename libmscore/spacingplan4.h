@@ -5,6 +5,7 @@
 #include <QtGlobal>
 #include <QString>
 #include <functional>
+#include <map>
 #include <vector>
 #include "fraction.h"
 #include "gracespacing4.h"
@@ -178,6 +179,11 @@ bool spacingPlanPublicationValid4(const System*, const SpacingPlan4&, QString* r
 // Validate everything first, then write the segment fields only. Measure/late
 // grace finalization keeps its native order in collectSystem. Failure is atomic.
 bool publishSpacingPlanSegments4(System*, const SpacingPlan4&, QString* reason = nullptr);
+
+// Studio-only fallback for a retained system when the full placement plan
+// cannot be published. Returns target measure widths without changing layout.
+// An empty map lets collectSystem keep its legacy per-measure stretching.
+std::map<Measure*, qreal> systemSpacingWidths4(System*, qreal extraWidth);
 
 // Try natural width, then Studio's first three positive-duration squeeze
 // passes. Publish only a fitting whole-system plan; stronger compression and
