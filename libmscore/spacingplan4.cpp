@@ -26,6 +26,7 @@
 #include "tie.h"
 #include "rest.h"
 #include "score.h"
+#include "mscore.h"
 #include "segment.h"
 #include "staff.h"
 #include "stem.h"
@@ -102,6 +103,167 @@ bool NativeGraceInputs4::captureSystem(System* system, SpacingAttachmentPreparat
     const auto rootDirections = declarations(_measures);
     return captureSystemSpacingAttachments4(system, directions, owner, reason, &rootDirections);
 }
+
+// After-grace beams are normally laid out after system spacing. Prepare their
+// stem geometry at the planned intra-group distances first, so the planner and
+// the final beam pass see the same shapes. Preserve native chord positions here.
+static bool prepareAfterGraceBeamForSpacing4(Chord* main, GraceAfterGeometry4 geometry)
+{
+    const auto graces = main->graceNotesAfter();
+    Beam* beam = graces.front()->beam();
+    if (!beam) return true;
+    const auto sameShape = [](const SpacingShape4& a, const SpacingShape4& b) {
+        if (a.elements.size() != b.elements.size()) return false;
+        for (size_t i = 0; i < a.elements.size(); ++i) {
+            const auto& x = a.elements[i];
+            const auto& y = b.elements[i];
+            if (x.item != y.item || x.identity != y.identity
+                || x.aggregateOwners != y.aggregateOwners || x.sharedItems != y.sharedItems
+                || qAbs(x.rect.x() - y.rect.x()) > 1e-9
+                || qAbs(x.rect.y() - y.rect.y()) > 1e-9
+                || qAbs(x.rect.width() - y.rect.width()) > 1e-9
+                || qAbs(x.rect.height() - y.rect.height()) > 1e-9)
+                return false;
+        }
+        return true;
+    };
+    std::vector<qreal> original;
+    for (const Chord* grace : graces) original.push_back(grace->x());
+    // Packing and beam slope depend on each other's geometry. Require a stable
+    // projection, with a bounded attempt count; otherwise use native fallback.
+    for (int pass = 0; pass < 8; ++pass) {
+        for (int i = 0; i < graces.size(); ++i)
+            graces[i]->rxpos() = original.front() + geometry.plan.positions[i].x
+                - geometry.plan.positions.front().x;
+        beam->layout();
+        for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = original[i];
+        main->segment()->createShape(main->vStaffIdx());
+        GraceAfterGeometry4 next;
+        if (!queryGraceAfterGeometry4(main, next)) return false;
+        if (sameShape(geometry.source, next.source) && sameShape(geometry.target, next.target))
+            return true;
+        geometry = next;
+    }
+    return false;
+}
+
+static bool sameGraceBeamPreparation4(const GraceBeamPreparation4& saved, const GraceMergedGeometry4& fresh)
+{
+    const auto& a = saved.geometry.plan;
+    const auto& b = fresh.plan;
+    if (a.slurPolicy != b.slurPolicy || a.owner != b.owner || a.target != b.target || a.left != b.left || a.right != b.right
+        || a.positions.size() != b.positions.size() || saved.beams.size() != b.positions.size()) return false;
+    for (size_t i = 0; i < b.positions.size(); ++i) {
+        if (a.positions[i].chord != b.positions[i].chord || a.positions[i].x != b.positions[i].x
+            || saved.beams[i] != b.positions[i].chord->beam()) return false;
+    }
+    const auto sameShape = [](const SpacingShape4& x, const SpacingShape4& y) {
+        if (x.elements.size() != y.elements.size()) return false;
+        for (size_t i = 0; i < x.elements.size(); ++i) {
+            const auto& p = x.elements[i];
+            const auto& q = y.elements[i];
+            if (p.item != q.item || p.identity != q.identity || p.rect.x() != q.rect.x() || p.rect.y() != q.rect.y()
+                || p.rect.width() != q.rect.width() || p.rect.height() != q.rect.height()
+                || p.aggregateOwners != q.aggregateOwners || p.sharedItems != q.sharedItems) return false;
+        }
+        return true;
+    };
+    return sameShape(saved.geometry.source, fresh.source) && sameShape(saved.geometry.target, fresh.target);
+}
+
+// Before-grace groups already have fixed internal horizontal positions. Their beams
+// can therefore finalize stems and slashes before system spacing, independent
+// of the enclosing measure's eventual stretch. Otherwise the page pass moves
+// the slash after its provisional shape has constrained a neighboring note.
+// Keep this mutation outside the read-only placement planner and restrict it
+// to groups admitted by the corresponding grace adapter.
+static bool prepareGraceBeamsForSpacing4(System* system, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                        std::vector<GraceMergedGeometry4>& readyMerged)
+{
+    // A fresh handoff for the immediately following read-only plan. Every
+    // possible beam/shape write below invalidates ALL earlier entries.
+    readyMerged.clear();
+    if (!system->score()->styleB(Sid::spacingLayout4) || MScore::noHorizontalStretch)
+        return true;
+    std::vector<const Chord*> jointTargets;
+    for (MeasureBase* mb : system->measures()) {
+        if (!mb->isMeasure()) continue;
+        for (Segment& segment : toMeasure(mb)->segments()) {
+            if (!segment.enabled() || !segment.visible() || !segment.isChordRestType()) continue;
+            for (Element* item : segment.elist()) {
+                if (!item || !item->isChord()) continue;
+                Chord* main = toChord(item);
+                if (std::find(jointTargets.begin(), jointTargets.end(), main) != jointTargets.end()) continue;
+                if (!main->graceNotesAfter().empty()) {
+                    GraceAfterGeometry4 geometry;
+                    if (queryGraceAfterGeometry4(main, geometry)) {
+                        readyMerged.clear();
+                        if (!prepareAfterGraceBeamForSpacing4(main, geometry)) return false;
+                    }
+                    else {
+                        GraceMergedGeometry4 joint;
+                        if (queryGraceMergedGeometry4(main, joint)) {
+                            auto saved = std::find_if(preparedBeams.begin(), preparedBeams.end(),
+                                [main](const GraceBeamPreparation4& entry) { return entry.geometry.plan.owner == main; });
+                            if (saved != preparedBeams.end() && sameGraceBeamPreparation4(*saved, joint)) {
+                                SpacingProfileScope4 reuse(SpacingProfileStage4::BEAM_REUSE);
+                                readyMerged.push_back(joint);
+                            }
+                            else {
+                                GraceBeamPreparation4 entry;
+                                readyMerged.clear();
+                                if (!prepareGraceMergedBeams4(main, nullptr, &entry.geometry)) return false;
+                                readyMerged.push_back(entry.geometry);
+                                for (const auto& position : entry.geometry.plan.positions)
+                                    entry.beams.push_back(position.chord->beam());
+                                if (saved == preparedBeams.end()) preparedBeams.push_back(std::move(entry));
+                                else *saved = std::move(entry);
+                            }
+                            jointTargets.push_back(joint.plan.target);
+                        }
+                    }
+                    continue;
+                }
+                GraceBeforePlan4 group;
+                if (!queryGraceBeforePlan4(main, group)) continue;
+                bool placed = true;
+                for (const GracePosition4& p : group.positions)
+                    placed = placed && std::isfinite(p.chord->x()) && qAbs(p.chord->x() - p.x) <= 1e-6;
+                if (!placed) continue;
+                Beam* beam = main->graceNotesBefore().front()->beam();
+                if (beam) {
+                    readyMerged.clear();
+                    beam->layout(); // Also refreshes the owning segment's native shape.
+                }
+            }
+        }
+    }
+    return true;
+}
+
+// Native beam/root production may write derived geometry. Capture one fresh
+// attachment owner only after it completes; destroy all query views on return.
+// The factory itself can remain bound for later native publication callbacks.
+bool nativeSystemSpacingPlan4(System* system, const SpacingSystemRequest4& request,
+                                     NativeGraceInputs4* inputs, std::vector<GraceBeamPreparation4>& preparedBeams,
+                                     SpacingPlan4& result, QString* reason)
+{
+    const auto fail = [reason](const char* text) { if (reason) *reason = text; return false; };
+    std::vector<GraceMergedGeometry4> readyMerged;
+    const bool ready = prepareGraceBeamsForSpacing4(system, preparedBeams, readyMerged);
+    if (!system->score()->styleB(Sid::spacingLayout4)) return false;
+    if (MScore::noHorizontalStretch) return fail("Horizontal stretch disabled");
+    if (!ready) return fail(request.pass == SpacingPass4::CANDIDATE
+        ? "Candidate grace-beam preparation rejected" : "Final grace-beam preparation rejected");
+    if (!inputs) return fail("Prepared-input factory unavailable");
+    SpacingAttachmentPreparation4 attachments;
+    if (!inputs->captureSystem(system, attachments, reason)) {
+        if (reason && reason->isEmpty()) *reason = "Prepared system attachment domain unavailable";
+        return false;
+    }
+    return selectSystemSpacingPlan4(system, request, attachments, result, reason, &readyMerged);
+}
+
 
 namespace {
 SpacingDecisionScope4*& activeSpacingDecision4()

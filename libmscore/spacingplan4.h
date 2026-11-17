@@ -202,6 +202,21 @@ public:
     bool captureSystem(System*, SpacingAttachmentPreparation4&, QString* reason = nullptr) const;
 };
 
+// Per-collection mutable grace-beam preparation belongs to the optional
+// Studio spacing module, not to the native system collector.
+// Local to one collectSystem call. A fresh validated projection must match
+// exactly before skipping repeated preparation during prefix fitting.
+struct GraceBeamPreparation4 {
+    GraceMergedGeometry4 geometry;
+    std::vector<const Beam*> beams;
+};
+
+// Capture fresh native inputs and prepare grace beams before selecting an
+// optional Studio spacing plan. The result and failure handling are unchanged.
+bool nativeSystemSpacingPlan4(System*, const SpacingSystemRequest4&,
+                              NativeGraceInputs4*, std::vector<GraceBeamPreparation4>&,
+                              SpacingPlan4& result, QString* reason = nullptr);
+
 // Studio-only fallback for a retained system when the full placement plan
 // cannot be published. Returns target measure widths without changing layout.
 // An empty map lets collectSystem keep its legacy per-measure stretching.
