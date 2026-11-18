@@ -225,6 +225,30 @@ qreal applyStudioSegmentWidth4(Segment* segment, const StudioSegmentWidth4& stud
     return qMax(width, studio.minimum);
 }
 
+// Keep optional Studio spring weights and fixed cross-beam offsets behind
+// the spacing adapter. The caller's legacy spring solver is unmodified.
+StudioMeasureSpringScope4::StudioMeasureSpringScope4(const Measure* measure)
+    : _enabled(measure->score()->styleB(Sid::spacingLayout4)),
+      _rhythmicEnabled(_enabled && !measure->isMMRest())
+{
+}
+
+qreal StudioMeasureSpringScope4::fixedOffset(const Segment* segment) const
+{
+    return _enabled ? segment->spacingWidthOffset4() : 0;
+}
+
+StudioMeasureSpring4 StudioMeasureSpringScope4::spring(const Segment* segment) const
+{
+    StudioMeasureSpring4 spring;
+    spring.fixedOffset = fixedOffset(segment);
+    if (_rhythmicEnabled && segment->isChordRestType()) {
+        spring.useRhythmicWeight = true;
+        spring.rhythmicWeight = segmentSpacingStretch4(segment);
+    }
+    return spring;
+}
+
 // Keep Studio's direction-certificate allocation, invalidation and lifetime
 // in the optional spacing module. An inactive style creates no state, as before.
 StudioDirectionState4::StudioDirectionState4()

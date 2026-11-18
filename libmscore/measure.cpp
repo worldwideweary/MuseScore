@@ -3765,6 +3765,7 @@ void Measure::stretchMeasure(qreal targetWidth)
       //---------------------------------------------------
 
       std::multimap<qreal, Segment*> springs;
+      StudioMeasureSpringScope4 studioSprings(this);
 
       Segment* seg = first();
       while (seg && (!seg->enabled() || seg->allElementsInvisible()))
@@ -3775,11 +3776,11 @@ void Measure::stretchMeasure(qreal targetWidth)
                   continue;
             Fraction t = s.ticks();
             if (t.isNotZero()) {
-                  qreal str = score()->styleB(Sid::spacingLayout4) && !isMMRest() && s.isChordRestType()
-                        ? segmentSpacingStretch4(&s)
+                  const StudioMeasureSpring4 studio = studioSprings.spring(&s);
+                  qreal str = studio.useRhythmicWeight
+                        ? studio.rhythmicWeight
                         : 1.0 + 0.865617 * log(qreal(t.ticks()) / qreal(minTick.ticks())); // legacy spring weight
-                  qreal offset = score()->styleB(Sid::spacingLayout4) ? s.spacingWidthOffset4() : 0;
-                  qreal d   = (s.width() - offset) / str;
+                  qreal d   = (s.width() - studio.fixedOffset) / str;
                   s.setStretch(str);
                   springs.insert(std::pair<qreal, Segment*>(d, &s));
                   }
@@ -3795,8 +3796,7 @@ void Measure::stretchMeasure(qreal targetWidth)
             qreal c     = 0.0;
             for (auto i = springs.begin(); i != springs.end();) {
                   c            += i->second->stretch();
-                  minimumWidth -= i->second->width() - (score()->styleB(Sid::spacingLayout4)
-                        ? i->second->spacingWidthOffset4() : 0);
+                  minimumWidth -= i->second->width() - studioSprings.fixedOffset(i->second);
                   qreal f       = (targetWidth - minimumWidth) / c;
                   ++i;
                   if (i == springs.end() || f <= i->first) {
@@ -3810,8 +3810,7 @@ void Measure::stretchMeasure(qreal targetWidth)
             //---------------------------------------------------
 
             for (auto& i : springs) {
-                  qreal width = force * i.second->stretch() + (score()->styleB(Sid::spacingLayout4)
-                        ? i.second->spacingWidthOffset4() : 0);
+                  qreal width = force * i.second->stretch() + studioSprings.fixedOffset(i.second);
                   if (width > i.second->width())
                         i.second->setWidth(width);
                   }

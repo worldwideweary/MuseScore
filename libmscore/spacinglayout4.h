@@ -10,6 +10,26 @@
 namespace Ms {
 class Segment;
 double segmentSpacingStretch4(const Segment*);
+class Measure;
+
+// This scope supplies Studio-only inputs to the existing Measure spring
+// solver. An inactive Studio style supplies zero fixed offsets and no
+// rhythmic-weight override; the native spring algorithm stays in Measure.
+struct StudioMeasureSpring4 {
+    qreal fixedOffset { 0 };
+    qreal rhythmicWeight { 0 };
+    bool useRhythmicWeight { false };
+};
+
+class StudioMeasureSpringScope4 {
+    bool _enabled { false };
+    bool _rhythmicEnabled { false };
+public:
+    explicit StudioMeasureSpringScope4(const Measure*);
+    StudioMeasureSpring4 spring(const Segment*) const;
+    qreal fixedOffset(const Segment*) const;
+};
+
 // The Studio width contribution is read before native collision clearance;
 // its rhythmic minimum is applied afterwards. Native sizing stays separate.
 struct StudioSegmentWidth4 {
