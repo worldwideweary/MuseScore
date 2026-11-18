@@ -34,6 +34,7 @@
 #include "mscore.h"
 #include "segment.h"
 #include "staff.h"
+#include "stafftype.h"
 #include "stem.h"
 #include "system.h"
 #include "tremolo.h"
@@ -1488,6 +1489,61 @@ static bool traceSpacingMeasure4(const Measure* measure)
     return number > 0 && measure && measure->no() + 1 == number;
 }
 
+// Studio-only tie-spacing probe: sample native grip clearance on a
+// detached copy without changing the live tie or its editable segments.
+static const char* studioTieSpacingGripInset4(const Tie* tie, qreal& inset)
+      {
+      const Note* a = tie->startNote();
+      const Note* b = tie->endNote();
+      if (tie->isPartial() || !a || !b || a->track() != b->track() || tie->track() != a->track()
+          || a->line() != b->line() || a->isNudged() || b->isNudged())
+            return "unsupported endpoints";
+      const Chord* first = a->chord();
+      const Chord* last = b->chord();
+      const Measure* measure = first->measure();
+      if (!measure || measure != last->measure())
+            return "tie crosses a measure boundary";
+      if (!measure->system())
+            return "measure has no system yet";
+      if (first->staffMove() || last->staffMove() || first->isGrace() || last->isGrace()
+          || first->isNudged() || last->isNudged()
+          || (first->notes().size() == 1 && last->notes().size() == 1))
+            return "unsupported chord context";
+      const Staff* st = a->staff();
+      const StaffType* type = st ? st->staffType(a->tick()) : nullptr;
+      if (!type || !st->isPitchedStaff(a->tick()) || type != st->staffType(b->tick())
+          || type->yoffset().val() != 0 || type->lineDistance().val() != 1)
+            return "unsupported staff geometry";
+      for (size_t i = 0; i < tie->nsegments(); ++i)
+            if (tie->segmentAt(int(i))->isNudged() || tie->segmentAt(int(i))->isEdited()) return "edited tie segment";
+
+      // Use the real grip adjustments on a detached tie copy. Restrict the
+      // probe to grips above the staff, where native layout does not snap
+      // their height to staff lines as the span changes.
+      Tie copy(*tie);
+      copy.calculateDirection();
+      SlurPos positions;
+      copy.slurPos(&positions);
+      if (positions.p1.y() != positions.p2.y())
+            return "grips are not level";
+      if (!(positions.p1.y() < 0))
+            return "grips are at or below the top staff line";
+      const auto originX = [](const Chord* chord) {
+            return chord->measure()->x() + chord->segment()->x();
+            };
+      TieSegment probe(tie->score());
+      probe.setSpanner(&copy);
+      probe.setTrack(tie->track());
+      probe.setSpannerSegmentType(SpannerSegmentType::SINGLE);
+      probe.ups(Grip::START).p = positions.p1 - QPointF(originX(first), 0);
+      probe.ups(Grip::END).p = positions.p2 - QPointF(originX(last), 0);
+      probe.adjustX();
+      const qreal result = probe.ups(Grip::START).p.x() - probe.ups(Grip::END).p.x();
+      if (!std::isfinite(result)) return "nonfinite grip inset";
+      inset = result;
+      return nullptr;
+      }
+
 struct SpacingDistanceTrace4 {
     qreal collision = 0;
     qreal tie = 0;
@@ -1547,7 +1603,7 @@ bool distance4(const SpacingPaddingTable4& table, const SpacingSegmentPlan4& a, 
                 const qreal inset = 0.5 * std::max(note->spatium(), end->spatium());
                 const qreal boundsInset = right - left + inset;
                 qreal gripInset = boundsInset;
-                const char* skipped = tie->spacingGripInset4(gripInset);
+                const char* skipped = studioTieSpacingGripInset4(tie, gripInset);
                 const qreal minimum = gripInset
                     + table.score()->styleP(Sid::minTieLength) * std::max(note->mag(), end->mag());
                 if (trace) {
