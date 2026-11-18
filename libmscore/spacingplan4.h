@@ -16,6 +16,7 @@ class Measure;
 class MeasureBase;
 class Segment;
 class SlurSegment;
+class Element;
 class ChordRest;
 class ElementEditData;
 class System;
@@ -356,6 +357,30 @@ public:
     bool measureWidth(Measure*, qreal& width) const;
     // Call after native measure positions and widths have been finalized.
     void publishAfterPlacement(Score*, System*) const;
+};
+
+// Value-only pre-/post-Undo proof for optional Studio slur-offset relayout.
+// Construct after CmdState::reset(), verify immediately after the native
+// UndoStack operation, and consume the result before Score::update(false).
+// Do not retain the scope across unrelated score edits.
+class StudioSlurUndoRedoProof4 {
+    Score* _score;
+    bool _undo;
+    const SlurSegment* _segment = nullptr;
+    const Slur* _slur = nullptr;
+    const Element* _start = nullptr;
+    const Element* _end = nullptr;
+    Fraction _tick { 0, 1 };
+    Fraction _tick2 { 0, 1 };
+    int _track = -1;
+    int _track2 = -1;
+    quint64 _generation = 0;
+    int _index = 0;
+public:
+    StudioSlurUndoRedoProof4(Score*, bool undo);
+    StudioSlurUndoRedoProof4(const StudioSlurUndoRedoProof4&) = delete;
+    StudioSlurUndoRedoProof4& operator=(const StudioSlurUndoRedoProof4&) = delete;
+    const SlurSegment* verifiedOffset() const;
 };
 
 // Studio-only anchor editing eligibility; bounded offset-edit snapshot

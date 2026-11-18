@@ -16,6 +16,7 @@
 */
 
 #include "spacingprofile4.h"
+#include "spacingplan4.h"
 #include "accidental.h"
 #include "articulation.h"
 #include "barline.h"
@@ -234,27 +235,16 @@ void Score::undoRedo(bool undo, EditData* ed)
       {
             SpacingProfileScope4 profile(SpacingProfileStage4::UNDO_REDO);
             cmdState().reset();
-            const SlurSegment* offset = styleB(Sid::spacingLayout4) && isMaster()
-                  && masterScore()->scoreList().size() == 1 ? undoStack()->slurOffset4(undo) : nullptr;
-            const Slur* slur = offset ? offset->slur() : nullptr;
-            const Element* start = slur ? slur->startElement() : nullptr;
-            const Element* end = slur ? slur->endElement() : nullptr;
-            const Fraction tick = slur ? slur->tick() : Fraction(0, 1);
-            const Fraction tick2 = slur ? slur->tick2() : Fraction(0, 1);
-            const int track = slur ? slur->track() : -1;
-            const int track2 = slur ? slur->track2() : -1;
-            const quint64 generation = cmdState().generation4();
-            const int index = undoStack()->getCurIdx();
+            // Capture the optional Studio history proof after command-state reset,
+            // before the native Undo/Redo command can change anchors or generation.
+            StudioSlurUndoRedoProof4 slurProof(this, undo);
             if (undo)
                   undoStack()->undo(ed);
             else
                   undoStack()->redo(ed);
-            // Confirm that the expected history entry ran and anchors stayed fixed.
-            // Normal property notifications have already populated the dirty range.
-            if (offset && offset->score() == this && !offset->links() && !slur->links()
-                && cmdState().generation4() == generation && undoStack()->getCurIdx() == index + (undo ? -1 : 1)
-                && slur->startElement() == start && slur->endElement() == end
-                && slur->tick() == tick && slur->tick2() == tick2 && slur->track() == track && slur->track2() == track2)
+            // Undo and update ownership remain native; the adapter verifies only
+            // whether the bounded slur-offset fast path is still eligible.
+            if (const SlurSegment* offset = slurProof.verifiedOffset())
                   cmdState().requestSlurOffset4(offset);
             update(false);
             cmdState().cancelSlurEdit4(); // Do not carry history proof into a later update.

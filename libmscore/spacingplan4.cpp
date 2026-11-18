@@ -30,6 +30,7 @@
 #include "tie.h"
 #include "rest.h"
 #include "score.h"
+#include "undo.h"
 #include "mscore.h"
 #include "segment.h"
 #include "staff.h"
@@ -3169,6 +3170,39 @@ void publishStudioSpacingResult4(Score* score, System* system, bool useStudioPla
                 system->width(), availableWidth, decisionReason);
 }
 
+
+// Capture the slur history proof before native Undo/Redo mutates the score.
+// Matches Score::undoRedo's original snapshot and eligibility ordering.
+StudioSlurUndoRedoProof4::StudioSlurUndoRedoProof4(Score* score, bool undo)
+    : _score(score), _undo(undo)
+{
+    _segment = score->styleB(Sid::spacingLayout4) && score->isMaster()
+          && score->masterScore()->scoreList().size() == 1
+          ? score->undoStack()->slurOffset4(undo) : nullptr;
+    _slur = _segment ? _segment->slur() : nullptr;
+    _start = _slur ? _slur->startElement() : nullptr;
+    _end = _slur ? _slur->endElement() : nullptr;
+    _tick = _slur ? _slur->tick() : Fraction(0, 1);
+    _tick2 = _slur ? _slur->tick2() : Fraction(0, 1);
+    _track = _slur ? _slur->track() : -1;
+    _track2 = _slur ? _slur->track2() : -1;
+    _generation = score->cmdState().generation4();
+    _index = score->undoStack()->getCurIdx();
+}
+
+const SlurSegment* StudioSlurUndoRedoProof4::verifiedOffset() const
+{
+    // The expected undo entry must have run, without changing slur anchors,
+    // tracks, time range, command generation, or link ownership.
+    if (_segment && _segment->score() == _score && !_segment->links() && !_slur->links()
+        && _score->cmdState().generation4() == _generation
+        && _score->undoStack()->getCurIdx() == _index + (_undo ? -1 : 1)
+        && _slur->startElement() == _start && _slur->endElement() == _end
+        && _slur->tick() == _tick && _slur->tick2() == _tick2
+        && _slur->track() == _track && _slur->track2() == _track2)
+          return _segment;
+    return nullptr;
+}
 
 // Adapter-only edit predicates: evaluated at the same points as the original
 // SlurSegment code.  The native editor continues to own undo transactions,
