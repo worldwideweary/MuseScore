@@ -4,6 +4,7 @@
 #define MS_GRACESPACING4_H
 #include <QtGlobal>
 #include <QString>
+#include <QVector>
 #include <vector>
 #include <functional>
 #include <utility>
@@ -140,6 +141,11 @@ bool buildGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reaso
 // creates/destroys fresh read-only state around this one query. Null binding
 // preserves the existing standalone builders and compatibility policy.
 bool queryGraceBeforePlan4(const Chord*, GraceBeforePlan4&, QString* reason = nullptr);
+// Call only after legacy Chord::layoutPitched() has packed its before-graces.
+// No writes with Studio spacing disabled or if the bounded query fails.
+// On success publish the same grace positions and left-spacing reservation.
+void applyStudioGraceBeforePlan4(Chord*, const QVector<Chord*>& before, qreal legacyLeft,
+                                 qreal chordX, qreal& leftSpace);
 bool queryGraceAfterPlan4(const Chord*, GraceAfterPlan4&, QString* reason = nullptr);
 bool queryGraceAfterGeometry4(const Chord*, GraceAfterGeometry4&, QString* reason = nullptr);
 bool queryGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* reason = nullptr);
@@ -148,6 +154,9 @@ bool queryGraceMergedGeometry4(const Chord*, GraceMergedGeometry4&, QString* rea
 // to-grace constraint in the available interval, then publish all x positions.
 // Failure does not move any items. Native/system widths remain unchanged.
 bool applyGraceAfterPlan4(Chord*, QString* reason = nullptr);
+// Producer dispatch: preserves the preceding native after-grace layout and
+// applies the optional adapter only when the Studio spacing style is enabled.
+void applyStudioGraceAfterPlan4(Chord*);
 
 // Automatic slur within a validated same-direction combined group: first
 // incoming after-grace (or the existing local before anchor) to target main.

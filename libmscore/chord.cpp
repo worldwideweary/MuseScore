@@ -1835,8 +1835,7 @@ void Chord::layout2()
                   }
             // Legacy packing above always runs first, including when the
             // style is disabled or the supported plan cannot safely fit.
-            if (score()->styleB(Sid::spacingLayout4))
-                  applyGraceAfterPlan4(this);
+            applyStudioGraceAfterPlan4(this);
             }
       if (_tabDur)
             _tabDur->layout2();
@@ -2308,14 +2307,8 @@ void Chord::layoutPitched()
       // and measure fitting. Legacy packing above resets positions/space on
       // every pass, so disabling the style or rejecting the context restores
       // Evolution's handling without a cached extent from an earlier layout.
-      if (gnb && score()->styleB(Sid::spacingLayout4)) {
-            GraceBeforePlan4 plan;
-            if (queryGraceBeforePlan4(this, plan)) {
-                  for (int i = 0; i < gnb; ++i)
-                        graceNotesBefore[i]->rxpos() = plan.positions[i].x;
-                  _spaceLw = qMax(lll, -plan.left - chordX);
-                  }
-            }
+      if (gnb)
+            applyStudioGraceBeforePlan4(this, graceNotesBefore, lll, chordX, _spaceLw);
 
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.

@@ -57,6 +57,24 @@ bool queryGraceBeforePlan4(const Chord* chord, GraceBeforePlan4& result, QString
     });
 }
 
+// The original Chord::layoutPitched() first publishes its legacy grace
+// packing. Only a successful Studio query may replace those positions and
+// the left-spacing reservation; on rejection the legacy geometry remains.
+void applyStudioGraceBeforePlan4(Chord* main, const QVector<Chord*>& before,
+                                 qreal legacyLeft, qreal chordX, qreal& leftSpace)
+{
+    if (!main->score()->styleB(Sid::spacingLayout4))
+        return;
+    if (before.empty())
+        return;
+    GraceBeforePlan4 plan;
+    if (!queryGraceBeforePlan4(main, plan))
+        return;
+    for (int i = 0; i < before.size(); ++i)
+        before[i]->rxpos() = plan.positions[i].x;
+    leftSpace = qMax(legacyLeft, -plan.left - chordX);
+}
+
 bool queryGraceAfterPlan4(const Chord* chord, GraceAfterPlan4& result, QString* reason)
 {
     return runGraceQuery4(chord, reason, [&](SpacingContextCache4* cache) {
@@ -892,6 +910,12 @@ bool applyGraceAfterPlan4(Chord* owner, QString* reason)
     for (int i = 0; i < graces.size(); ++i) graces[i]->rxpos() = positions[i];
     owner->segment()->createShape(owner->vStaffIdx());
     return true;
+}
+
+void applyStudioGraceAfterPlan4(Chord* owner)
+{
+    if (owner->score()->styleB(Sid::spacingLayout4))
+        applyGraceAfterPlan4(owner);
 }
 
 }
