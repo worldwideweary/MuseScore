@@ -41,6 +41,41 @@ SlurStemMetrics4 slurStemMetrics4(const Chord* chord)
     return result;
 }
 
+// Studio beam-end stem inset selection, evaluated at exactly the same point
+// as the old slurPos() branches (before spatium scaling and articulations).
+void applyStudioSlurBeamStemInset4(const Chord* chord, bool eligible, bool start,
+                                  qreal& yAdjustment, qreal& xOffsetSp)
+{
+    if (!eligible || !chord || !chord->beam()) return;
+    if (start)
+        yAdjustment = -.5 * chord->chordMag();
+    else
+        yAdjustment = !chord->beam()->elements().empty()
+            && chord->beam()->elements().front() != chord ? .75 : -.5;
+    xOffsetSp = qMax(qreal(.35) * chord->chordMag(), qreal(.2));
+}
+
+// Preserve the two historically distinct Studio beam-height formulas:
+// the start uses the beam-width term produced by slurStemMetrics4(), whereas
+// the end reads the score style beamWidth without start's magnification.
+void applyStudioSlurBeamStemHeight4(const Chord* chord, const Score* score, bool eligible,
+                                   bool start, qreal spatium, qreal upSign,
+                                   qreal& height, qreal& y)
+{
+    if (!eligible || !chord || !score) return;
+    if (start) {
+        const SlurStemMetrics4 metrics = slurStemMetrics4(chord);
+        height = metrics.length + metrics.beamWidthSp / 2
+              + qMax(qreal(.35) * chord->chordMag(), qreal(.2)) * spatium;
+    }
+    else {
+        const qreal beamWidthSp = chord->beam() ? score->styleS(Sid::beamWidth).val() : 0;
+        height = slurStemMetrics4(chord).length + beamWidthSp / 2
+              + qMax(qreal(.35) * chord->chordMag(), qreal(.2)) * spatium;
+    }
+    y = chord->stemPos().y() - chord->pagePos().y() + upSign * height;
+}
+
 bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qreal spatium,
                        bool up, GraceSlurCurve4& result, bool startFloated, bool endFloated, QString* reason)
 {

@@ -7,6 +7,7 @@
 namespace Ms {
 class Chord;
 class Slur;
+class Score;
 class SlurSegment;
 class GraceMergedSlurQuery4;
 struct GraceSlurCurve4 {
@@ -20,6 +21,13 @@ struct SlurStemMetrics4 {
     qreal beamWidthSp = 0;  // Studio slurPos's separate start beam-width term.
 };
 SlurStemMetrics4 slurStemMetrics4(const Chord*);
+// Studio-only slurPos beam-end stem clearances. Native caller supplies its
+// current defaults; these helpers adjust them only for eligible Studio paths.
+// The start and end rules deliberately differ (beam metrics and beamlet edge).
+void applyStudioSlurBeamStemInset4(const Chord*, bool eligible, bool start,
+                                  qreal& yAdjustment, qreal& xOffsetSp);
+void applyStudioSlurBeamStemHeight4(const Chord*, const Score*, bool eligible, bool start,
+                                   qreal spatium, qreal upSign, qreal& height, qreal& y);
 // Studio v4.7.5 localized collision adjustment for the validated ordinary
 // combined-grace scope. The caller supplies unedited automatic anchors and
 // typed physical obstacles. Endpoint balance follows the validated anchor branches.

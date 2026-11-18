@@ -1133,10 +1133,7 @@ void Slur::slurPos(SlurPos* sp)
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
                   qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
                   qreal xOffset = 0.35;
-                  if (beamEnds4 && sc->beam()) {
-                        yadj = -.5 * sc->chordMag();
-                        xOffset = qMax(qreal(.35) * sc->chordMag(), qreal(.2));
-                        }
+                  applyStudioSlurBeamStemInset4(sc, beamEnds4, true, yadj, xOffset);
                   yadj *= _spatium * __up;
                   pt += QPointF(xOffset * _spatium, yadj);
                   // account for articulations
@@ -1156,10 +1153,7 @@ void Slur::slurPos(SlurPos* sp)
                   // don't allow overlap with beam
                   qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -0.25);
                   qreal xOffset = 0.35;
-                  if (beamEnds4 && ec->beam()) {
-                        yadj = !ec->beam()->elements().empty() && ec->beam()->elements().front() != ec ? .75 : -.5;
-                        xOffset = qMax(qreal(.35) * ec->chordMag(), qreal(.2));
-                        }
+                  applyStudioSlurBeamStemInset4(ec, beamEnds4, false, yadj, xOffset);
                   yadj *= _spatium * __up;
                   pt += QPointF(-xOffset * _spatium, yadj);
                   // account for articulations
@@ -1210,15 +1204,8 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
-                        if (beamHeights4) {
-                              // Studio 4.7.5 slurPos: actual stem length,
-                              // beamWidthSp/2 and magnification-aware clearance.
-                              // Keep the existing horizontal attachment here.
-                              const SlurStemMetrics4 metrics = slurStemMetrics4(sc);
-                              sh = metrics.length + metrics.beamWidthSp / 2
-                                    + qMax(qreal(.35) * sc->chordMag(), qreal(.2)) * _spatium;
-                              yo = sc->stemPos().y() - sc->pagePos().y() + __up * sh;
-                              }
+                        applyStudioSlurBeamStemHeight4(sc, score(), beamHeights4, true,
+                              _spatium, __up, sh, yo);
                         xo       = stem1->pos().x();
 
                         // account for articulations
@@ -1334,14 +1321,8 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = ec->downNote()->pos().y() - sh;
                               else
                                     yo = ec->upNote()->pos().y() + sh;
-                              if (beamHeights4) {
-                                    // The source's end branch uses the style
-                                    // space value without the start's magS().
-                                    const qreal beamWidthSp = beam2 ? score()->styleS(Sid::beamWidth).val() : 0;
-                                    sh = slurStemMetrics4(ec).length + beamWidthSp / 2
-                                          + qMax(qreal(.35) * ec->chordMag(), qreal(.2)) * _spatium;
-                                    yo = ec->stemPos().y() - ec->pagePos().y() + __up * sh;
-                                    }
+                              applyStudioSlurBeamStemHeight4(ec, score(), beamHeights4, false,
+                                    _spatium, __up, sh, yo);
                               xo = stem2->pos().x();
 
                               // account for articulations
