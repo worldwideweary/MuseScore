@@ -2,6 +2,7 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #ifndef MS_SPACINGLAYOUT4_H
 #define MS_SPACINGLAYOUT4_H
+#include <QtGlobal>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -9,6 +10,9 @@
 namespace Ms {
 class Segment;
 double segmentSpacingStretch4(const Segment*);
+// Studio-only fixed offset for a cross-staff beam boundary. The minimum is
+// returned separately from the signed offset; native sizing is unchanged.
+qreal crossBeamSpacingOffset4(const Segment*, const Segment*, qreal* minimumWidth = nullptr);
 
 // Flexible widths exclude fixed cross-beam offsets. The returned common force
 // follows Studio stretchSegmentsToWidth; collision floors remain unstretched

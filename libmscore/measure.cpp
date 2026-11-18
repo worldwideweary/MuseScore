@@ -23,7 +23,6 @@
 #include "barline.h"
 #include "barlinegeometry.h"
 #include "beam.h"
-#include "beamlayout4.h"
 #include "box.h"
 #include "bracket.h"
 #include "bracketItem.h"
@@ -36,7 +35,6 @@
 #include "fermata.h"
 #include "fret.h"
 #include "glissando.h"
-#include "groups.h"
 #include "hairpin.h"
 #include "hook.h"
 #include "icon.h"
@@ -3750,114 +3748,6 @@ QString Measure::accessibleInfo() const
       {
       return QString("%1: %2").arg(Element::accessibleInfo(), QString::number(no() + 1));
       }
-
-// Select one beamed stream, allowing un-beamed chord voices as constraints.
-// Studio permits an outgoing adjustment beside a longer sounding value, but
-// an un-beamed chord at the following onset blocks the signed adjustment.
-static const Chord* singleSpacingChord4(const Segment* segment, bool following, bool& canAdjust)
-{
-    const Chord* chord = nullptr;
-    for (const Element* element : segment->elist()) {
-        if (!element || !element->isChordRest() || !element->visible() || !element->staff()->show())
-            continue;
-        const ChordRest* cr = toChordRest(element);
-        if (cr->isFullMeasureRest() || (cr->isRest() && toRest(cr)->isGap()))
-            continue;
-        if (!cr->isChord())
-            return nullptr;
-        if (!cr->beam()) {
-            if (following || cr->actualTicks() <= segment->ticks())
-                canAdjust = false;
-            continue;
-        }
-        if (chord)
-            return nullptr; // independent beamed voices keep the existing fallback
-        chord = toChord(cr);
-    }
-    return chord;
-}
-
-// A secondary beamlet is a one-chord group at level 1. Determine it from
-// grouping, not the beam segments left over from a previous layout pass.
-static bool secondarySpacingBeamlet4(const Chord* chord)
-{
-    if (chord->beams() != 2)
-        return false;
-    const auto& elements = chord->beam()->elements();
-    auto it = std::find(elements.begin(), elements.end(), chord);
-    if (it == elements.end())
-        return false;
-    auto breaks = [chord](ChordRest* current, ChordRest* previous) {
-        if (chord->score()->styleB(Sid::beamLayout4)) {
-            bool secondary, tertiary;
-            beam4CalcBreaks(current, previous, 1, secondary, tertiary);
-            return secondary;
-        }
-        return Groups::endBeam(current, previous) == Beam::Mode::BEGIN32;
-    };
-    if (it != elements.begin() && (*(it - 1))->beams() >= 2 && !breaks(*it, *(it - 1)))
-        return false;
-    if (it + 1 != elements.end() && (*(it + 1))->beams() >= 2 && !breaks(*(it + 1), *it))
-        return false;
-    return true;
-}
-
-static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal* minimumWidth = nullptr)
-{
-    if (minimumWidth)
-        *minimumWidth = 0;
-    if (!next || !next->isChordRestType())
-        return 0;
-    bool canAdjust = true;
-    const Chord* chord = singleSpacingChord4(segment, false, canAdjust);
-    const Chord* nextChord = singleSpacingChord4(next, true, canAdjust);
-    if (!chord || !nextChord || chord->track() != nextChord->track()
-        || !chord->beam() || chord->beam() != nextChord->beam() || !chord->beam()->cross()
-        || chord->beam()->elements().size() <= 2
-        || chord->beams() < 1 || chord->beams() > 2 || nextChord->beams() < 1 || nextChord->beams() > 2
-        || chord->mag() != 1.0 || nextChord->mag() != 1.0
-        || chord->actualTicks() != segment->ticks() || nextChord->actualTicks() != next->ticks())
-        return 0;
-    const Beam* beam = chord->beam();
-    if (beam->beamDirection() != Direction::AUTO || beam->userModified())
-        return 0;
-    int upperStaff = chord->vStaffIdx();
-    int lowerStaff = upperStaff;
-    for (const ChordRest* cr : beam->elements()) {
-        if (!cr->isChord() || cr->beams() < 1 || cr->beams() > 2)
-            return 0;
-        upperStaff = qMin(upperStaff, cr->vStaffIdx());
-        lowerStaff = qMax(lowerStaff, cr->vStaffIdx());
-        }
-    if (lowerStaff != upperStaff + 1)
-        return 0;
-    for (const ChordRest* cr : beam->elements()) {
-        const Chord* c = toChord(cr);
-        // layout1 leaves provisional stem directions; layout later resolves
-        // them around the beam. Infer the unambiguous staff-side case here.
-        // Notes extending into the interstaff gap can change that split.
-        if (c->notes().empty() || c->stemDirection() != Direction::AUTO
-            || (c->vStaffIdx() == upperStaff
-                && c->downNote()->line() > 2 * (segment->score()->staff(upperStaff)->lines(c->tick()) - 1))
-            || (c->vStaffIdx() == lowerStaff && c->upNote()->line() < 0))
-            return 0;
-        }
-    if (chord->vStaffIdx() == nextChord->vStaffIdx())
-        return 0;
-    const qreal displacement = qMax(qreal(0), segment->score()->noteHeadWidth()
-        - segment->score()->styleP(Sid::stemWidth));
-    const bool upDown = chord->vStaffIdx() == lowerStaff;
-    if (upDown && minimumWidth) {
-        if (secondarySpacingBeamlet4(chord) && secondarySpacingBeamlet4(nextChord)) {
-            // Studio PaddingTable's beam-to-beam padding is fixed at 0.35sp.
-            *minimumWidth = displacement + 2 * segment->score()->styleP(Sid::beamMinLen)
-                + 0.35 * segment->spatium();
-        }
-        else
-            *minimumWidth = 2 * displacement;
-    }
-    return canAdjust ? (upDown ? displacement : -displacement) : 0;
-}
 
 //-----------------------------------------------------------------------------
 //    stretchMeasure
