@@ -305,6 +305,13 @@ void MScore::init()
       //  initialize styles
       //
       _baseStyle.precomputeValues();
+      // New scores use Studio 4 bracket/brace defaults.
+      // Keep baseStyle() at the historical 3.x values so legacy scores
+      // can inherit their original defaults when loading.
+      _defaultStyle.set(Sid::bracketWidth, Spatium(0.45));
+      _defaultStyle.set(Sid::bracketDistance, Spatium(0.45));
+      _defaultStyle.set(Sid::akkoladeWidth, Spatium(1.50));
+      _defaultStyle.set(Sid::akkoladeBarDistance, Spatium(0.35));
       QSettings s;
       QString defStyle = s.value("score/style/defaultStyleFile").toString();
       if (!(MScore::testMode || defStyle.isEmpty())) {

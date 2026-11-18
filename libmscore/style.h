@@ -1542,6 +1542,8 @@ enum class Sid : short {
       timeSigAcrossY,
 
       headerToLineStartDistance,
+      // Studio 4 instrument-name clearance; appended to keep existing Sid indices stable.
+      instrumentNameOffset,
 
       STYLES
       ///\}
@@ -1567,6 +1569,8 @@ class MStyle {
       ChordList _chordList;
       bool _customChordList;        // if true, chordlist will be saved as part of score
       int _defaultStyleVersion = -1;
+
+      bool _musicXmlBracketWidthExplicit = false;
 
    public:
       void initRepeatCourtesyDefaults(int mscVersion);
@@ -1611,6 +1615,12 @@ class MStyle {
       static const char* valueName(const Sid);
       static Sid styleIdx(const QString& name);
       static MStyle* resolveStyleDefaults(const int defaultsVersion);
+
+      bool musicXmlBracketWidthExplicit() const
+            { return _musicXmlBracketWidthExplicit; }
+
+      void setMusicXmlBracketWidthExplicit(bool explicitWidth = true)
+            { _musicXmlBracketWidthExplicit = explicitWidth; }
       };
 
 //---------------------------------------------------------

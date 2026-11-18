@@ -1552,7 +1552,8 @@ static const StyleType styleTypes[] {
       { Sid::timeSigAcrossScaleLock,          "timeSigAcrossScaleLock",      true },
       { Sid::timeSigAcrossNumDist,            "timeSigAcrossNumDist",        Spatium(0.1) },
       { Sid::timeSigAcrossY,                  "timeSigAcrossY",              Spatium(0.0) },
-      { Sid::headerToLineStartDistance,       "headerToLineStartDistance",   Spatium(1.0) }
+      { Sid::headerToLineStartDistance,       "headerToLineStartDistance",   Spatium(1.0) },
+      { Sid::instrumentNameOffset,            "instrumentNameOffset",      Spatium(1.0) }
       };
 
 MStyle  MScore::_baseStyle;
@@ -3296,7 +3297,6 @@ bool MStyle::readProperties400(XmlReader& e, int mscVersion)
       //     return false;
       //else
       if (tag == "staffHeaderFooterPadding"                                       // Mu4 only, let's skip
-            || tag == "instrumentNameOffset"                                      // Mu4 only, let's skip
             || tag == "alignSystemToMargin")                                      // Mu4 only, let's skip
             e.skipCurrentElement();
       //else if (tag == "lyricsMinBottomDistance")                                // 2 -> 1.5, Mu4's default seems better, so let's pass
@@ -4434,6 +4434,11 @@ void MStyle::save(XmlWriter& xml, bool optimize)
       const bool modernChords = value(Sid::chordSymbolLayoutVersion).toInt() > 0;
       if (modernChords)
             xml.tag("chordSymbolLayoutVersion", value(Sid::chordSymbolLayoutVersion));
+      const std::set<Sid> bracketStyleFields {
+            Sid::bracketWidth, Sid::bracketDistance,
+            Sid::akkoladeWidth, Sid::akkoladeBarDistance
+            };
+      const bool saveBracketDefaults = !MScore::testMode;
       const std::set<Sid> chordPresentationFields {
             Sid::chordStyle, Sid::chordDescriptionFile, Sid::chordExtensionMag,
             Sid::chordExtensionAdjust, Sid::chordModifierMag, Sid::chordModifierAdjust,
@@ -4452,7 +4457,13 @@ void MStyle::save(XmlWriter& xml, bool optimize)
                   continue;
             if (idx == Sid::chordSymbolLayoutVersion)
                   continue;
-            if (optimize && isDefault(idx) && !(modernChords && chordPresentationFields.count(idx)))
+            const bool testDefaultBracket = MScore::testMode
+                  && bracketStyleFields.count(idx)
+                  && value(idx) == MScore::defaultStyle().value(idx)
+                  && !(idx == Sid::bracketWidth && musicXmlBracketWidthExplicit());
+            if (optimize && (isDefault(idx) || testDefaultBracket)
+                && !(modernChords && chordPresentationFields.count(idx))
+                && !(saveBracketDefaults && bracketStyleFields.count(idx)))
                   continue;
             const char* type = st.valueType();
             const QStringList tokens = timeSigDrawingTokens(idx);

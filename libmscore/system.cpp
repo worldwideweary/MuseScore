@@ -231,39 +231,43 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
       if (_staves.empty())                 // ignore vbox
             return;
 
-      static const Spatium instrumentNameOffset(1.0);       // TODO: make style value
+      // Scale the instrument-name clearance using the displayed name's
+      // font settings, including long names on later systems.
+      qreal nameOffsetScale = 1.0;
+      // Actual displayed name type is authoritative, including sections
+      // that restart with long names on a non-first system.
+      bool useLongNames = isFirstSystem;
+      for (const SysStaff* ss : qAsConst(_staves)) {
+            if (!ss->instrumentNames.isEmpty()) {
+                  useLongNames = ss->instrumentNames.front()->instrumentNameType() == InstrumentNameType::LONG;
+                  break;
+                  }
+            }
+      const Sid fontSizeSid = useLongNames ? Sid::longInstrumentFontSize : Sid::shortInstrumentFontSize;
+      const Sid followStaffSid = useLongNames ? Sid::longInstrumentFontSpatiumDependent
+                                             : Sid::shortInstrumentFontSpatiumDependent;
+      const qreal defaultFontSize = MScore::baseStyle().value(fontSizeSid).toDouble();
+      if (defaultFontSize > 0.0)
+            nameOffsetScale = score()->styleD(fontSizeSid) / defaultFontSize;
+      if (!score()->styleB(followStaffSid) && score()->spatium() > 0.0)
+            nameOffsetScale *= MScore::baseStyle().value(Sid::spatium).toDouble() / score()->spatium();
+      nameOffsetScale = qMax(qreal(1.0), nameOffsetScale);
+      // This value is used both when reserving the name area and when placing
+      // the displayed labels; using the same offset avoids divergent X positions.
+      const Spatium instrumentNameOffset(
+            score()->styleS(Sid::instrumentNameOffset).val() * nameOffsetScale);
 
       int nstaves  = _staves.size();
 
-      //---------------------------------------------------
-      //  find x position of staves
-      //---------------------------------------------------
-      qreal xoff2 = 0.0; // x offset for instrument name
-
-      for (Part*& p : score()->parts()) {
-            if (firstVisibleSysStaffOfPart(p) < 0)
-                  continue;
-            for (int staffIdx = firstSysStaffOfPart(p); staffIdx <= lastSysStaffOfPart(p); ++staffIdx) {
-                  for (InstrumentName* t : qAsConst(_staves[staffIdx]->instrumentNames)) {
-                        t->layout();
-                        qreal w = t->width() + point(instrumentNameOffset);
-                        if (w > xoff2)
-                              xoff2 = w;
-                        }
-                  }
-            }
-
-      if (isFirstSystem && firstSystemIndent)
-            xoff2 = qMax(xoff2, styleP(Sid::firstSystemIndentationValue) * mag());
+      // The score-wide margin calculation below measures instrument names
+      // and determines their positioning offset.
+      qreal xoff2 = 0.0;
 
       //---------------------------------------------------
       //  create brackets
       //---------------------------------------------------
 
       int columns = getBracketsColumnsCount();
-      std::vector<qreal> bracketWidth(columns);
-      for (int i = 0; i < columns; ++i)
-            bracketWidth[i] = 0.0;
 
       QList<Bracket*> bl;
       bl.swap(_brackets);
@@ -274,8 +278,7 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
                   for (auto& bi : s->brackets()) {
                         if (bi->column() != i || bi->bracketType() == BracketType::NO_BRACKET)
                               continue;
-                        Bracket* b = createBracket(bi, i, staffIdx, bl, this->firstMeasure());
-                        if (b != nullptr) bracketWidth[i] = qMax(bracketWidth[i], b->width());
+                        createBracket(bi, i, staffIdx, bl, this->firstMeasure());
                         }
                   }
             }
@@ -284,17 +287,75 @@ void System::layoutSystem(qreal xo1, const bool isFirstSystem, bool firstSystemI
             delete b;
 
       //---------------------------------------------------
-      //  layout  SysStaff and StaffLines
+      //  calculate score-wide system margin
       //---------------------------------------------------
 
-      _leftMargin = xoff2;
+      // 4.7-style horizontal system margin. Use the greatest
+      // sum of overlapping bracket widths across staves (not a sum of every
+      // column maximum). Bracket::width() already includes the gap to the barline.
+      {
+            qreal bracketReserve = 0.0;
+            qreal effectiveNameIndent = 0.0;
 
-      qreal bd = score()->styleP(Sid::bracketDistance);
-      if (!_brackets.empty()) {
-            for (int w : bracketWidth)
-                  _leftMargin += w + bd;
+            // Studio measures names on globally visible parts even when
+            // their staves are hidden on THIS particular system.
+            // Do not change the actual displayed instrument names.
+            for (SysStaff* ss : qAsConst(_staves)) {
+                  for (InstrumentName* name : qAsConst(ss->instrumentNames)) {
+                        name->layout();
+                        effectiveNameIndent = qMax(effectiveNameIndent,
+                              name->width() + point(instrumentNameOffset));
+                        }
+                  }
+
+            // Studio totalBracketOffset(): reserve the widest sum of
+            // overlapping BRACKET ITEMS from the full score, regardless
+            // of whether a bracket is drawn on this particular system.
+            // The dummy has no System parent so its brace is sized as if
+            // the globally visible staves were all present.
+            std::vector<qreal> fullScoreWidths(nstaves, 0.0);
+            for (int i = 0; i < nstaves; ++i) {
+                  Staff* s = score()->staff(i);
+                  for (auto& bi : s->brackets()) {
+                        if (bi->bracketType() == BracketType::NO_BRACKET || bi->bracketSpan() <= 0)
+                              continue;
+                        const int end = qMin(nstaves - 1, i + bi->bracketSpan() - 1);
+                        int firstVisible = -1;
+                        int lastVisible = -1;
+                        for (int j = i; j <= end; ++j) {
+                              if (!score()->staff(j)->show())
+                                    continue;
+                              if (firstVisible == -1)
+                                    firstVisible = j;
+                              lastVisible = j;
+                              }
+                        if (firstVisible == -1)
+                              continue;
+                        const int visibleSpan = lastVisible - firstVisible + 1;
+                        if (visibleSpan <= 1 && bi->bracketSpan() != visibleSpan
+                            && !score()->styleB(Sid::alwaysShowBracketsWhenEmptyStavesAreHidden))
+                              continue;
+                        Bracket dummy(score());
+                        dummy.setBracketItem(bi);
+                        dummy.setStaffSpan(firstVisible, lastVisible);
+                        const qreal width = dummy.width();
+                        for (int j = firstVisible; j <= lastVisible; ++j)
+                              fullScoreWidths[j] += width;
+                        }
+                  }
+            for (qreal width : fullScoreWidths)
+                  bracketReserve = qMax(bracketReserve, width);
+
+            // 4.7's first-system indentation already includes bracket width.
+            // Instrument names instead add their own reserved space.
+            qreal indent = effectiveNameIndent;
+            if (isFirstSystem && firstSystemIndent)
+                  indent = qMax(indent,
+                        styleP(Sid::firstSystemIndentationValue) * mag() - bracketReserve);
+            indent = qMax(qreal(0.0), indent);
+            xoff2 = indent;  // Also used to position instrument names below.
+            _leftMargin = qFuzzyIsNull(indent) ? 0.0 : indent + bracketReserve;
             }
-
       for (int staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
             SysStaff* s  = _staves[staffIdx];
             Staff* staff = score()->staff(staffIdx);
@@ -593,17 +654,25 @@ int System::getBracketsColumnsCount()
 
 void System::setBracketsXPosition(const qreal xPosition)
       {
-      qreal bracketDistance = score()->styleP(Sid::bracketDistance);
       for (Bracket* b1 : qAsConst(_brackets)) {
+            // 4.7 places the centreline of a drawn bracket, rather than the
+            // left edge of its stroke, relative to the preceding barline.
+            const BracketType bracketType = b1->bracketType();
+            const qreal strokeCorrection =
+                  (bracketType == BracketType::NORMAL || bracketType == BracketType::LINE)
+                  ? score()->styleP(Sid::bracketWidth) * .5 : 0.0;
             qreal xOffset = 0;
             for (const Bracket* b2 : qAsConst(_brackets)) {
                   bool b1FirstStaffInB2 = (b1->firstStaff() >= b2->firstStaff() && b1->firstStaff() <= b2->lastStaff());
                   bool b1LastStaffInB2 = (b1->lastStaff() >= b2->firstStaff() && b1->lastStaff() <= b2->lastStaff());
                   if (b1->column() > b2->column() &&
                         (b1FirstStaffInB2 || b1LastStaffInB2))
-                        xOffset += b2->width() + bracketDistance;
+                        // Bracket::width() already includes the appropriate
+                        // bracket/brace padding.  Adding bracketDistance again
+                        // (the 3.x behavior) double-counts it in nested groups.
+                        xOffset += b2->width();
                   }
-            b1->rxpos() = xPosition - xOffset - b1->width();
+            b1->rxpos() = xPosition - xOffset - b1->width() + strokeCorrection;
             }
       }
 
