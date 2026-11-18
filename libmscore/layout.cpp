@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <map>
+
 #include "accidental.h"
 #include "ambitus.h"
 #include "arpeggio.h"
@@ -76,6 +78,134 @@ namespace Ms {
 #else
 #define PAGEDBG(...)  ;
 #endif
+
+// Native system-wide spring solver. Reuse rhythmic weights and collision
+// floors while distributing the remaining width across the system.
+static bool applyNativePooledSprings(System* system, qreal addedWidth)
+      {
+      if (!std::isfinite(addedWidth) || addedWidth <= 0.0)
+            return false;
+
+      struct Spring {
+            Segment* segment;
+            qreal stretch;
+            };
+      std::multimap<qreal, Spring> springs;
+      std::map<Segment*, qreal> proposed;
+      std::vector<Measure*> measures;
+      qreal minimum = 0.0;
+      qreal original = 0.0;
+
+      // Keep the experiment to ordinary, complete measures.  Frame systems,
+      // multi-measure rests, and degenerate durations retain native layout.
+      for (MeasureBase* mb : system->measures()) {
+            if (!mb->isMeasure())
+                  return false;
+            Measure* m = toMeasure(mb);
+            if (m->isMMRest())
+                  return false;
+            const Fraction minTick = m->computeTicks();
+            if (minTick.ticks() <= 0)
+                  return false;
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            if (!first)
+                  return false;
+            minimum += first->x();
+            original += m->width();
+            for (Segment& s : m->segments()) {
+                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                        continue;
+                  minimum += s.width();
+                  proposed[&s] = s.width();
+                  if (s.isChordRestType() && s.ticks().isNotZero()) {
+                        // A pooled solver must give the same duration the same
+                        // weight in every measure.  The native 3.x formula
+                        // divides by each measure's shortest duration; mixing
+                        // those per-measure weights starves whole-measure rests
+                        // and overexpands dense measures (notably M29/M31).
+                        //
+                        // Diagnostic experiment: match the reference 4.7.5
+                        // quarter-note-based duration slope of 1.5.  Do not
+                        // change the native natural widths or tie minima.
+                        const qreal ratio = qreal(s.ticks().ticks())
+                              / qreal(Fraction(1, 4).ticks());
+                        if (ratio <= 0.0)
+                              return false;
+                        const qreal str = std::pow(1.5, std::log2(ratio));
+                        if (!std::isfinite(str) || str <= 0.0)
+                              return false;
+                        springs.emplace(s.width() / str, Spring { &s, str });
+                        }
+                  }
+            measures.push_back(m);
+            }
+      if (springs.empty())
+            return false;
+
+      const qreal target = original + addedWidth;
+      if (target <= minimum)
+            return false;
+      qreal variableStretch = 0.0;
+      qreal force = 0.0;
+      for (auto it = springs.begin(); it != springs.end();) {
+            variableStretch += it->second.stretch;
+            minimum -= it->second.segment->width();
+            const qreal candidate = (target - minimum) / variableStretch;
+            ++it;
+            if (it == springs.end() || candidate <= it->first) {
+                  force = candidate;
+                  break;
+                  }
+            }
+      if (!std::isfinite(force) || force <= 0.0)
+            return false;
+      for (const auto& entry : springs) {
+            Segment* segment = entry.second.segment;
+            proposed[segment] = qMax(segment->width(), force * entry.second.stretch);
+            }
+
+      // Check the complete plan before changing the score.  An unsuccessful
+      // experiment must leave the original per-measure solver untouched.
+      qreal sumWidths = 0.0;
+      std::vector<qreal> widths;
+      widths.reserve(measures.size());
+      for (Measure* m : measures) {
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            qreal width = first->x();
+            for (Segment* s = first; s; s = s->nextEnabled()) {
+                  auto it = proposed.find(s);
+                  width += it == proposed.end() ? s->width() : it->second;
+                  }
+            if (!std::isfinite(width) || width < m->score()->styleP(Sid::minMeasureWidth))
+                  return false;
+            widths.push_back(width);
+            sumWidths += width;
+            }
+      if (qAbs(sumWidths - target) > 0.0001 * qMax(qreal(1.0), target))
+            return false;
+
+      for (const auto& entry : springs)
+            entry.second.segment->setStretch(entry.second.stretch);
+      for (const auto& entry : proposed)
+            entry.first->setWidth(entry.second);
+      for (size_t i = 0; i < measures.size(); ++i) {
+            Measure* m = measures[i];
+            Segment* first = m->first();
+            while (first && (!first->enabled() || first->allElementsInvisible()))
+                  first = first->next();
+            qreal x = first->x();
+            for (Segment* s = first; s; s = s->nextEnabled()) {
+                  s->rxpos() = x;
+                  x += s->width();
+                  }
+            m->bbox().setWidth(widths[i]);
+            }
+      return true;
+      }
 
 //---------------------------------------------------------
 //   rebuildBspTree
@@ -4416,6 +4546,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // stretch incomplete row
       //
       qreal rest;
+      bool nativePooled = false;
       if (MScore::noHorizontalStretch)
             rest = 0;
       else {
@@ -4450,6 +4581,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   else
                         rest = minWidth;
                   }
+            nativePooled = applyNativePooledSprings(system, rest);
             rest /= totalWeight;
             }
 
@@ -4467,8 +4599,12 @@ System* Score::collectSystem(LayoutContext& lc)
                   Measure* m = toMeasure(mb);
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
-                  ww  += rest * weight * stretch;
-                  m->stretchMeasure(ww);
+                  if (!nativePooled)
+                        ww += rest * weight * stretch;
+                  if (nativePooled)
+                        m->layoutElementsAfterSpacing(ww);
+                  else
+                        m->stretchMeasure(ww);
                   m->layoutStaffLines();
                   if (createBrackets) {
                         system->addBrackets(toMeasure(mb));

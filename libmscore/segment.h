@@ -51,7 +51,7 @@ class Segment final : public Element {
       Fraction _tick;  // { Fraction(0, 1) };
       Fraction _ticks; // { Fraction(0, 1) };
       Spatium _extraLeadingSpace;
-      qreal _stretch;
+      qreal _stretch { 1.0 };
 
       Segment* _next = nullptr;                     // linked list of segments inside a measure
       Segment* _prev = nullptr;
