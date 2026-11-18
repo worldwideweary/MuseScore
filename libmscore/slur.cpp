@@ -506,73 +506,24 @@ void SlurSegment::computeBezier(QPointF p6o)
       QPointF p3(c1, -shoulderH);
       QPointF p4(c2, -shoulderH);
 
-      if (autoplace() && isSingleType() && system() && score()->styleB(Sid::spacingLayout4)) {
-            SpacingShape4 obstacles;
-            if (buildGraceMergedSlurObstacles4(slur(), obstacles, nullptr, true, slur()->_graceQuery4)) {
-                  // Fit independently of user offsets. layoutSegment already
-                  // received the raw anchors, so do not re-plan the same grace
-                  // geometry through slurPos on each grip preview/relayout.
-                  SlurPos anchors;
-                  if (_graceRawAnchors4) {
-                        anchors.p1 = _graceRawStart4;
-                        anchors.p2 = _graceRawEnd4;
-                        }
-                  else
-                        slur()->slurPos(&anchors);
-                  const QPointF span = anchors.p2 - anchors.p1;
-                  const qreal baseAngle = std::atan2(span.y(), span.x());
-                  const qreal baseLength = std::hypot(span.x(), span.y());
-                  const qreal spaces = baseLength / _spatium;
-                  const qreal baseWidth = spaces < 2 ? .6 : spaces < 10 ? .5 : spaces < 18 ? .6 : .7;
-                  // Studio v4.7.5 computeShoulderHeight. This validated
-                  // after-grace/main span ends on an unbeamed main chord, so
-                  // the source's wholly-over-beams reduction does not apply.
-                  const qreal baseHeight = std::sqrt(spaces / 4) * _spatium;
-                  const qreal sign = slur()->up() ? -1 : 1;
-                  QTransform toSystem;
-                  toSystem.translate(anchors.p1.x(), anchors.p1.y());
-                  toSystem.rotateRadians(baseAngle);
-                  GraceSlurCurve4 curve;
-                  curve.start = anchors.p1;
-                  curve.control1 = toSystem.map(QPointF(baseLength * (1 - baseWidth) / 2, sign * baseHeight));
-                  curve.control2 = toSystem.map(QPointF(baseLength * (1 + baseWidth) / 2, sign * baseHeight));
-                  curve.end = anchors.p2;
-                  const Chord* start = toChord(slur()->startElement());
-                  const Chord* target = toChord(slur()->endElement());
-                  const bool opposite = start->up() != target->up();
-                  // These are the floated-anchor branches of slurPosChord for
-                  // this validated first-grace / unbeamed-main scope.
-                  const bool startFloated = opposite && start->up() == slur()->up() && !start->hook()
-                        && (!start->beam() || start->beam()->elements().back() == start);
-                  const bool endFloated = opposite && target->up() == slur()->up();
-                  if (fitGraceSlurCurve4(obstacles.translated(-ipos()), target, _spatium, slur()->up(),
-                                        curve, startFloated, endFloated)) {
-                        // Apply manual endpoint moves AFTER fitting. Let each
-                        // control follow its adjacent endpoints proportionally;
-                        // its explicit Bezier offset is added below as usual.
-                        const QPointF startOffset = ups(Grip::START).off;
-                        const QPointF endOffset = ups(Grip::END).off;
-                        const qreal width = curve.end.x() - curve.start.x();
-                        const qreal firstRatio = (curve.control1.x() - curve.start.x()) / width;
-                        const qreal secondRatio = (curve.control2.x() - curve.start.x()) / width;
-                        curve.control1 += startOffset * (1 - firstRatio) + endOffset * firstRatio;
-                        curve.control2 += startOffset * (1 - secondRatio) + endOffset * secondRatio;
-                        curve.start += startOffset;
-                        curve.end += endOffset;
-                        pp1 = curve.start;
-                        pp2 = curve.end;
-                        sinb = std::atan2(pp2.y() - pp1.y(), pp2.x() - pp1.x());
-                        t.reset();
-                        t.rotateRadians(-sinb);
-                        p2 = t.map(pp2 - pp1);
-                        p3 = t.map(curve.control1 - pp1);
-                        p4 = t.map(curve.control2 - pp1);
-                        p5 = p2 * .5;
-                        ups(Grip::START).p = pp1 - startOffset;
-                        p6o = t.map(shoulderDelta);
-                        _graceCurveAdjusted4 = true;
-                        }
-                  }
+      GraceSlurCurve4 studioCurve;
+      if (fitStudioGraceSlurSegmentCurve4(this, _graceRawAnchors4, _graceRawStart4,
+                                         _graceRawEnd4, slur()->_graceQuery4, studioCurve)) {
+            // The Studio adapter returns absolute, offset-adjusted anchors.
+            // Keep the existing segment-local Bezier/grip publication here.
+            const QPointF startOffset = ups(Grip::START).off;
+            pp1 = studioCurve.start;
+            pp2 = studioCurve.end;
+            sinb = std::atan2(pp2.y() - pp1.y(), pp2.x() - pp1.x());
+            t.reset();
+            t.rotateRadians(-sinb);
+            p2 = t.map(pp2 - pp1);
+            p3 = t.map(studioCurve.control1 - pp1);
+            p4 = t.map(studioCurve.control2 - pp1);
+            p5 = p2 * .5;
+            ups(Grip::START).p = pp1 - startOffset;
+            p6o = t.map(shoulderDelta);
+            _graceCurveAdjusted4 = true;
             }
 
       qreal w = score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth);

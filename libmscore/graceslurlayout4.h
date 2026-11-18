@@ -7,6 +7,7 @@
 namespace Ms {
 class Chord;
 class Slur;
+class SlurSegment;
 class GraceMergedSlurQuery4;
 struct GraceSlurCurve4 {
     QPointF start, control1, control2, end; // System x / staff-relative y.
@@ -26,6 +27,14 @@ SlurStemMetrics4 slurStemMetrics4(const Chord*);
 bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium,
                        bool up, GraceSlurCurve4&, bool startFloated = false, bool endFloated = false,
                        QString* reason = nullptr);
+// Optional Studio Bezier fitting for the ordinary single-segment combined
+// after-grace/main slur.  The caller supplies the pass's raw anchors, if any;
+// on success this publishes an offset-adjusted absolute curve, leaving the
+// legacy segment-local grip/Bezier publication inside computeBezier().
+// Failure does not modify result or the segment.
+bool fitStudioGraceSlurSegmentCurve4(const SlurSegment* segment, bool rawAnchors,
+                                    const QPointF& rawStart, const QPointF& rawEnd,
+                                    GraceMergedSlurQuery4* query, GraceSlurCurve4& result);
 // Studio beam-side anchors for an automatic first-after-grace / main slur in
 // the validated combined scope. Only the stem-side start branch is adapted.
 // When both stems agree, adapt its forced stem-side end too; otherwise retain

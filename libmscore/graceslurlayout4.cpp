@@ -198,8 +198,77 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
     return fail("Grace slur clearance exceeds bounded fitting passes");
 }
 
-// Preserve the original slurPos eligibility and keep the bounded
-// grace-beam query unchanged.  No geometry is published on failure.
+// This is the original optional computeBezier candidate and fitter. The
+// segment's native curve construction, grip mutation and path publication stay
+// in slur.cpp; only the Studio-specific automatic curve proposal lives here.
+bool fitStudioGraceSlurSegmentCurve4(const SlurSegment* segment, bool rawAnchors,
+                                    const QPointF& rawStart, const QPointF& rawEnd,
+                                    GraceMergedSlurQuery4* query, GraceSlurCurve4& result)
+{
+    if (!segment || !segment->autoplace() || !segment->isSingleType()
+        || !segment->system() || !segment->score()
+        || !segment->score()->styleB(Sid::spacingLayout4))
+        return false;
+    Slur* slur = segment->slur();
+    SpacingShape4 obstacles;
+    if (!buildGraceMergedSlurObstacles4(slur, obstacles, nullptr, true, query))
+        return false;
+
+    // Fit independently of user offsets. layoutSegment already received raw
+    // anchors; do not re-plan grace positions on grip previews/relayout.
+    SlurPos anchors;
+    if (rawAnchors) {
+        anchors.p1 = rawStart;
+        anchors.p2 = rawEnd;
+    }
+    else
+        slur->slurPos(&anchors);
+    const qreal spatium = segment->spatium();
+    const QPointF span = anchors.p2 - anchors.p1;
+    const qreal baseAngle = std::atan2(span.y(), span.x());
+    const qreal baseLength = std::hypot(span.x(), span.y());
+    const qreal spaces = baseLength / spatium;
+    const qreal baseWidth = spaces < 2 ? .6 : spaces < 10 ? .5 : spaces < 18 ? .6 : .7;
+    // Studio v4.7.5 computeShoulderHeight. The validated after-grace/main
+    // span ends on an unbeamed main chord; no wholly-over-beams reduction.
+    const qreal baseHeight = std::sqrt(spaces / 4) * spatium;
+    const qreal sign = slur->up() ? -1 : 1;
+    QTransform toSystem;
+    toSystem.translate(anchors.p1.x(), anchors.p1.y());
+    toSystem.rotateRadians(baseAngle);
+    GraceSlurCurve4 curve;
+    curve.start = anchors.p1;
+    curve.control1 = toSystem.map(QPointF(baseLength * (1 - baseWidth) / 2, sign * baseHeight));
+    curve.control2 = toSystem.map(QPointF(baseLength * (1 + baseWidth) / 2, sign * baseHeight));
+    curve.end = anchors.p2;
+    const Chord* start = toChord(slur->startElement());
+    const Chord* target = toChord(slur->endElement());
+    const bool opposite = start->up() != target->up();
+    // Floated-anchor branches of slurPosChord for the validated scope.
+    const bool startFloated = opposite && start->up() == slur->up() && !start->hook()
+        && (!start->beam() || start->beam()->elements().back() == start);
+    const bool endFloated = opposite && target->up() == slur->up();
+    if (!fitGraceSlurCurve4(obstacles.translated(-segment->ipos()), target, spatium, slur->up(),
+                            curve, startFloated, endFloated))
+        return false;
+
+    // Apply manual endpoint moves AFTER fitting. Each control follows its
+    // adjacent endpoints proportionally; explicit Bezier offsets remain native.
+    const QPointF startOffset = segment->ups(Grip::START).off;
+    const QPointF endOffset = segment->ups(Grip::END).off;
+    const qreal width = curve.end.x() - curve.start.x();
+    const qreal firstRatio = (curve.control1.x() - curve.start.x()) / width;
+    const qreal secondRatio = (curve.control2.x() - curve.start.x()) / width;
+    curve.control1 += startOffset * (1 - firstRatio) + endOffset * firstRatio;
+    curve.control2 += startOffset * (1 - secondRatio) + endOffset * secondRatio;
+    curve.start += startOffset;
+    curve.end += endOffset;
+    result = curve;
+    return true;
+}
+
+// Preserve original slurPos eligibility and keep the bounded grace-beam
+// query unchanged. No geometry is published on failure.
 bool applyStudioGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& start, QPointF& end, GraceMergedSlurQuery4* query)
 {
     if (!slur || slur->isIncoming() || slur->isOutgoing()
