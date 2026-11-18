@@ -4280,7 +4280,7 @@ qreal Measure::createEndBarLines(bool isLastMeasureInSystem)
 
 qreal Measure::basicStretch() const
       {
-      if (score()->styleB(Sid::spacingLayout4) && !isMMRest())
+      if (studioUsesRhythmicMeasureWidths4(this))
             return 1.0; // duration/user stretch is already in the segment widths
       qreal stretch = userStretch() * score()->styleD(Sid::measureSpacing);
       if (stretch < 1.0)
@@ -4805,9 +4805,8 @@ static qreal nativeBarlineChordClearance475(Segment* segment, qreal legacy)
 
 void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
       {
-      const bool studioRhythm = score()->styleB(Sid::spacingLayout4) && !isMMRest();
-      if (studioRhythm)
-            computeTicks(); // header/trailer changes can invalidate segment durations
+      StudioMeasureWidthScope4 studioWidth(this);
+      studioWidth.prepareDurations(this); // header/trailer may change the Studio rhythm
       Segment* fs = firstEnabled();
       if (!fs->visible())           // first enabled could be a clef change on invisible staff
             fs = fs->nextActive();
@@ -4895,10 +4894,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             // but still consider it for spacing of previous segment
             if (!ns)
                   ns = s->next(SegmentType::BarLineType);
-            const bool useStudioWidth = studioRhythm && s->isChordRestType()
-                  && s->ticks() > Fraction(0, 1);
-            const StudioSegmentWidth4 studioWidth = useStudioWidth
-                  ? studioSegmentWidth4(s, ns) : StudioSegmentWidth4{};
+            const StudioSegmentWidth4 proposed = studioWidth.propose(s, ns);
             qreal w;
 
             if (ns) {
@@ -4927,7 +4923,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                         isSystemHeader = false;
                         }
                   else {
-                        w = s->minHorizontalDistance(ns, false, studioWidth.offset < 0);
+                        w = s->minHorizontalDistance(ns, false, proposed.offset < 0);
                         }
 // printf("  min %f <%s>(%d) <%s>(%d)\n", s->x(), s->subTypeName(), s->enabled(), ns->subTypeName(), ns->enabled());
 #if 1
@@ -4983,8 +4979,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   }
             else
                   w = s->minRight();
-            if (useStudioWidth)
-                  w = applyStudioSegmentWidth4(s, studioWidth, w, spatium());
+            w = studioWidth.finalize(s, proposed, w, spatium());
             s->setWidth(w);
             x += w;
             s = s->next();

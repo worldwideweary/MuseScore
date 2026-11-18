@@ -203,21 +203,45 @@ static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next
     return canAdjust ? (upDown ? displacement : -displacement) : 0;
 }
 
-// Compute the Studio-only signed cross-beam contribution before the caller
-// measures ordinary segment collisions. The collision minimum is retained for
-// the later floor, after the caller finishes its native collision pass.
-StudioSegmentWidth4 studioSegmentWidth4(const Segment* segment, const Segment* next)
+// One eligibility rule for Studio's intrinsic rhythmic measure widths.
+// MM rests retain Evolution's ordinary measure stretch even in Studio mode.
+bool studioUsesRhythmicMeasureWidths4(const Measure* measure)
+{
+    return measure->score()->styleB(Sid::spacingLayout4) && !measure->isMMRest();
+}
+
+StudioMeasureWidthScope4::StudioMeasureWidthScope4(const Measure* measure)
+    : _enabled(studioUsesRhythmicMeasureWidths4(measure))
+{
+}
+
+// The call stays at the beginning of Measure::computeMinWidth(), before any
+// collision work or segment-width reset.
+void StudioMeasureWidthScope4::prepareDurations(Measure* measure) const
+{
+    if (_enabled)
+        measure->computeTicks();
+}
+
+// Capture Studio eligibility and signed cross-beam offset before the native
+// collision pass. A disabled scope returns precisely the old zero proposal.
+StudioSegmentWidth4 StudioMeasureWidthScope4::propose(const Segment* segment, const Segment* next) const
 {
     StudioSegmentWidth4 result;
+    if (!_enabled || !segment->isChordRestType() || !(segment->ticks() > Fraction(0, 1)))
+        return result;
+    result.enabled = true;
     result.offset = crossBeamSpacingOffset4(segment, next, &result.minimum);
     return result;
 }
 
-// Apply the Studio rhythmic width floor after the caller has measured its
-// collisions. Preserve the original write/weight/floor order exactly.
-qreal applyStudioSegmentWidth4(Segment* segment, const StudioSegmentWidth4& studio,
-                              qreal width, qreal measureSpatium)
+// The native collision floor is calculated before this step. Only an eligible
+// Studio segment writes its offset and receives the rhythmic/cross-beam floor.
+qreal StudioMeasureWidthScope4::finalize(Segment* segment, const StudioSegmentWidth4& studio,
+                                        qreal width, qreal measureSpatium) const
 {
+    if (!studio.enabled)
+        return width;
     segment->setSpacingWidthOffset4(studio.offset);
     width = qMax(width, 3.5 * measureSpatium * segmentSpacingStretch4(segment) + studio.offset);
     // Evolution's collision floor applies to both signed offsets; additionally
@@ -229,7 +253,7 @@ qreal applyStudioSegmentWidth4(Segment* segment, const StudioSegmentWidth4& stud
 // the spacing adapter. The caller's legacy spring solver is unmodified.
 StudioMeasureSpringScope4::StudioMeasureSpringScope4(const Measure* measure)
     : _enabled(measure->score()->styleB(Sid::spacingLayout4)),
-      _rhythmicEnabled(_enabled && !measure->isMMRest())
+      _rhythmicEnabled(studioUsesRhythmicMeasureWidths4(measure))
 {
 }
 

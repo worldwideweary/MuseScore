@@ -35,10 +35,22 @@ public:
 struct StudioSegmentWidth4 {
     qreal offset { 0 };
     qreal minimum { 0 };
+    bool enabled { false };
 };
-StudioSegmentWidth4 studioSegmentWidth4(const Segment*, const Segment*);
-qreal applyStudioSegmentWidth4(Segment*, const StudioSegmentWidth4&,
-                              qreal measuredWidth, qreal measureSpatium);
+
+// The optional module owns the Studio-only duration refresh, the signed
+// cross-beam offset and the post-collision rhythmic width floor. Ordinary
+// collision measurement and segment placement stay in Measure.
+bool studioUsesRhythmicMeasureWidths4(const Measure*);
+class StudioMeasureWidthScope4 {
+    bool _enabled { false };
+public:
+    explicit StudioMeasureWidthScope4(const Measure*);
+    void prepareDurations(Measure*) const;
+    StudioSegmentWidth4 propose(const Segment*, const Segment*) const;
+    qreal finalize(Segment*, const StudioSegmentWidth4&, qreal measuredWidth,
+                   qreal measureSpatium) const;
+};
 
 // Flexible widths exclude fixed cross-beam offsets. The returned common force
 // follows Studio stretchSegmentsToWidth; collision floors remain unstretched
