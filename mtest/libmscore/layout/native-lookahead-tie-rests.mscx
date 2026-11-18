@@ -1,0 +1,444 @@
+<?xml version='1.0' encoding='utf-8'?>
+<museScore version="3.02">
+  <Score>
+    <LayerTag id="0" tag="default" />
+    <currentLayer>0</currentLayer>
+    <Division>480</Division>
+    <Style>
+      <Spatium>1.76389</Spatium>
+      <createMultiMeasureRests>0</createMultiMeasureRests>
+      <hideEmptyStaves>0</hideEmptyStaves>
+      <lastSystemFillLimit>1</lastSystemFillLimit>
+    </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <metaTag name="arranger" />
+    <metaTag name="composer" />
+    <metaTag name="copyright" />
+    <metaTag name="lyricist" />
+    <metaTag name="movementNumber" />
+    <metaTag name="movementTitle" />
+    <metaTag name="poet" />
+    <metaTag name="source" />
+    <metaTag name="translator" />
+    <metaTag name="workNumber" />
+    <metaTag name="workTitle">Beam Test Cross Measure</metaTag>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>Standard</name>
+        </StaffType>
+      </Staff>
+      <Staff id="2">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <trackName>Voice</trackName>
+      <Instrument>
+        <trackName>Voice</trackName>
+        <minPitchP>36</minPitchP>
+        <maxPitchP>94</maxPitchP>
+        <minPitchA>40</minPitchA>
+        <maxPitchA>79</maxPitchA>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Articulation name="staccato">
+          <velocity>100</velocity>
+          <gateTime>85</gateTime>
+        </Articulation>
+        <Articulation name="tenuto">
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Articulation name="sforzato">
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+        </Articulation>
+        <Channel>
+          </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Beam>
+            <l1>-3</l1>
+            <l2>-7</l2>
+          </Beam>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+        <voice>
+          <Chord>
+            <BeamMode>mid</BeamMode>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+              <Spanner type="Tie">
+                <Tie />
+                <next>
+                  <location>
+                    <fractions>1/8</fractions>
+                  </location>
+                </next>
+              </Spanner>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <fractions>-1/8</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Beam>
+            <l1>-4</l1>
+            <l2>-4</l2>
+          </Beam>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>69</pitch>
+              <tpc>17</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>71</pitch>
+              <tpc>19</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>System 2 staff text</text>
+          </StaffText>
+          <StaffText>
+            <style>Expression</style>
+            <text>System 2 espressivo</text>
+          </StaffText>
+          <Harmony>
+            <root>14</root>
+            <name>m</name>
+            <lid>5</lid>
+          </Harmony>
+          <FretDiagram>
+            <string no="0">
+              <marker>88</marker>
+            </string>
+            <string no="1">
+              <dot>3</dot>
+            </string>
+            <string no="2">
+              <dot>2</dot>
+            </string>
+            <string no="3">
+              <marker>79</marker>
+            </string>
+            <string no="4">
+              <dot>1</dot>
+            </string>
+            <string no="5">
+              <marker>79</marker>
+            </string>
+          </FretDiagram>
+          <Dynamic>
+            <subtype>mf</subtype>
+          </Dynamic>
+          <Spanner type="Pedal">
+            <Pedal>
+              <endHookType>1</endHookType>
+              <beginText>&lt;sym&gt;keyboardPedalPed&lt;/sym&gt;</beginText>
+            </Pedal>
+            <next>
+              <location>
+                <measures>1</measures>
+              </location>
+            </next>
+          </Spanner>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Lyrics>
+              <text>look-</text>
+            </Lyrics>
+            <Note>
+              <pitch>67</pitch>
+              <tpc>15</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+          <Spanner type="Pedal">
+            <prev>
+              <location>
+                <measures>-1</measures>
+              </location>
+            </prev>
+          </Spanner>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>System 3 staff text</text>
+          </StaffText>
+          <StaffText>
+            <style>Expression</style>
+            <text>System 3 espressivo</text>
+          </StaffText>
+          <Harmony>
+            <root>17</root>
+            <name>sus4</name>
+            <lid>65</lid>
+          </Harmony>
+          <FretDiagram>
+            <string no="0">
+              <marker>88</marker>
+            </string>
+            <string no="1">
+              <dot>3</dot>
+            </string>
+            <string no="2">
+              <dot>2</dot>
+            </string>
+            <string no="3">
+              <marker>79</marker>
+            </string>
+            <string no="4">
+              <dot>1</dot>
+            </string>
+            <string no="5">
+              <marker>79</marker>
+            </string>
+          </FretDiagram>
+          <Dynamic>
+            <subtype>p</subtype>
+          </Dynamic>
+          <Spanner type="Pedal">
+            <Pedal>
+              <endHookType>1</endHookType>
+              <beginText>&lt;sym&gt;keyboardPedalPed&lt;/sym&gt;</beginText>
+            </Pedal>
+            <next>
+              <location>
+                <measures>1</measures>
+              </location>
+            </next>
+          </Spanner>
+          <Chord>
+            <durationType>quarter</durationType>
+            <Lyrics>
+              <text>ahead</text>
+            </Lyrics>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+          <Rest>
+            <durationType>quarter</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+          <Spanner type="Pedal">
+            <prev>
+              <location>
+                <measures>-1</measures>
+              </location>
+            </prev>
+          </Spanner>
+        </voice>
+      </Measure>
+      <Measure>
+        <LayoutBreak>
+          <subtype>line</subtype>
+        </LayoutBreak>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+    <Staff id="2">
+      <Measure>
+        <voice>
+          <Clef>
+            <concertClefType>F</concertClefType>
+            <transposingClefType>F</transposingClefType>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>System 2 lower staff</text>
+          </StaffText>
+          <Dynamic>
+            <subtype>pp</subtype>
+          </Dynamic>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <text>System 3 lower staff</text>
+          </StaffText>
+          <Dynamic>
+            <subtype>f</subtype>
+          </Dynamic>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

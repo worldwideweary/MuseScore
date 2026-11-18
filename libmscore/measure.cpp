@@ -4989,6 +4989,30 @@ static qreal continuationParenPadding(const Segment* segment)
 
 void Measure::computeMinWidth()
       {
+      // A full-measure rest can retain a centered position from an earlier
+      // layout while getNextMeasure() prepares a following system.  That
+      // post-spacing position must not enter a new natural-width calculation.
+      // Keep it normalized throughout this reflow, including subsequent
+      // spacing passes: layoutElementsAfterSpacing() will center it again.
+      // A *rejected* speculative measure is restored by collectSystem()'s
+      // lookahead snapshot instead of being stretched.
+      for (Segment& segment : segments()) {
+            if (!segment.isChordRestType())
+                  continue;
+            bool reset = false;
+            for (Element* element : segment.elist()) {
+                  if (!element || !element->isRest())
+                        continue;
+                  Rest* rest = toRest(element);
+                  if (rest->isFullMeasureRest() && !qFuzzyIsNull(rest->rxpos())) {
+                        rest->rxpos() = 0.0;
+                        reset = true;
+                        }
+                  }
+            if (reset)
+                  segment.createShapes();
+            }
+
       Segment* s;
 
       // skip disabled segment

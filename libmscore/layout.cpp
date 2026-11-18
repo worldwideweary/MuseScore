@@ -3545,10 +3545,17 @@ void Score::getNextMeasure(LayoutContext& lc)
                   }
             }
 
+      // This measure may be an already-positioned lookahead from the following
+      // system. Rest::layout() clears a full-measure rest's horizontal offset,
+      // but collectSystem() can keep the following system unchanged without
+      // stretching this measure again. Preserve its existing centering until
+      // an actual measure stretch recomputes it.
+      const bool preserveLookaheadMeasureRestX = measure->system()
+            && measure->tick() > lc.endTick;
       for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {
             for (Segment& segment : measure->segments()) {
                   if (segment.isChordRestType()) {
-                        layoutChords1(&segment, staffIdx);
+                        layoutChords1(&segment, staffIdx, preserveLookaheadMeasureRestX);
                         for (int voice = 0; voice < VOICES; ++voice) {
                               ChordRest* cr = segment.cr(staffIdx * VOICES + voice);
                               if (cr) {
@@ -3902,7 +3909,7 @@ static void applyLyricsMin(Measure* m, int staffIdx, qreal yMin)
 //   restoreBeams
 //---------------------------------------------------------
 
-static void restoreBeams(Measure* m)
+static void restoreBeams(Measure* m, bool addToSkyline = true)
       {
       for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
             for (Element* e : s->elist()) {
@@ -3911,7 +3918,8 @@ static void restoreBeams(Measure* m)
                         if (isTopBeam(cr)) {
                               Beam* b = cr->beam();
                               b->layout();
-                              b->addSkyline(m->system()->staff(b->staffIdx())->skyline());
+                              if (addToSkyline)
+                                    b->addSkyline(m->system()->staff(b->staffIdx())->skyline());
                               }
                         }
                   }
@@ -4372,8 +4380,50 @@ System* Score::collectSystem(LayoutContext& lc)
 
       QList<System *> brokenSystems;
 
+      // A measure provisionally tried at the end of a system can already
+      // have a valid layout in its original next system.  Save its exact
+      // rhythmic distribution before fitting changes it: restoring only the
+      // total width with stretchMeasure() can produce a different layout.
+      struct LookaheadSegmentGeometry {
+            Segment* segment;
+            qreal x;
+            qreal width;
+            qreal stretch;
+            bool enabled;
+            };
+      struct LookaheadRestGeometry {
+            Segment* segment;
+            Rest* rest;
+            qreal x;
+            };
+      struct LookaheadMeasureGeometry {
+            qreal width;
+            std::vector<LookaheadSegmentGeometry> segments;
+            std::vector<LookaheadRestGeometry> rests;
+            };
+      std::map<Measure*, LookaheadMeasureGeometry> lookaheadGeometry;
+
       while (lc.curMeasure) {    // collect measure for system
             System* oldSystem = lc.curMeasure->system();
+            if (oldSystem && lc.curMeasure->isMeasure()
+                && lc.curMeasure->tick() > lc.endTick) {
+                  Measure* lookahead = toMeasure(lc.curMeasure);
+                  if (lookaheadGeometry.find(lookahead) == lookaheadGeometry.end()) {
+                        LookaheadMeasureGeometry saved;
+                        saved.width = lookahead->width();
+                        for (Segment& segment : lookahead->segments()) {
+                              saved.segments.push_back({ &segment, segment.x(), segment.width(),
+                                    segment.stretch(), segment.enabled() });
+                              if (segment.isChordRestType()) {
+                                    for (Element* e : segment.elist()) {
+                                          if (e && e->isRest() && toRest(e)->isFullMeasureRest())
+                                                saved.rests.push_back({ &segment, toRest(e), e->rxpos() });
+                                          }
+                                    }
+                              }
+                        lookaheadGeometry.emplace(lookahead, std::move(saved));
+                        }
+                  }
             system->appendMeasure(lc.curMeasure);
 
             qreal ww  = 0;      // width of current measure
@@ -4547,11 +4597,26 @@ System* Score::collectSystem(LayoutContext& lc)
             MeasureBase* curMB = lc.curMeasure;
             Measure* m = curMB && curMB->isMeasure() ? toMeasure(curMB) : nullptr;
             bool curMeasureMayHaveJoinedBeams = m && measureMayHaveBeamsJoinedIntoNext(m);
-            if (lc.prevMeasure == lc.systemOldMeasure && !curMeasureMayHaveJoinedBeams) {
+            // Preserve the native incremental-layout boundary check; no
+            // optional Studio spacing plan is present in this branch.
+            const bool stableBoundary = lc.prevMeasure == lc.systemOldMeasure
+                  && !curMeasureMayHaveJoinedBeams;
+            // If the following measure was not re-fitted into this system, its
+            // existing positions, widths and skyline are already authoritative.
+            const bool untouchedLookahead = !breakMeasure && (!m ||
+                  (m->header() == curHeader && m->trailer() == curTrailer
+                   && qAbs(m->width() - m->oldWidth()) <= 1e-6 * m->spatium()));
+            if (stableBoundary) {
                 // If current measure has possible beams joining to the next, we need to continue layout. This needs a better solution in future. [M.S.]
                   // this system ends in the same place as the previous layout
                   // ok to stop
-                  if (m) {
+                  if (m && untouchedLookahead) {
+                        // Rebuild beam drawings without recomputing
+                        // the untouched measure's rhythmic spacing.
+                        // Do not duplicate the preserved system skyline.
+                        restoreBeams(m, false);
+                        }
+                  if (m && !untouchedLookahead) {
                         // we may have previously processed first measure(s) of next system
                         // so now we must restore to original state
                         if (m->repeatStart()) {
@@ -4572,8 +4637,43 @@ System* Score::collectSystem(LayoutContext& lc)
                                     m->addSystemTrailer(m->nextMeasure());
                               else
                                     m->removeSystemTrailer();
-                              m->computeMinWidth();
-                              m->stretchMeasure(m->oldWidth());
+                              bool restoredSnapshot = false;
+                              const auto savedIt = lookaheadGeometry.find(m);
+                              if (savedIt != lookaheadGeometry.end()) {
+                                    const LookaheadMeasureGeometry& saved = savedIt->second;
+                                    // Header/trailer restoration can add segments. Fall
+                                    // back to recalculation when topology or enabled
+                                    // state differs from the captured arrangement.
+                                    auto original = saved.segments.begin();
+                                    Segment* segment = m->segments().first();
+                                    for (; original != saved.segments.end() && segment;
+                                          ++original, segment = segment->next()) {
+                                          if (original->segment != segment
+                                              || original->enabled != segment->enabled())
+                                                break;
+                                          }
+                                    if (original == saved.segments.end() && !segment) {
+                                          m->bbox().setWidth(saved.width);
+                                          for (const LookaheadSegmentGeometry& geometry : saved.segments) {
+                                                geometry.segment->setX(geometry.x);
+                                                geometry.segment->setWidth(geometry.width);
+                                                geometry.segment->setStretch(geometry.stretch);
+                                                }
+                                          // computeMinWidth() may have reset a centered
+                                          // whole-measure rest while trying this measure
+                                          // in a different system. Restore its original
+                                          // position and collision shape when rolling back.
+                                          for (const LookaheadRestGeometry& geometry : saved.rests) {
+                                                geometry.rest->rxpos() = geometry.x;
+                                                geometry.segment->createShape(geometry.rest->staffIdx());
+                                                }
+                                          restoredSnapshot = true;
+                                          }
+                                    }
+                              if (!restoredSnapshot) {
+                                    m->computeMinWidth();
+                                    m->stretchMeasure(m->oldWidth());
+                                    }
                               restoreBeams(m);
                               if (m == nm || !m->noBreak())
                                     break;
