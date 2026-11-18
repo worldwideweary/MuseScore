@@ -16,6 +16,8 @@ class Segment;
 class Shape;
 class ChordRest;
 class Clef;
+class KeySig;
+struct KeySym;
 
 enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
 // LEGACY_SPACER records a known producer's aggregate bound. It is retained in
@@ -67,6 +69,11 @@ public:
 // With Studio spacing off both helpers preserve the native bbox alignment/shape.
 qreal studioClefAlignmentX4(const Clef*, qreal legacyX);
 Shape studioClefShape4(const Clef*, SymId);
+
+// Studio key-signature glyph positioning. Only called from an eligible
+// non-custom, non-atonal Studio layout. `previous` borrows the last glyph
+// before the producer appends the next one; null means the first glyph.
+qreal studioKeySignatureGlyphX4(const KeySig*, SymId, int line, const KeySym* previous);
 
 // Strict ordered coverage, not rectangle-to-candidate matching. Coincident
 // rectangles retain their individual producers. Failure leaves result intact.

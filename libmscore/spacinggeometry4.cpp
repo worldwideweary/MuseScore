@@ -8,6 +8,7 @@
 #include "barline.h"
 #include "chord.h"
 #include "clef.h"
+#include "keysig.h"
 #include "hook.h"
 #include "ledgerline.h"
 #include "measure.h"
@@ -81,6 +82,32 @@ Shape studioClefShape4(const Clef* clef, SymId symId)
       return result;
       }
 
+
+// Studio places key-signature glyphs relative to the previous glyph's ink
+// width, with separate distances for mixed accidentals and naturals. Preserve
+// the original cutout comparison and let KeySig retain glyph append order.
+qreal studioKeySignatureGlyphX4(const KeySig* keySig, SymId sym, int line, const KeySym* previous)
+      {
+      if (!previous)
+            return 0.0;
+
+      const qreal sp = keySig->spatium();
+      qreal gap = keySig->score()->styleS(Sid::keysigAccidentalDistance).val();
+      if (previous->sym != sym)
+            gap *= 2.0;
+      else if (sym == SymId::accidentalNatural)
+            gap = keySig->score()->styleS(Sid::keysigNaturalDistance).val();
+      qreal x = previous->spos.x() + keySig->symWidth(previous->sym) / sp + gap;
+      const qreal y = line * (keySig->staff() ? keySig->staff()->lineDistance(keySig->tick()) * 0.5 : 0.5);
+      const bool rising = y < previous->spos.y();
+      const QPointF left = rising ? keySig->symCutOutSW(sym) : keySig->symCutOutNW(sym);
+      const QPointF right = rising ? keySig->symCutOutNE(previous->sym) : keySig->symCutOutSE(previous->sym);
+      const qreal leftY = y * sp + left.y();
+      const qreal rightY = previous->spos.y() * sp + right.y();
+      if (rising ? leftY < rightY : leftY > rightY)
+            x -= left.x() / sp;
+      return x;
+      }
 
 bool SpacingShape4::complete() const
 {

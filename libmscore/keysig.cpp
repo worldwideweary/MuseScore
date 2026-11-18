@@ -12,6 +12,7 @@
 
 #include "clef.h"
 #include "keysig.h"
+#include "spacinggeometry4.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
@@ -208,26 +209,11 @@ void KeySig::layout()
 
       const bool studio = !isCustom() && !isAtonal() && score()->styleB(Sid::spacingLayout4);
       const auto append = [&](SymId sym, qreal legacyX, int line) {
-            qreal x = studio ? 0.0 : legacyX;
-            const auto& symbols = _sig.keySymbols();
-            if (studio && !symbols.isEmpty()) {
-                  // Studio places each glyph using the previous glyph's ink width.
-                  // Mixed pairs separate more; staggered pairs can share a cutout.
-                  const KeySym& previous = symbols.back();
-                  qreal gap = score()->styleS(Sid::keysigAccidentalDistance).val();
-                  if (previous.sym != sym)
-                        gap *= 2.0;
-                  else if (sym == SymId::accidentalNatural)
-                        gap = score()->styleS(Sid::keysigNaturalDistance).val();
-                  x = previous.spos.x() + symWidth(previous.sym) / _spatium + gap;
-                  const qreal y = line * (staff() ? staff()->lineDistance(tick()) * 0.5 : 0.5);
-                  const bool rising = y < previous.spos.y();
-                  const QPointF left = rising ? symCutOutSW(sym) : symCutOutNW(sym);
-                  const QPointF right = rising ? symCutOutNE(previous.sym) : symCutOutSE(previous.sym);
-                  const qreal leftY = y * _spatium + left.y();
-                  const qreal rightY = previous.spos.y() * _spatium + right.y();
-                  if (rising ? leftY < rightY : leftY > rightY)
-                        x -= left.x() / _spatium;
+            qreal x = legacyX;
+            if (studio) {
+                  const auto& symbols = _sig.keySymbols();
+                  const KeySym* previous = symbols.isEmpty() ? nullptr : &symbols.back();
+                  x = studioKeySignatureGlyphX4(this, sym, line, previous);
                   }
             addLayout(sym, x, line);
             };
