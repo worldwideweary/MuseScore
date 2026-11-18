@@ -7,6 +7,7 @@
 #include "arpeggio.h"
 #include "barline.h"
 #include "chord.h"
+#include "clef.h"
 #include "hook.h"
 #include "ledgerline.h"
 #include "measure.h"
@@ -23,6 +24,63 @@
 #include <functional>
 
 namespace Ms {
+
+// Studio internal pitched clefs right-align against the cutout-based ink
+// shape. Header, palette, TAB, percussion and native alignment stay unchanged.
+qreal studioClefAlignmentX4(const Clef* clef, qreal legacyX)
+      {
+      if (clef->score()->styleB(Sid::spacingLayout4) && clef->segment()
+          && clef->segment()->rtick().isNotZero()
+          && clef->staff() && clef->staff()->isPitchedStaff(clef->tick()))
+            return -clef->shape().right();
+      return legacyX;
+      }
+
+// Studio TLayout::layoutClef uses the font's SMuFL cutouts for internal
+// clefs. Keep header/palette/TAB/percussion and legacy shapes unchanged.
+// The native producer owns every rectangle; typed spacing captures retain
+// this clef's identity without replacing or guessing aggregate geometry.
+Shape studioClefShape4(const Clef* clef, SymId symId)
+      {
+      if (!clef->score() || !clef->score()->styleB(Sid::spacingLayout4)
+          || !clef->segment() || clef->segment()->rtick().isZero()
+          || !clef->staff() || !clef->staff()->isPitchedStaff(clef->tick())
+          || symId == SymId::noSym || clef->bbox().isEmpty())
+            return clef->Element::shape();
+
+      const QRectF r = clef->bbox();
+      QPointF nw = clef->symCutOutNW(symId), ne = clef->symCutOutNE(symId);
+      QPointF sw = clef->symCutOutSW(symId), se = clef->symCutOutSE(symId);
+      const bool nwNull = nw.isNull(), neNull = ne.isNull();
+      const bool swNull = sw.isNull(), seNull = se.isNull();
+      if (nwNull && neNull && swNull && seNull)
+            return clef->Element::shape();
+      if (nwNull) nw = r.topLeft();
+      if (neNull) ne = r.topRight();
+      if (swNull) sw = r.bottomLeft();
+      if (seNull) se = r.bottomRight();
+
+      const qreal leftInset = std::max(nw.x(), sw.x());
+      const qreal rightInset = std::min(ne.x(), se.x());
+      const qreal topInset = std::max(nw.y(), ne.y());
+      const qreal bottomInset = std::min(sw.y(), se.y());
+      Shape result;
+      result.add(QRectF(QPointF(sw.x(), r.bottom()), QPointF(se.x(), topInset)).normalized());
+      const bool rightPlaced = !seNull;
+      if (rightPlaced)
+            result.add(QRectF(QPointF(r.right(), se.y()), QPointF(leftInset, ne.y())).normalized());
+      const bool topPlaced = !rightPlaced || !neNull;
+      if (topPlaced)
+            result.add(QRectF(QPointF(nw.x(), r.top()), QPointF(ne.x(), bottomInset)).normalized());
+      if (!topPlaced || !nwNull)
+            result.add(QRectF(QPointF(r.left(), sw.y()), QPointF(rightInset, nw.y())).normalized());
+      if (leftInset > rightInset && topInset < bottomInset)
+            result.add(QRectF(QPointF(r.left(), bottomInset), QPointF(r.right(), topInset)).normalized());
+      if (leftInset < rightInset && topInset > bottomInset)
+            result.add(QRectF(QPointF(leftInset, r.bottom()), QPointF(rightInset, r.top())).normalized());
+      return result;
+      }
+
 
 bool SpacingShape4::complete() const
 {

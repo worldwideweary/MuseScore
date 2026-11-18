@@ -14,6 +14,8 @@ class Element;
 class Segment;
 class Shape;
 class ChordRest;
+class Clef;
+enum class SymId : short;
 
 enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
 // LEGACY_SPACER records a known producer's aggregate bound. It is retained in
@@ -59,6 +61,12 @@ public:
     void addHorizontalSpacing(Shape::HorizontalSpacingType, qreal left, qreal right,
                               const Element* owner = nullptr);
 };
+
+// Studio-only internal clef alignment and SMuFL cutout geometry. The producer
+// passes its actual laid-out symbol (which can be noSym for invisible clefs).
+// With Studio spacing off both helpers preserve the native bbox alignment/shape.
+qreal studioClefAlignmentX4(const Clef*, qreal legacyX);
+Shape studioClefShape4(const Clef*, SymId);
 
 // Strict ordered coverage, not rectangle-to-candidate matching. Coincident
 // rectangles retain their individual producers. Failure leaves result intact.
