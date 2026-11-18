@@ -1072,14 +1072,12 @@ void Slur::slurPos(SlurPos* sp)
 
       Stem* stem1 = sc && staffHasStems ? sc->stem() : 0;
       Stem* stem2 = ec && staffHasStems ? ec->stem() : 0;
-      const bool beamHeights4 = score()->styleB(Sid::spacingLayout4) && !useTablature
-            && scr->staff() && ecr->staff()
-            && scr->staff()->isPitchedStaff(scr->tick()) && ecr->staff()->isPitchedStaff(ecr->tick())
-            && scr->vStaffIdx() == ecr->vStaffIdx()
-            && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo());
-      const bool beamEnds4 = beamHeights4 && !isIncoming() && !isOutgoing()
-            && (!scr->beam() || !scr->beam()->cross())
-            && (!ecr->beam() || !ecr->beam()->cross());
+      // The Studio adapter owns its beam eligibility checks; the native
+      // stem/beam layout below retains its original endpoint decisions.
+      const StudioSlurBeamEligibility4 studioBeam4 = studioSlurBeamEligibility4(this, scr, ecr,
+            useTablature);
+      const bool beamHeights4 = studioBeam4.heights;
+      const bool beamEnds4 = studioBeam4.ends;
 
       enum class SlurAnchor : char {
             NONE, STEM

@@ -6,6 +6,7 @@
 #include <QString>
 namespace Ms {
 class Chord;
+class ChordRest;
 class Slur;
 class Score;
 class SlurSegment;
@@ -20,6 +21,15 @@ struct SlurStemMetrics4 {
     qreal length = 0;       // Includes manual stem length and source beam inset.
     qreal beamWidthSp = 0;  // Studio slurPos's separate start beam-width term.
 };
+// Beam-height and beam-end eligibility for optional Studio slur anchoring.
+// Keeping these checks in the adapter avoids making the native renderer
+// depend on Studio-only staff, tremolo, or cross-beam policy.
+struct StudioSlurBeamEligibility4 {
+    bool heights = false;
+    bool ends = false;
+};
+StudioSlurBeamEligibility4 studioSlurBeamEligibility4(const Slur*, const ChordRest* start,
+                                                     const ChordRest* end, bool tablature);
 SlurStemMetrics4 slurStemMetrics4(const Chord*);
 // Studio-only slurPos beam-end stem clearances. Native caller supplies its
 // current defaults; these helpers adjust them only for eligible Studio paths.

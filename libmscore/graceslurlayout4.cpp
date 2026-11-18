@@ -11,6 +11,7 @@
 #include "segment.h"
 #include "slur.h"
 #include "slurtie.h"
+#include "staff.h"
 #include "stem.h"
 #include "system.h"
 #include <QTransform>
@@ -18,6 +19,29 @@
 #include <cmath>
 
 namespace Ms {
+// These conditions are copied from Slur::slurPos() without changing their
+// order or coupling. Stem-height eligibility deliberately allows cross beams;
+// beam-end insets do not. Partial slurs are excluded only from beam ends.
+StudioSlurBeamEligibility4 studioSlurBeamEligibility4(const Slur* slur,
+                                                     const ChordRest* scr,
+                                                     const ChordRest* ecr,
+                                                     bool useTablature)
+{
+    StudioSlurBeamEligibility4 result;
+    if (!slur || !scr || !ecr || !slur->score()) return result;
+    const Chord* sc = scr->isChord() ? toChord(scr) : nullptr;
+    const Chord* ec = ecr->isChord() ? toChord(ecr) : nullptr;
+    result.heights = slur->score()->styleB(Sid::spacingLayout4) && !useTablature
+            && scr->staff() && ecr->staff()
+            && scr->staff()->isPitchedStaff(scr->tick()) && ecr->staff()->isPitchedStaff(ecr->tick())
+            && scr->vStaffIdx() == ecr->vStaffIdx()
+            && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo());
+    result.ends = result.heights && !slur->isIncoming() && !slur->isOutgoing()
+            && (!scr->beam() || !scr->beam()->cross())
+            && (!ecr->beam() || !ecr->beam()->cross());
+    return result;
+}
+
 SlurStemMetrics4 slurStemMetrics4(const Chord* chord)
 {
     SlurStemMetrics4 result;
