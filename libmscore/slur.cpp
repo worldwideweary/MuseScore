@@ -24,6 +24,7 @@
 #include "score.h"
 #include "slur.h"
 #include "slurdirection4.h"
+#include "spacingplan4.h"
 #include "gracespacing4.h"
 #include "graceslurlayout4.h"
 #include "stem.h"
@@ -40,10 +41,7 @@ void SlurSegment::startEditDrag(EditData& ed)
       {
       SlurTieSegment::startEditDrag(ed);
       const Slur* s = slur();
-      _offsetEdit4.clean = score()->styleB(Sid::spacingLayout4)
-            && score()->isMaster() && score()->masterScore()->scoreList().size() == 1
-            && score()->cmdState().updateMode() == UpdateMode::DoNothing
-            && !links() && !s->links();
+      _offsetEdit4.clean = studioSlurOffsetDragEligible4(this);
       _offsetEdit4.start = s->startElement();
       _offsetEdit4.generation = score()->cmdState().generation4();
       _offsetEdit4.end = s->endElement();
@@ -57,19 +55,12 @@ void SlurSegment::endEditDrag(EditData& ed)
       {
       const Slur* s = slur();
       const ElementEditData* data = ed.getData(this);
-      bool offsetOnly = _offsetEdit4.clean && data && !data->propertyData.empty()
+      bool offsetOnly = _offsetEdit4.clean && studioSlurOffsetPropertiesEligible4(data)
             && _offsetEdit4.generation == score()->cmdState().generation4() && !links() && !s->links()
             && score()->cmdState().updateMode() == UpdateMode::DoNothing
             && _offsetEdit4.start == s->startElement() && _offsetEdit4.end == s->endElement()
             && _offsetEdit4.tick == s->tick() && _offsetEdit4.tick2 == s->tick2()
             && _offsetEdit4.track == s->track() && _offsetEdit4.track2 == s->track2();
-      if (data) {
-            for (const PropertyData& property : data->propertyData) {
-                  if (property.id != Pid::SLUR_UOFF1 && property.id != Pid::SLUR_UOFF2
-                      && property.id != Pid::SLUR_UOFF3 && property.id != Pid::SLUR_UOFF4
-                      && property.id != Pid::OFFSET) offsetOnly = false;
-                  }
-            }
       _offsetEdit4.clean = false;
       // This known commit writes only the captured offsets/flags and GENERATED.
       // Keep normal undo bookkeeping and layout notifications, then classify it.
@@ -349,15 +340,8 @@ void SlurSegment::changeAnchor(EditData& ed, Element* element)
       // complete fresh spacing plan before retaining any horizontal fields.
       const quint64 anchorGeneration = score()->cmdState().generation4();
       System* anchorSystem = system();
-      const bool anchorOnly = ed.curGrip == Grip::END && isSingleType() && anchorSystem
-            && score()->styleB(Sid::spacingLayout4) && score()->isMaster()
-            && score()->masterScore()->scoreList().size() == 1
-            && score()->cmdState().updateMode() == UpdateMode::DoNothing
-            && !links() && !spanner()->links()
-            && slur()->slurDirection() != Direction::AUTO
-            && scr->measure() && ecr->measure() && cr->measure()
-            && scr->measure()->system() == anchorSystem
-            && ecr->measure()->system() == anchorSystem && cr->measure()->system() == anchorSystem;
+      const bool anchorOnly = studioSlurEndAnchorEditEligible4(this, ed.curGrip == Grip::END,
+            scr, ecr, cr);
 
       // save current start/end elements
       for (ScoreElement* e : spanner()->linkList()) {

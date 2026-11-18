@@ -15,6 +15,9 @@ namespace Ms {
 class Measure;
 class MeasureBase;
 class Segment;
+class SlurSegment;
+class ChordRest;
+class ElementEditData;
 class System;
 class Beam;
 class Chord;
@@ -354,6 +357,15 @@ public:
     // Call after native measure positions and widths have been finalized.
     void publishAfterPlacement(Score*, System*) const;
 };
+
+// Studio-only editing eligibility.  The native editor retains its undo writes,
+// endpoint snapshot, edit generation check and layout notifications.  These
+// queries do not mutate any score state or request incremental layout.
+bool studioSlurOffsetDragEligible4(const SlurSegment*);
+bool studioSlurOffsetPropertiesEligible4(const ElementEditData*);
+bool studioSlurEndAnchorEditEligible4(const SlurSegment*, bool endGrip,
+                                      const ChordRest* start, const ChordRest* end,
+                                      const ChordRest* candidate);
 
 // Publish the optional fallback marker and bounded diagnostics only after
 // final measure widths are committed (also clears prior status with style off).

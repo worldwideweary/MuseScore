@@ -3170,6 +3170,51 @@ void publishStudioSpacingResult4(Score* score, System* system, bool useStudioPla
 }
 
 
+// Adapter-only edit predicates: evaluated at the same points as the original
+// SlurSegment code.  The native editor continues to own undo transactions,
+// captured endpoints/generation, and the eventual command-state request.
+bool studioSlurOffsetDragEligible4(const SlurSegment* segment)
+{
+    if (!segment) return false;
+    const Score* score = segment->score();
+    const Slur* slur = segment->slur();
+    return score && slur && score->styleB(Sid::spacingLayout4)
+            && score->isMaster() && score->masterScore()->scoreList().size() == 1
+            && score->cmdState().updateMode() == UpdateMode::DoNothing
+            && !segment->links() && !slur->links();
+}
+
+bool studioSlurOffsetPropertiesEligible4(const ElementEditData* data)
+{
+    if (!data || data->propertyData.empty()) return false;
+    for (const PropertyData& property : data->propertyData) {
+        if (property.id != Pid::SLUR_UOFF1 && property.id != Pid::SLUR_UOFF2
+            && property.id != Pid::SLUR_UOFF3 && property.id != Pid::SLUR_UOFF4
+            && property.id != Pid::OFFSET) return false;
+    }
+    return true;
+}
+
+bool studioSlurEndAnchorEditEligible4(const SlurSegment* segment, bool endGrip,
+                                      const ChordRest* start, const ChordRest* end,
+                                      const ChordRest* candidate)
+{
+    if (!segment || !start || !end || !candidate) return false;
+    const Score* score = segment->score();
+    const Slur* slur = segment->slur();
+    const System* anchorSystem = segment->system();
+    return endGrip && segment->isSingleType() && anchorSystem
+            && score && slur && score->styleB(Sid::spacingLayout4) && score->isMaster()
+            && score->masterScore()->scoreList().size() == 1
+            && score->cmdState().updateMode() == UpdateMode::DoNothing
+            && !segment->links() && !slur->links()
+            && slur->slurDirection() != Direction::AUTO
+            && start->measure() && end->measure() && candidate->measure()
+            && start->measure()->system() == anchorSystem
+            && end->measure()->system() == anchorSystem
+            && candidate->measure()->system() == anchorSystem;
+}
+
 // Hold the same native command-state lock as Score::doLayoutRange while the
 // optional Studio slur relayout reuses the current system and page objects.
 class StudioSlurEditCmdStateLocker4 {
