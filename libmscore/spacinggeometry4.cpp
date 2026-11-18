@@ -6,6 +6,7 @@
 #include "accidental.h"
 #include "arpeggio.h"
 #include "barline.h"
+#include "breath.h"
 #include "chord.h"
 #include "clef.h"
 #include "keysig.h"
@@ -25,6 +26,17 @@
 #include <functional>
 
 namespace Ms {
+
+// Studio 4.7.5 TLayout::layoutBreath aligns the glyph's right edge for
+// pitched staves. Preserve the legacy derived X when Studio is disabled,
+// independently of user position offsets. Called only for score elements
+// after Breath::layout() has established the glyph's bounding box.
+qreal studioBreathAlignmentX4(const Breath* breath)
+      {
+      const bool studio = breath->score()->styleB(Sid::spacingLayout4)
+            && breath->staff()->isPitchedStaff(breath->tick());
+      return studio ? -breath->bbox().right() : 0.0;
+      }
 
 // Studio internal pitched clefs right-align against the cutout-based ink
 // shape. Header, palette, TAB, percussion and native alignment stay unchanged.

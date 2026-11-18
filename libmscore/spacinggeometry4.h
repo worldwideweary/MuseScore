@@ -17,6 +17,7 @@ class Shape;
 class ChordRest;
 class Clef;
 class KeySig;
+class Breath;
 struct KeySym;
 
 enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
@@ -69,6 +70,11 @@ public:
 // With Studio spacing off both helpers preserve the native bbox alignment/shape.
 qreal studioClefAlignmentX4(const Clef*, qreal legacyX);
 Shape studioClefShape4(const Clef*, SymId);
+
+// Studio 4.7.5 breath/caesura alignment against the right edge of the
+// laid-out symbol. Returns the native derived X (zero) when Studio spacing
+// is disabled or the staff is not pitched; user offsets stay independent.
+qreal studioBreathAlignmentX4(const Breath*);
 
 // Studio key-signature glyph positioning. Only called from an eligible
 // non-custom, non-atonal Studio layout. `previous` borrows the last glyph
