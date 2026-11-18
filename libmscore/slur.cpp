@@ -1104,40 +1104,18 @@ void Slur::slurPos(SlurPos* sp)
                   sa2 = SlurAnchor::STEM;
             }
 
-      if (score()->styleB(Sid::spacingLayout4) && !useTablature
-          && sp->system1 && sp->system2 && sp->system1 != sp->system2
-          && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo())) {
-            // Studio 4.7.5 slurPos: continued slurs anchor an unbeamed
-            // stem-side endpoint to its own stem. Do not let a remote beam,
-            // stem-direction change or pitch float that fixed local endpoint.
-            if (scr->up() == _up && stem1 && !scr->beam())
-                  sa1 = SlurAnchor::STEM;
-            if (ecr->up() == _up && stem2 && !ecr->beam())
-                  sa2 = SlurAnchor::STEM;
-            }
-
-      if (beamEnds4) {
-            // Studio 4.7.5 slurPos / stemSideForBeam: select each endpoint
-            // independently. A final start or first end in a beam is eligible
-            // for the stem inset even when its partner is also beamed.
-            sa1 = sa2 = SlurAnchor::NONE;
-            if (sc && sc->hook() && scr->up() == _up)
-                  sa1 = SlurAnchor::STEM;
-            if (scr->up() == ecr->up() && scr->up() == _up) {
-                  const Beam* firstBeam = scr->beam();
-                  const Beam* lastBeam = ecr->beam();
-                  const bool beamSideStart = firstBeam && !firstBeam->elements().empty()
-                        && firstBeam->elements().back() != scr;
-                  const bool beamSideEnd = lastBeam && !lastBeam->elements().empty()
-                        && lastBeam->elements().front() != ecr;
-                  if (stem1 && !beamSideStart) sa1 = SlurAnchor::STEM;
-                  if (stem2 && !beamSideEnd) sa2 = SlurAnchor::STEM;
-                  }
-            else if (sp->system1 && sp->system2 && sp->system1 != sp->system2) {
-                  if (scr->up() == _up && stem1 && !scr->beam()) sa1 = SlurAnchor::STEM;
-                  if (ecr->up() == _up && stem2 && !ecr->beam()) sa2 = SlurAnchor::STEM;
-                  }
-            }
+      // Native stem selection above remains authoritative when Studio spacing
+      // is off. The optional adapter may update each endpoint in the same
+      // continued-system / beamed-end order as before.
+      bool startOnStem4 = sa1 == SlurAnchor::STEM;
+      bool endOnStem4 = sa2 == SlurAnchor::STEM;
+      const StudioSlurStemAnchorInputs4 studioAnchors4 = {
+            this, scr, ecr, sp->system1, sp->system2,
+            useTablature, beamEnds4, stem1 != nullptr, stem2 != nullptr
+            };
+      applyStudioSlurStemAnchors4(studioAnchors4, startOnStem4, endOnStem4);
+      sa1 = startOnStem4 ? SlurAnchor::STEM : SlurAnchor::NONE;
+      sa2 = endOnStem4 ? SlurAnchor::STEM : SlurAnchor::NONE;
 
       qreal __up = _up ? -1.0 : 1.0;
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()

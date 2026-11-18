@@ -112,6 +112,53 @@ bool prepareStudioSlurDirection4(Slur* slur, Direction& result)
         && prepareSlurDirection4(slur, result);
 }
 
+// Keep the legacy stem-attachment selection in Slur::slurPos(). Only the
+// Studio continued-system and beam-end overrides live here. The ordering is
+// significant: beamEnds may reset both previously selected stem anchors.
+void applyStudioSlurStemAnchors4(const StudioSlurStemAnchorInputs4& f, bool& startStem, bool& endStem)
+{
+    const Slur* slur = f.slur;
+    const ChordRest* scr = f.start;
+    const ChordRest* ecr = f.end;
+    if (!slur || !scr || !ecr || !slur->score()) return;
+
+    const Chord* sc = scr->isChord() ? toChord(scr) : nullptr;
+    const Chord* ec = ecr->isChord() ? toChord(ecr) : nullptr;
+    const bool up = slur->up();
+
+    if (slur->score()->styleB(Sid::spacingLayout4) && !f.tablature
+        && f.startSystem && f.endSystem && f.startSystem != f.endSystem
+        && (!sc || !sc->tremolo()) && (!ec || !ec->tremolo())) {
+        // A continued, unbeamed stem-side endpoint attaches to its own stem.
+        if (scr->up() == up && f.hasStartStem && !scr->beam())
+            startStem = true;
+        if (ecr->up() == up && f.hasEndStem && !ecr->beam())
+            endStem = true;
+    }
+
+    if (f.beamEnds) {
+        // Select each beam endpoint independently. This override resets the
+        // earlier selection, including continued-system stem decisions.
+        startStem = endStem = false;
+        if (sc && sc->hook() && scr->up() == up)
+            startStem = true;
+        if (scr->up() == ecr->up() && scr->up() == up) {
+            const Beam* firstBeam = scr->beam();
+            const Beam* lastBeam = ecr->beam();
+            const bool beamSideStart = firstBeam && !firstBeam->elements().empty()
+                && firstBeam->elements().back() != scr;
+            const bool beamSideEnd = lastBeam && !lastBeam->elements().empty()
+                && lastBeam->elements().front() != ecr;
+            if (f.hasStartStem && !beamSideStart) startStem = true;
+            if (f.hasEndStem && !beamSideEnd) endStem = true;
+        }
+        else if (f.startSystem && f.endSystem && f.startSystem != f.endSystem) {
+            if (scr->up() == up && f.hasStartStem && !scr->beam()) startStem = true;
+            if (ecr->up() == up && f.hasEndStem && !ecr->beam()) endStem = true;
+        }
+    }
+}
+
 bool resolvePreparedSlurDirection4(const Slur* slur, Direction& result)
 {
     return slurDirectionImpl4(slur, result, false);

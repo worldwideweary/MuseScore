@@ -6,6 +6,8 @@
 
 namespace Ms {
 class Slur;
+class ChordRest;
+class System;
 enum class SpacingStemMixture4 { NONE, MIXED, PENDING };
 struct SpacingSlurDirectionFacts4 {
     Direction requested = Direction::AUTO;
@@ -29,6 +31,22 @@ bool prepareSlurDirection4(Slur*, Direction& result);
 // Rendering entry point: selects the Studio direction producer only when
 // the optional horizontal-spacing style is enabled.  Failure preserves result.
 bool prepareStudioSlurDirection4(Slur*, Direction& result);
+
+// Studio beam-end and across-system stem-side slur anchoring. The native
+// renderer passes its already-evaluated beam-end eligibility and initial
+// legacy stem selections. This helper changes nothing if Studio is off.
+struct StudioSlurStemAnchorInputs4 {
+    const Slur* slur;
+    const ChordRest* start;
+    const ChordRest* end;
+    const System* startSystem;
+    const System* endSystem;
+    bool tablature;
+    bool beamEnds;
+    bool hasStartStem;
+    bool hasEndStem;
+};
+void applyStudioSlurStemAnchors4(const StudioSlurStemAnchorInputs4&, bool& startStem, bool& endStem);
 
 // Read-only native adapter after required note-line/stem producer work. Does
 // not establish readiness itself. Uses current prepared inputs, never Slur::up,
