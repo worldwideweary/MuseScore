@@ -81,6 +81,11 @@
 
 namespace Ms {
 
+// Diagnostic only: show the native minimum and the finally allocated
+// chord-to-chord distances.  A tie minimum is a floor, not a final position:
+// Measure::stretchMeasure() may enlarge the spring after computeMinWidth().
+// Intentionally independent of spacingLayout4 and the 4.x spacing adapter.
+
 // System coordinates for open-ended slurs and lyric lines. Match Studio 4.7's
 // default header (1sp), repeat/end (0.25sp), and following-barline (0.65sp) gaps.
 qreal Measure::firstNoteRestSegmentX(bool leading) const
@@ -4770,18 +4775,35 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                             || (staff->isTabStaff(s->tick()) && !staff->staffType(s->tick())->showBackTied()))
                               continue;
                         for (const Note* note : toChord(item)->notes()) {
-                              Tie* tie = note->partialTie(true);
-                              if (note->visible() && tie && tie->addToSkyline())
-                                    tieEnds.push_back(tie->incomingEndOffset() - tie->incomingStartOffset());
+                              if (!note->visible())
+                                    continue;
+                              Tie* partial = note->partialTie(true);
+                              if (partial && partial->addToSkyline())
+                                    tieEnds.push_back(partial->incomingEndOffset() - partial->incomingStartOffset());
+                              // Studio reserves header clearance for ordinary
+                              // cross-system ties from every voice as well as
+                              // incoming partial ties. Only the first rhythmic
+                              // position can contain a system-entry tie end.
+                              if (first && s == this->first(SegmentType::ChordRest)) {
+                                    Tie* back = note->tieBack();
+                                    if (back && back->endNote() == note && back->startNote()
+                                        && back->addToSkyline()
+                                        && back->startNote()->chord()->measure()->system() != system())
+                                          tieEnds.push_back(back->incomingEndOffset() - back->incomingStartOffset());
+                                    }
                               }
                         }
                   if (!tieEnds.empty()) {
                         const qreal longest = *std::max_element(tieEnds.begin(), tieEnds.end());
                         const qreal oldX = x;
+                        // The provisional x already includes the user's leading space.
+                        // Keep that offset outside the automatic hanging-tie minimum,
+                        // as Studio does, so negative values can move the first chord.
+                        const qreal leading = s->extraLeadingSpace().val() * spatium();
                         for (qreal end : tieEnds) {
                               const Sid minimum = qAbs(end - longest) < 0.001 * spatium()
                                     ? Sid::minHangingTieLength : Sid::minTieLength;
-                              x = qMax(x, score()->styleP(minimum) - end);
+                              x = qMax(x, score()->styleP(minimum) - end + leading);
                               }
                         if (x > oldX && s->prevActive())
                               s->prevActive()->setWidth(s->prevActive()->width() + x - oldX);
@@ -4810,6 +4832,25 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   if (isSystemHeader && (ns->isChordRestType() || (ns->isClefType() && !ns->header()))) {
                         // this is the system header gap
                         w = s->minHorizontalDistance(ns, true);
+                        // Studio 4.7 uses a maximum, not a sum, of the shape
+                        // clearance and the header's right extent plus the
+                        // configured distance. It also ensures 1.5 sp between
+                        // the header's right ink and the next segment's left
+                        // ink. Apply only to header-clef -> chord/rest boundaries.
+                        if (s->isHeaderClefType() && ns->isChordRestType()) {
+                              const qreal right = s->minRight();
+                              const qreal left = ns->minLeft();
+                              const qreal collision = s->minHorizontalCollidingDistance(ns);
+                              const qreal headerDistance = score()->styleP(Sid::systemHeaderDistance);
+                              w = qMax(collision, right + headerDistance);
+                              w = qMax(w, right + left + 1.5 * spatium());
+                              // The Studio header clearance overrides the normal
+                              // segment distance. Restore the first chord's
+                              // independent manual leading-space adjustment;
+                              // minHorizontalDistance() included it in the
+                              // provisional value that was replaced above.
+                              w += ns->extraLeadingSpace().val() * spatium();
+                              }
                         isSystemHeader = false;
                         }
                   else {

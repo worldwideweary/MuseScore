@@ -28,6 +28,7 @@
 #include "mscore.h"
 #include "measure.h"
 #include "note.h"
+#include "navigate.h"
 #include "part.h"
 #include "repeat.h"
 #include "score.h"
@@ -37,10 +38,13 @@
 #include "staff.h"
 #include "staffstate.h"
 #include "system.h"
+#include "tie.h"
 #include "tuplet.h"
 #include "timesig.h"
 #include "undo.h"
 #include "xml.h"
+
+#include <cmath>
 
 namespace Ms {
 
@@ -2339,6 +2343,58 @@ qreal Segment::minLeftAfterBarline(const Shape& barrier, qreal padding) const
       return distance + padding;
       }
 
+// The native minimum for ordinary ties belongs to the pair of source and
+// destination segments, not to either chord's general bounding rectangle.
+// Coordinates below are segment-local, matching the geometry used by the
+// drawing code. The legacy chord reservation remains for other tie cases.
+static qreal nativeTiedNoteDistance(const Segment* sourceSegment, const Segment* targetSegment)
+      {
+      if (!sourceSegment || !targetSegment || !sourceSegment->isChordRestType()
+          || !targetSegment->isChordRestType()
+          || sourceSegment->measure() != targetSegment->measure())
+            return 0.0;
+
+      qreal required = 0.0;
+      const Score* score = targetSegment->score();
+      for (int track = 0; track < score->ntracks(); ++track) {
+            Element* item = targetSegment->element(track);
+            if (!item || !item->isChord())
+                  continue;
+            Chord* destination = toChord(item);
+            if (destination->isGrace() || !destination->staff()
+                || destination->staff()->isTabStaff(destination->tick()))
+                  continue;
+            for (Note* note : destination->notes()) {
+                  Tie* tie = note->tieBack();
+                  if (!tie || tie->isPartial() || tie->endNote() != note
+                      || !tie->startNote())
+                        continue;
+                  Note* source = tie->startNote();
+                  Chord* origin = source->chord();
+                  if (!origin || origin->isGrace()
+                      || origin->segment() != sourceSegment
+                      || origin->measure() != destination->measure()
+                      || origin->vStaffIdx() != destination->vStaffIdx()
+                      || origin != prevChordRest(destination))
+                        continue;
+
+                  tie->calculateDirection();
+                  tie->calculateIsInside();
+                  const QPointF start = tieNoteAttachment(source, tie->up(), tie->isInside(), true);
+                  const QPointF end = tieNoteAttachment(note, tie->up(), tie->isInside(), false);
+                  const qreal startX = origin->x() + source->x() + start.x();
+                  const qreal endX = destination->x() + note->x() + end.x();
+                  const qreal minimum = score->styleP(Sid::minTieLength)
+                        * qMax(source->mag(), note->mag());
+                  const qreal distance = minimum + startX - endX;
+                  if (!std::isfinite(distance))
+                        continue;
+                  required = qMax(required, distance);
+                  }
+            }
+      return required;
+      }
+
 //---------------------------------------------------------
 //   minHorizontalCollidingDistance
 //    calculate the minimum distance to ns avoiding collisions
@@ -2358,7 +2414,7 @@ qreal Segment::minHorizontalCollidingDistance(Segment* ns) const
             qreal d = staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx));
             w       = qMax(w, d);
             }
-      return w;
+      return qMax(w, nativeTiedNoteDistance(this, ns));
       }
 
 //---------------------------------------------------------
@@ -2745,6 +2801,10 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
 
       if (w < 0.0)
             w = 0.0;
+      if (ns && isChordRestType() && ns->isChordRestType()) {
+            const qreal tieMinimum = nativeTiedNoteDistance(this, ns);
+            w = qMax(w, tieMinimum);
+            }
       if (ns)
             w += ns->extraLeadingSpace().val() * spatium();
       return w;

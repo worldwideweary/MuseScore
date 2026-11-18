@@ -2077,7 +2077,22 @@ void Chord::layoutPitched()
                   bool shortStart = false;
                   Note* sn = tie->startNote();
                   Chord* sc = sn->chord();
-                  if (sc && sc->measure() == measure() && sc == prevChordRest(this)) {
+                  // Ordinary pitched ties between adjacent chords are
+                  // constrained between their actual attachment points by
+                  // Segment::minHorizontalDistance(). Do not also reserve
+                  // their minimum through this chord's general left shape:
+                  // that rectangle constrains unrelated voices and staves.
+                  // Keep the legacy estimate for unsupported cases.
+                  const bool pairwiseTie = !tie->isPartial()
+                        && tie->endNote() == note
+                        && sc && sc->segment() && segment()
+                        && sc->segment() != segment()
+                        && sc->measure() == measure()
+                        && sc->vStaffIdx() == vStaffIdx()
+                        && !sc->isGrace() && !isGrace()
+                        && sc == prevChordRest(this);
+                  if (sc && sc->measure() == measure()
+                      && sc == prevChordRest(this) && !pairwiseTie) {
                         if (tie->isInside() || (sc->stem() && sc->up() == tie->up())) {
                               shortStart = true;
                               if (sc->width() > sn->width()) {
