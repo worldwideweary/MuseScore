@@ -6804,10 +6804,14 @@ void ExportMusicXml::print(const Measure* const m, const int partNr, const int f
                   double systemLM = getTenthsFromDots(mmR1->pagePos().x() - system->page()->pagePos().x()) - lm;
                   double systemRM = pageWidth - rm - (getTenthsFromDots(system->bbox().width()) + lm);
 
+                  auto formatMargin = [](double v) {
+                        return QString::number(qAbs(v) < 0.005 ? 0.0 : v, 'f', 2);
+                        };
+
                   _xml.stag("system-layout");
                   _xml.stag("system-margins");
-                  _xml.tag("left-margin", QString("%1").arg(QString::number(systemLM,'f',2)));
-                  _xml.tag("right-margin", QString("%1").arg(QString::number(systemRM,'f',2)) );
+                  _xml.tag("left-margin", formatMargin(systemLM));
+                  _xml.tag("right-margin", formatMargin(systemRM));
                   _xml.etag();
 
                   if (mpc.systemStart && !mpc.pageStart) {

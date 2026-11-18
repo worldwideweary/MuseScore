@@ -1805,8 +1805,11 @@ void MusicXMLParserPass1::defaults()
                         const QString type = _e.attributes().value("type").toString();
                         if (_e.name() == "line-width") {
                               const double val = _e.readElementText().toDouble();
-                              if (isImportLayout)
+                              if (isImportLayout) {
                                     setStyle(type, val);
+                                    if (type == "bracket")
+                                          _score->style().setMusicXmlBracketWidthExplicit();
+                                    }
                               }
                         else if (_e.name() == "note-size") {
                               const double val = _e.readElementText().toDouble();
