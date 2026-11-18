@@ -94,6 +94,7 @@ enum class Pid : short {
       DISTRIBUTE,
       MIRROR_HEAD,
       DOT_POSITION,
+      ALIGN_DOTS,
       TUNING,
       PAUSE,
 

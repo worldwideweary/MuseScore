@@ -254,6 +254,23 @@
         </item>
        </layout>
       </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QCheckBox" name="alignDots">
+        <property name="text">
+         <string>Align augmentation dots</string>
+        </property>
+        <property name="toolTip">
+         <string>Use one horizontal dot column for simultaneous chords on this staff</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="Ms::ResetButton" name="resetAlignDots" native="true">
+        <property name="accessibleName">
+         <string>Reset 'Align augmentation dots' value</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -278,6 +295,7 @@
   <tabstop>isSmall</tabstop>
   <tabstop>stemless</tabstop>
   <tabstop>stemDirection</tabstop>
+  <tabstop>alignDots</tabstop>
  </tabstops>
  <resources/>
  <connections/>

@@ -1100,6 +1100,9 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
       qreal lx           = 10000.0;  // leftmost notehead position
       qreal upDotPosX    = 0.0;
       qreal downDotPosX  = 0.0;
+      // Unlike the legacy staff-wide dot column, Studio resolves a column
+      // for each chord before combining compatible voices.
+      std::map<Chord*, qreal> chordDotRight;
 
       int nNotes = int(notes.size());
       int nAcc = 0;
@@ -1196,12 +1199,7 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
 
             Direction dotPosition = note->userDotPosition();
             if (chord->dots()) {
-                  if (chord->up())
-                        upDotPosX = qMax(upDotPosX, xx);
-                  else {
-                        downDotPosX = qMax(downDotPosX, xx);
-                        }
-
+                  chordDotRight[chord] = qMax(chordDotRight[chord], xx);
                   if (dotPosition == Direction::AUTO && nNotes > 1 && note->visible() && !note->dotsHidden()) {
                         // resolve dot conflicts
                         int line = note->line();
@@ -1246,18 +1244,94 @@ void Score::layoutChords3(std::vector<Note*>& notes, const Staff* staff, Segment
             note->setDotY(dotPosition);  // also removes invalid dots
             }
 
+      // Mirroring and stem-direction changes can alter a stem's attachment
+      // without changing any note's vertical position.  The conditional
+      // stem layout in the loop above would then leave the previous attachment
+      // geometry in place until a pitch edit forces a vertical update.
+      // Refresh each affected chord once, after all notehead positions are set.
+      std::vector<Chord*> refreshedStems;
+      for (Note* note : notes) {
+            Chord* chord = note->chord();
+            if (std::find(refreshedStems.begin(), refreshedStems.end(), chord) != refreshedStems.end())
+                  continue;
+            refreshedStems.push_back(chord);
+            if (Stem* stem = chord->stem()) {
+                  stem->layout();
+                  if (Hook* hook = chord->hook())
+                        hook->rypos() = stem->hookPos().y();
+                  }
+            }
+
       // if there are no non-mirrored notes in a downstem chord,
       // then use the stem X position as X origin for accidental layout
       if (nNotes && leftNotes.size() == nNotes)
             lx = notes.front()->chord()->stemPosX();
 
-      if (segment) {
-            // align all dots for segment/staff
-            // it would be possible to dots for up & down chords separately
-            // this would require space to have been allocated previously
-            // when calculating chord offsets
-            segment->setDotPosX(staff->idx(), qMax(upDotPosX, downDotPosX));
+      // Studio 4.7 aligns dots within the same stem-direction group, but
+      // keeps upward/downward groups independent unless their notes conflict.
+      // Store the final column on each chord: Note::layout2() and chord
+      // spacing will then use the same result. Invisible-only dot groups do
+      // not force visible chords to move to their column.
+      std::vector<Chord*> visibleDotChords;
+      for (const auto& entry : chordDotRight) {
+            Chord* chord = entry.first;
+            chord->setDotPosX(entry.second);
+            bool hasVisibleDot = false;
+            for (const Note* n : chord->notes()) {
+                  for (const NoteDot* dot : n->dots()) {
+                        if (dot->visible()) {
+                              hasVisibleDot = true;
+                              break;
+                              }
+                        }
+                  if (hasVisibleDot)
+                        break;
+                  }
+            if (!hasVisibleDot)
+                  continue;
+            visibleDotChords.push_back(chord);
+            if (chord->up())
+                  upDotPosX = qMax(upDotPosX, entry.second);
+            else
+                  downDotPosX = qMax(downDotPosX, entry.second);
             }
+
+      bool oppositeStemConflict = false;
+      for (size_t i = 0; i < visibleDotChords.size() && !oppositeStemConflict; ++i) {
+            const Chord* a = visibleDotChords[i];
+            for (size_t j = i + 1; j < visibleDotChords.size(); ++j) {
+                  const Chord* b = visibleDotChords[j];
+                  if (a->up() == b->up())
+                        continue;
+                  const Chord* upChord = a->up() ? a : b;
+                  const Chord* downChord = a->up() ? b : a;
+                  // Adjacent or overlapping notes can put the two dot groups
+                  // into the same space; in that case share the outer column.
+                  if (downChord->upNote()->line() - upChord->downNote()->line() < 2) {
+                        oppositeStemConflict = true;
+                        break;
+                        }
+                  }
+            }
+
+      // A local Inspector override on any participating chord requests the
+      // legacy shared column for the entire staff/segment, not just itself.
+      bool alignAllDots = oppositeStemConflict;
+      for (const Chord* chord : visibleDotChords) {
+            if (chord->alignDots()) {
+                  alignAllDots = true;
+                  break;
+                  }
+            }
+      const qreal sharedColumn = qMax(upDotPosX, downDotPosX);
+      for (Chord* chord : visibleDotChords) {
+            chord->setDotPosX(alignAllDots
+                               ? sharedColumn
+                               : (chord->up() ? upDotPosX : downDotPosX));
+            }
+      // Keep the old segment position available to TAB and legacy consumers.
+      if (segment)
+            segment->setDotPosX(staff->idx(), sharedColumn);
 
       if (nAcc == 0)
             return;

@@ -124,6 +124,7 @@ InspectorNote::InspectorNote(QWidget* parent)
             { Pid::SMALL,          1, c.isSmall,       c.resetSmall         },
             { Pid::NO_STEM,        1, c.stemless,      c.resetStemless      },
             { Pid::STEM_DIRECTION, 1, c.stemDirection, c.resetStemDirection },
+            { Pid::ALIGN_DOTS,     1, c.alignDots,      c.resetAlignDots      },
 
             { Pid::LEADING_SPACE,  2, s.leadingSpace,  s.resetLeadingSpace  },
             };
@@ -181,6 +182,12 @@ void InspectorNote::setElement()
       bool nograce = !note->chord()->isGrace();
       s.leadingSpace->setEnabled(nograce);
       s.resetLeadingSpace->setEnabled(nograce && s.leadingSpace->value());
+
+      // The chord-level dot-column override is not used for tablature.
+      const bool pitchedDots = !note->staffType()->isTabStaff();
+      c.alignDots->setEnabled(pitchedDots);
+      if (!pitchedDots)
+            c.resetAlignDots->setEnabled(false);
 
       n.fixedLine->setEnabled(n.fixed->isChecked());
       n.playWidget->setVisible(n.play->isChecked());

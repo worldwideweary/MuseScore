@@ -87,6 +87,7 @@ static constexpr PropertyMetaData propertyList[] = {
       { Pid::DISTRIBUTE,                P_TYPE::BOOL,           false, "distribute",             DUMMY_QT_TRANSLATE_NOOP("propertyName", "distributed")                                   },
       { Pid::MIRROR_HEAD,               P_TYPE::DIRECTION_H,    false, "mirror",                 DUMMY_QT_TRANSLATE_NOOP("propertyName", "mirror")                                        },
       { Pid::DOT_POSITION,              P_TYPE::DIRECTION,      false, "dotPosition",            DUMMY_QT_TRANSLATE_NOOP("propertyName", "dot position")                                  },
+      { Pid::ALIGN_DOTS,                P_TYPE::BOOL,           false, "alignDots",              DUMMY_QT_TRANSLATE_NOOP("propertyName", "align augmentation dots")                           },
       { Pid::TUNING,                    P_TYPE::REAL,           false, "tuning",                 DUMMY_QT_TRANSLATE_NOOP("propertyName", "tuning")                                        },
       { Pid::PAUSE,                     P_TYPE::REAL,           true,  "pause",                  DUMMY_QT_TRANSLATE_NOOP("propertyName", "pause")                                         },
 

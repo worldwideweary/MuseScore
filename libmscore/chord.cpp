@@ -10,6 +10,8 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include <limits>
+
 #include "accidental.h"
 #include "arpeggio.h"
 #include "chordbracket.h"
@@ -264,6 +266,7 @@ Chord::Chord(const Chord& c, bool link)
 
       _graceIndex     = c._graceIndex;
       _noStem         = c._noStem;
+      _alignDots      = c._alignDots;
       _playEventType  = c._playEventType;
       _stemDirection  = c._stemDirection;
       _noteType       = c._noteType;
@@ -756,7 +759,11 @@ void Chord::addLedgerLines()
             int from, delta;
             std::vector<LedgerLineData> vecLines;
             hw = 0.0;
-            minX  = maxX = 0;
+            // Each ledger line begins at the actual notehead extrema.
+            // Starting at zero incorrectly extends lines toward the chord origin
+            // when a mirrored notehead is positioned farther to the right.
+            minX = std::numeric_limits<qreal>::max();
+            maxX = std::numeric_limits<qreal>::min();
             minLine = 0;
             maxLine = lineBelow;
             if (j == 0) {                       // ...once from lowest up...
@@ -1044,6 +1051,8 @@ void Chord::write(XmlWriter& xml) const
       if (_stemSlash && _stemSlash->isUserModified())
             _stemSlash->write(xml);
       writeProperty(xml, Pid::STEM_DIRECTION);
+      if (_alignDots)
+            writeProperty(xml, Pid::ALIGN_DOTS);
       for (Note* n : _notes)
             n->write(xml);
       for (const Note* owner : _notes) {
@@ -1225,6 +1234,8 @@ bool Chord::readProperties(XmlReader& e)
             add(ss);
             }
       else if (readProperty(tag, e, Pid::STEM_DIRECTION))
+            ;
+      else if (readProperty(tag, e, Pid::ALIGN_DOTS))
             ;
       else if (tag == "noStem")
             _noStem = e.readInt();
@@ -2287,6 +2298,7 @@ void Chord::layoutPitched()
 
       _spaceRw = qMax(_spaceRw, LaissezVib::layoutChord(this));
 
+
       // Reserve shared-parenthesis width during horizontal layout, before
       // the later system pass adds any attached single-note bend geometry.
       for (Note* note : _notes) {
@@ -2959,9 +2971,13 @@ Element* Chord::drop(EditData& data)
 
 qreal Chord::dotPosX() const
       {
-      if (parent())
-            return segment()->dotPosX(staffIdx());
-      return -1000.0;
+      if (!parent())
+            return -1000.0;
+      // A pitched chord owns its dot column. TAB stems/fret marks retain the
+      // 3.x segment/staff column, including the special stem-through rules.
+      if (_dotPosXValid && staff() && !staff()->isTabStaff(tick()))
+            return _dotPosX;
+      return segment()->dotPosX(staffIdx());
       }
 
 //---------------------------------------------------------
@@ -3016,6 +3032,7 @@ QVariant Chord::getProperty(Pid propertyId) const
       switch (propertyId) {
             case Pid::NO_STEM:        return noStem();
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(stemDirection());
+            case Pid::ALIGN_DOTS:      return alignDots();
             default:
                   return ChordRest::getProperty(propertyId);
             }
@@ -3030,6 +3047,7 @@ QVariant Chord::propertyDefault(Pid propertyId) const
       switch (propertyId) {
             case Pid::NO_STEM:        return false;
             case Pid::STEM_DIRECTION: return QVariant::fromValue<Direction>(Direction::AUTO);
+            case Pid::ALIGN_DOTS:      return false;
             default:
                   return ChordRest::propertyDefault(propertyId);
             }
@@ -3047,6 +3065,9 @@ bool Chord::setProperty(Pid propertyId, const QVariant& v)
                   break;
             case Pid::STEM_DIRECTION:
                   setStemDirection(v.value<Direction>());
+                  break;
+            case Pid::ALIGN_DOTS:
+                  setAlignDots(v.toBool());
                   break;
             default:
                   return ChordRest::setProperty(propertyId, v);

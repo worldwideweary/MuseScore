@@ -73,6 +73,13 @@ class Chord final : public ChordRest {
 
       qreal _spaceLw;
       qreal _spaceRw;
+      // Native pitched-staff dot column, computed for each chord at layout time.
+      // Tablature continues to use the shared segment/staff dot position.
+      qreal _dotPosX { 0.0 };
+      bool _dotPosXValid { false };
+      // A single chord can request one shared column for all dotted chords
+      // on its staff at the same rhythmic position.
+      bool _alignDots { false };
 
       QVector<Articulation*> _articulations;
 
@@ -188,6 +195,9 @@ class Chord final : public ChordRest {
       void computeUp() override;
 
       qreal dotPosX() const;
+      void setDotPosX(qreal x) { _dotPosX = x; _dotPosXValid = true; }
+      bool alignDots() const { return _alignDots; }
+      void setAlignDots(bool v) { _alignDots = v; }
 
       bool noStem() const                           { return _noStem;  }
       void setNoStem(bool val)                      { _noStem = val;   }
