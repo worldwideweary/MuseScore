@@ -28,12 +28,20 @@ QPointF tieNoteAttachment(const Note*, bool up, bool inside, bool start, bool ad
 
 class TieSegment final : public SlurTieSegment {
       QPointF autoAdjustOffset;
-      qreal shoulderHeightMin = 0.4;
-      qreal shoulderHeightMax = 1.3;
+      // Transient displacement of the two endpoints produced by automatic
+      // staff-line and horizontal collision clearance. Never stored in scores.
+      QPointF automaticGripOffset[2];
+      void consolidateAutomaticGripOffsets();
+      void preserveAutomaticShoulderHeight();
+      void adjustVertical();
+      QRectF collisionBounds() const;
+      qreal shoulderHeightMin = 0.3;
+      qreal shoulderHeightMax = 2.0;
+      // Automatic stacked-tie shoulder displacement; never serialized.
+      // Captured in the editable grips only when the user first edits a tie.
+      qreal stackedShoulderOffset = 0.0;
 
       void setAutoAdjust(const QPointF& offset);
-      void setAutoAdjust(qreal x, qreal y)      { setAutoAdjust(QPointF(x, y)); }
-      QPointF getAutoAdjust() const             { return autoAdjustOffset; }
 
    protected:
       void changeAnchor(EditData&, Element*) override;
@@ -50,8 +58,11 @@ class TieSegment final : public SlurTieSegment {
       void layoutSegment(const QPointF& p1, const QPointF& p2);
       void adjustX();
       void finalizeSegment();
+      void separateFromOuterTie(TieSegment* outer);
 
       bool isEdited() const;
+      void startDrag(EditData&) override;
+      QRectF drag(EditData&) override;
       void editDrag(EditData&) override;
       bool edit(EditData&) override;
 

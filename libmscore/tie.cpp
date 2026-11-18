@@ -29,10 +29,40 @@
 #include "undo.h"
 #include "utils.h"
 
+#include <cmath>
+#include <QDebug>
 namespace Ms {
 
 Note* Tie::editStartNote;
 Note* Tie::editEndNote;
+
+// Curve height increases sublinearly with length: short ties remain compact,
+// while long ties gain enough bow without a linear growth in curvature.
+// Bounds are expressed in staff spaces, matching TieSegment's layout fields.
+static qreal tieCurveHeight(qreal length, qreal sp, qreal minSp, qreal maxSp)
+      {
+      if (sp <= 0.0)
+            return 0.0;
+      const qreal lengthSp = qAbs(length) / sp;
+      const qreal preferredSp = 0.3 + 0.3 * std::sqrt(qAbs(lengthSp - 1.0));
+      return qBound(minSp, preferredSp, qMax(minSp, maxSp)) * sp;
+      }
+
+// A short bow needs less ink at its center than a full-length tie. This
+// returns the distance between the two Bezier halves, not the total pen width.
+static qreal tieCurveThickness(qreal lengthSp, qreal sp, qreal endWidth,
+                               qreal midWidth, qreal minimumLengthSp, qreal mag)
+      {
+      const qreal normal = qMax(0.0, midWidth - endWidth);
+      const qreal shortLimit = 4.0 * mag;
+      if (lengthSp >= shortLimit || minimumLengthSp >= shortLimit)
+            return normal;
+      const qreal shortest = qMax(0.0, 0.15 * sp - endWidth);
+      const qreal amount = qBound(0.0,
+            (lengthSp - minimumLengthSp) / (shortLimit - minimumLengthSp), 1.0);
+      return qMin(normal, shortest + (normal - shortest) * amount);
+      }
+
 
 QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bool adjust)
       {
@@ -65,6 +95,7 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
       if (!adjust)
             return point;
 
+
       // Keep a curve close to a ledger line on the inward side of that line.
       for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
             const qreal distance = sign * (ledger->y() - note->y() - point.y());
@@ -95,6 +126,8 @@ QPointF tieNoteAttachment(const Note* note, bool up, bool inside, bool start, bo
             if (!element || !element->isChord())
                   continue;
             const Chord* otherChord = toChord(element);
+            if (otherChord->vStaffIdx() != chord->vStaffIdx())
+                  continue;
             const QPointF offset = otherChord->pos() - chord->pos();
             if (otherChord->stem() && otherChord->stem()->visible())
                   clear(otherChord->stem()->bbox().translated(otherChord->stem()->pos() + offset));
@@ -252,11 +285,49 @@ void TieSegment::changeAnchor(EditData& ed, Element* element)
       }
 
 //---------------------------------------------------------
+//   startDrag
+//    Normal-mode mouse dragging goes through Element::drag(), not editDrag().
+//    Save the automatic-to-manual grip conversion as part of the same undo
+//    command as the tie's whole-segment offset.
+//---------------------------------------------------------
+
+void TieSegment::startDrag(EditData& ed)
+      {
+      Element::startDrag(ed);
+      ElementEditData* eed = ed.getData(this);
+      if (!eed)
+            return;
+      for (auto pid : { Pid::SLUR_UOFF1, Pid::SLUR_UOFF2, Pid::SLUR_UOFF3, Pid::SLUR_UOFF4 })
+            eed->pushProperty(pid);
+      }
+
+//---------------------------------------------------------
+//   drag
+//    Freeze the visible automatic endpoints and shoulder before the first
+//    normal-mode drag makes the segment nudged. Otherwise the ensuing layout
+//    suppresses automatic collision clearance without retaining its geometry.
+//---------------------------------------------------------
+
+QRectF TieSegment::drag(EditData& ed)
+      {
+      if (!isEdited() && !isNudged())
+            preserveAutomaticShoulderHeight();
+      consolidateAutomaticGripOffsets();
+      return Element::drag(ed);
+      }
+
+//---------------------------------------------------------
 //   editDrag
 //---------------------------------------------------------
 
 void TieSegment::editDrag(EditData& ed)
       {
+      // The first grip edit disables automatic shoulder constraints as well
+      // as endpoint clearance. Preserve both parts of the currently visible
+      // curve before recording the user's movement.
+      if (!isEdited() && !isNudged())
+            preserveAutomaticShoulderHeight();
+      consolidateAutomaticGripOffsets();
       Grip g = ed.curGrip;
       ups(g).off += ed.delta;
 
@@ -297,15 +368,6 @@ void TieSegment::editDrag(EditData& ed)
             roffset() += ed.delta;
             }
 
-      // if this SlurSegment was automatically adjusted to avoid collision
-      // lock this edit by resetting SlurSegment to default position
-      // and incorporating previous adjustment into user offset
-      QPointF offset = getAutoAdjust();
-      if (!offset.isNull()) {
-            setAutoAdjust(0.0, 0.0);
-            roffset() += offset;
-            }
-
       triggerLayout();
       }
 
@@ -323,11 +385,20 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       QPointF tieStart = ups(Grip::START).p + ups(Grip::START).off;
       QPointF tieEnd = ups(Grip::END).p   + ups(Grip::END).off;
 
-      QPointF tieEndNormalized = tieEnd - tieStart; // normalize to zero
-      if (qFuzzyIsNull(tieEndNormalized.x())) {
-            qDebug("zero tie");
+      // As in Studio 4.7, do not construct a tie whose free end is at or
+      // beyond its note-owned endpoint. Very negative system-start leading
+      // space can reverse an incoming tie; preserve the common start anchor
+      // rather than independently extending each voice's tie backward.
+      // Clear prior layout geometry so an earlier valid curve cannot linger.
+      const qreal horizontalSpan = tieEnd.x() - tieStart.x();
+      if (horizontalSpan <= 0.0 || qFuzzyIsNull(horizontalSpan)) {
+            path = QPainterPath();
+            shapePath = QPainterPath();
+            _shape.clear();
             return;
             }
+
+      QPointF tieEndNormalized = tieEnd - tieStart; // normalize to zero
 
       qreal tieAngle = atan(tieEndNormalized.y() / tieEndNormalized.x()); // angle required from tie start to tie end--zero if horizontal
       QTransform t;
@@ -335,11 +406,9 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       tieEndNormalized = t.map(tieEndNormalized);  // apply that rotation
       shoulderOffset = t.map(shoulderOffset);  // also apply to shoulderOffset
 
-      double smallH = 0.38; // I don't know what this means currently
-      qreal tieWidthInSp = tieEndNormalized.x() / _spatium;
-      shoulderH = tieWidthInSp * 0.4 * smallH;  // magic math?
-      shoulderH = qBound(shoulderHeightMin, shoulderH, shoulderHeightMax);
-      shoulderH *= _spatium;  // shoulderH is now canvas units
+      const qreal tieWidthInSp = tieEndNormalized.x() / _spatium;
+      shoulderH = tieCurveHeight(tieEndNormalized.x(), _spatium,
+                                 shoulderHeightMin, shoulderHeightMax) + stackedShoulderOffset;
       shoulderW = .6;
 
       shoulderH -= shoulderOffset.y();
@@ -356,9 +425,12 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       QPointF bezier1(bezier1X, -shoulderH);
       QPointF bezier2(bezier2X, -shoulderH);
 
-      qreal w = score()->styleP(Sid::tieMidWidth) - score()->styleP(Sid::tieEndWidth);
-      if (staff())
-            w *= staff()->mag(tie()->tick());
+      const qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
+      const qreal endWidth = score()->styleP(Sid::tieEndWidth);
+      const qreal midWidth = score()->styleP(Sid::tieMidWidth);
+      const qreal minimumLengthSp = score()->styleS(Sid::minTieLength).val() * mag;
+      const qreal w = tieCurveThickness(tieWidthInSp, _spatium,
+                                       endWidth, midWidth, minimumLengthSp, mag) * mag;
       QPointF tieThickness(0.0, w);
 
       QPointF bezier1Offset = shoulderOffset + t.map(ups(Grip::BEZIER1).off);
@@ -412,19 +484,24 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       ups(Grip::DRAG).p = t.map(tieDrag);
       ups(Grip::SHOULDER).p = t.map(tieShoulder);
 
+      // Use the same sampled, thickness-aware collision shape as Studio 4.7.
+      // Its bounds can differ slightly from the drawn Bezier path bounds;
+      // those small differences affect staff-line clearance decisions.
       _shape.clear();
-      QPointF start;
-      start = t.map(start);
-
-      qreal minH = qAbs(3.0 * w);
-      int nbShapes = 15;
+      QPointF start = t.map(QPointF());
+      const qreal midThickness = 2.0 * w;
+      const int nbShapes = qBound(20, qRound(5.0 * tieWidthInSp), 50);
       const CubicBezier b(tieStart, ups(Grip::BEZIER1).pos(), ups(Grip::BEZIER2).pos(), ups(Grip::END).pos());
-      for (int i = 1; i <= nbShapes; i++) {
-            const QPointF point = b.pointAtPercent(i/float(nbShapes));
-            QRectF re = QRectF(start, point).normalized();
-            if (re.height() < minH) {
-                  tieWidthInSp = (minH - re.height()) * .5;
-                  re.adjust(0.0, -tieWidthInSp, 0.0, tieWidthInSp);
+      for (int i = 1; i <= nbShapes; ++i) {
+            const qreal phase = std::sin(0.5 * M_PI * qreal(i) / nbShapes);
+            const qreal percent = phase * phase;
+            const QPointF point = b.pointAtPercent(percent);
+            QRectF re(start, point);
+            re = re.normalized();
+            const qreal thickness = (1.0 - 2.0 * qAbs(0.5 - percent)) * midThickness;
+            if (re.height() < thickness) {
+                  const qreal padding = 0.5 * (thickness - re.height());
+                  re.adjust(0.0, -padding, 0.0, padding);
                   }
             _shape.add(re);
             start = point;
@@ -432,16 +509,38 @@ void TieSegment::computeBezier(QPointF shoulderOffset)
       }
 
 //---------------------------------------------------------
+//   collisionBounds
+//    Native tie collision shape, not the drawn path's tight bounds.
+//---------------------------------------------------------
+
+QRectF TieSegment::collisionBounds() const
+      {
+      QRectF bounds = path.boundingRect();
+      if (!_shape.empty()) {
+            // Shape::left() is a spacing distance, not an absolute X coordinate.
+            // Preserve the path's true span and use the sampled ink Y extent.
+            bounds.setTop(_shape.top());
+            bounds.setBottom(_shape.bottom());
+            }
+      return bounds;
+      }
+
+//---------------------------------------------------------
 //   layoutSegment
-//    adjust the y-position of the tie. this is called before adjustX()
-//    p1, p2  are in System coordinates
+//    Initialize tie endpoints in system coordinates. Ordinary pitched ties
+//    receive vertical clearance in finalizeSegment(), after horizontal layout.
+//    Keep the existing path for partial ties until their free-end geometry is
+//    migrated separately.
 //---------------------------------------------------------
 
 void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       {
       autoAdjustOffset = QPointF();
-      shoulderHeightMin = 0.4;
-      shoulderHeightMax = 1.3;
+      automaticGripOffset[0] = QPointF();
+      automaticGripOffset[1] = QPointF();
+      shoulderHeightMin = 0.3;
+      shoulderHeightMax = 2.0;
+      stackedShoulderOffset = 0.0;
 
       setPos(QPointF());
       ups(Grip::START).p = p1;
@@ -451,34 +550,16 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       if (staffType())
             rypos() += staffType()->yoffset().val() * spatium();
 
-      if (isNudged() || isEdited())
+      if (isNudged() || isEdited() || !tie()->isPartial())
             return;
 
-      QRectF bbox;
-      if (p1.y() == p2.y()) {
-            // for horizontal ties we can estimate the bbox using simple math instead of having to call
-            // computeBezier() which uses a whole lot of trigonometry to draw the entire tie
-            bbox.setX(p1.x());
-            bbox.setWidth(p2.x() - p1.x());
-
-            // The following is ripped from computeBezier()
-            // TODO: refactor this into its own method
-            qreal shoulderHeight = bbox.width() * 0.4 * 0.38;
-            shoulderHeight = qBound(shoulderHeightMin * spatium(), shoulderHeight, shoulderHeightMax * spatium());
-            //////////
-            qreal actualHeight = 2 * (shoulderHeight + styleP(Sid::slurMidWidth)) / 3;
-
-            bbox.setY(p1.y() - (slurTie()->up() ? actualHeight : 0));
-            bbox.setHeight(actualHeight);
-            }
-      else {
-            computeBezier();
-            bbox = path.boundingRect();
-            }
-
-      // instead of the above if-else, the more "accurate" way to do this is:
-      // computeBezier();
-      // bbox = path.boundingRect();
+      // Preserve partial-tie positioning while migrating ordinary ties.
+      // Their free ends need a separate pass to avoid repeat-edge regressions.
+      // Use the actual curve for staff-line checks. The old rectangular
+      // estimate assumes linear shoulder growth and a constant mid-width;
+      // neither holds for the shorter and longer bows now being laid out.
+      computeBezier();
+      const QRectF bbox = path.boundingRect();
 
       Tie* t = toTie(slurTie());
       qreal sp = spatium();
@@ -609,24 +690,279 @@ void TieSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       }
 
 //---------------------------------------------------------
+//   adjustVertical
+//    Vertical staff-line clearance for ordinary pitched ties. This operates
+//    after horizontal clearance has settled the tie length, so the curve
+//    is checked in its final geometry rather than against a stale bow.
+//    Automatic corrections remain in the existing transient endpoint and
+//    shoulder-height state, which v0.306/v0.307 preserve on first edit.
+//---------------------------------------------------------
+
+void TieSegment::adjustVertical()
+      {
+      if (tie()->isPartial() || isEdited() || isNudged())
+            return;
+
+      Staff* st = staff();
+      if (!st || st->isTabStaff(tick()))
+            return;
+      const qreal sp = spatium();
+      const qreal lineDist = st->lineDistance(tick()) * sp;
+      const int nLines = st->lines(tick());
+      if (sp <= 0.0 || lineDist <= 0.0 || nLines <= 0)
+            return;
+
+      const bool up = tie()->up();
+      const qreal outward = up ? -1.0 : 1.0;
+      const qreal lineHalfWidth = 0.5 * styleP(Sid::staffLineWidth);
+      const qreal endpointMargin = 0.15 * sp;
+
+      // The 4.x ledger rule is independent of horizontal note/ledger
+      // clearance. When a ledger lies just outward from the note-owned tip,
+      // move *both* tips inward by the same amount (at most 0.4 sp). This
+      // preserves horizontal ties and the slope of cross-staff ties. Use the
+      // note owned by this system segment, not a note in another system.
+      const Note* owner = isSingleBeginType() ? tie()->startNote() : tie()->endNote();
+      if (owner && owner->chord() && owner->chord()->ledgerLines()) {
+            const Chord* chord = owner->chord();
+            qreal chordY = chord->pos().y() + chord->segment()->pos().y()
+                  + chord->measure()->pos().y();
+            if (system() && chord->vStaffIdx() != vStaffIdx())
+                  chordY += system()->staff(chord->vStaffIdx())->y()
+                        - system()->staff(vStaffIdx())->y();
+            const qreal gripY = ups(isSingleBeginType() ? Grip::START : Grip::END).p.y();
+            const qreal margin = 0.4 * sp;
+            qreal correction = 0.0;
+            for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next()) {
+                  const qreal distance = outward * (chordY + ledger->y() - gripY);
+                  if (distance > 0.0 && distance < margin)
+                        correction = qMax(correction, margin - distance);
+                  }
+            if (correction > 0.0)
+                  setAutoAdjust(QPointF(0.0, -outward * correction));
+            }
+
+      // Clear the *outward* staff line when an endpoint emerges too close
+      // to its ink. Move both endpoints together to preserve any slope.
+      // For an upward tie the outward line is above (floor), for a downward
+      // tie it is below (ceil). Do not snap to the closest line in either
+      // direction, which can move an otherwise good attachment unnecessarily.
+      const qreal startY = ups(Grip::START).p.y();
+      const int outwardLine = up ? int(std::floor(startY / lineDist))
+                                 : int(std::ceil(startY / lineDist));
+      if (outwardLine >= 0 && outwardLine < nLines) {
+            const qreal lineY = outwardLine * lineDist;
+            const qreal distance = qAbs(startY - lineY);
+            if (distance < endpointMargin + lineHalfWidth) {
+                  const qreal targetY = lineY + (up ? -1.0 : 1.0)
+                        * (endpointMargin + lineHalfWidth);
+                  // The ledger adjustment may already have moved the tie.
+                  // setAutoAdjust() accepts a total offset, not a delta.
+                  setAutoAdjust(autoAdjustOffset + QPointF(0.0, targetY - startY));
+                  }
+            }
+
+      // At the crown, compare the two faces of the ink ribbon with the
+      // nearest staff line. Checking only the approximate center (v0.310)
+      // cannot distinguish a bow passing across the line from one that has
+      // already cleared it on either side. The outward/inward choice also
+      // depends on which face has more room, not just the center's sign.
+      computeBezier();
+      const QRectF bounds = collisionBounds();
+      const qreal length = bounds.width();
+      if (length <= 0.0)
+            return;
+
+      const qreal mag = st->mag(tick());
+      const qreal endWidth = styleP(Sid::tieEndWidth);
+      const qreal midWidth = styleP(Sid::tieMidWidth);
+      const qreal minLengthSp = score()->styleS(Sid::minTieLength).val() * mag;
+      const qreal ribbonHalfWidth = tieCurveThickness(length / sp, sp,
+            endWidth, midWidth, minLengthSp, mag) * mag;
+      const qreal outerY = up ? bounds.top() : bounds.bottom();
+      const qreal innerY = outerY - outward * 2.0 * ribbonHalfWidth;
+      const qreal centerY = 0.5 * (outerY + innerY);
+      const int nearestLine = int(std::round(centerY / lineDist));
+      if (nearestLine < 0 || nearestLine >= nLines)
+            return;
+
+      const qreal staffY = nearestLine * lineDist;
+      const qreal outerMargin = -outward
+            * (outerY - (staffY - outward * lineHalfWidth));
+      const qreal innerMargin = outward
+            * (innerY - (staffY + outward * lineHalfWidth));
+      const qreal required = (length < 3.0 * sp ? 0.10 : 0.15) * sp;
+      const bool growOutwards = outerMargin - 0.5 * required < innerMargin;
+      bool needsOutward = growOutwards && innerMargin < required;
+      bool needsInward = !growOutwards && outerMargin < required;
+      if (!needsOutward && !needsInward)
+            return;
+
+      // A compact inner bow may sit more cleanly between staff lines with
+      // its tips translated, rather than by changing its shoulder. This is
+      // restricted to non-outer ties without an adjacent tied second.
+      const bool shortTie = length < 2.0 * sp && bounds.height() < 0.7 * sp;
+      const bool nonOuter = !tie()->isInside() && !tie()->isOuterTieOfChord(true)
+            && !tie()->isOuterTieOfChord(false);
+      bool tiedSecondInside = false;
+      const Note* startNote = tie()->startNote();
+      if (startNote) {
+            const int neighborLine = startNote->line() + (up ? 1 : -1);
+            for (const Note* neighbor : startNote->chord()->notes()) {
+                  if (neighbor->line() == neighborLine && neighbor->tieFor()
+                      && neighbor->tieFor()->up() == up) {
+                        tiedSecondInside = true;
+                        break;
+                        }
+                  }
+            }
+      // Studio 4.7's small inside ties favor outward staff-line clearance.
+      // Without this override, a tie whose crown grazes a staff line can
+      // flatten into that line instead of growing outward and moving its
+      // endpoints when the shoulder's available correction is exhausted.
+      if (shortTie && tie()->isInside() && needsInward) {
+            needsOutward = true;
+            needsInward = false;
+            }
+      if (shortTie && nonOuter && !tiedSecondInside && needsInward) {
+            setAutoAdjust(autoAdjustOffset + QPointF(0.0,
+                  -outward * (required - outerMargin)));
+            return;
+            }
+
+      // Apply the requested correction in shoulder-height units, not
+      // crown-displacement units. The cubic itself attenuates a shoulder
+      // change at its apex. Cap the shoulder change using the current ink
+      // height; only outward corrections may move both tips by the excess.
+      const QPointF delta = ups(Grip::END).p - ups(Grip::START).p;
+      const qreal chordLength = std::hypot(delta.x(), delta.y());
+      if (chordLength <= 0.0 || delta.x() <= 0.0)
+            return;
+      const qreal currentHeight = tieCurveHeight(chordLength,
+            sp, shoulderHeightMin, shoulderHeightMax);
+      const qreal needed = needsOutward ? required - innerMargin
+                                       : required - outerMargin;
+      const qreal arcCorrection = qMin(needed, 0.75 * bounds.height());
+      const qreal tipRemainder = needsOutward ? needed - arcCorrection : 0.0;
+      if (tipRemainder > 0.0)
+            setAutoAdjust(autoAdjustOffset + QPointF(0.0, outward * tipRemainder));
+
+      // Project a vertical adjustment into the tie's local coordinates.
+      // Keep the existing endpoint slope and avoid adding a horizontal
+      // shoulder offset for cross-staff ties. Temporary bounds retain
+      // the correction for the next computeBezier() and first-edit capture.
+      const qreal heightChange = arcCorrection * delta.x() / chordLength;
+      const qreal desiredHeight = qMax(0.0,
+            currentHeight + (needsOutward ? heightChange : -heightChange));
+      if (needsOutward) {
+            shoulderHeightMin = qMax(shoulderHeightMin, desiredHeight / sp);
+            shoulderHeightMax = qMax(shoulderHeightMax, shoulderHeightMin);
+            }
+      else {
+            shoulderHeightMin = qMin(shoulderHeightMin, desiredHeight / sp);
+            shoulderHeightMax = qMin(shoulderHeightMax, desiredHeight / sp);
+            }
+      }
+
+//---------------------------------------------------------
+//   separateFromOuterTie
+//    After individual placement, make space between bows that begin on
+//    neighboring notes of the same chord and curve in the same direction.
+//    Change the transient shoulder bounds rather than the endpoints so
+//    first-edit preservation continues to work normally.
+//---------------------------------------------------------
+
+void TieSegment::separateFromOuterTie(TieSegment* outer)
+      {
+      if (!outer || outer == this || isEdited() || isNudged()
+          || outer->isEdited() || outer->isNudged()
+          || tie()->up() != outer->tie()->up())
+            return;
+
+      const qreal sp = spatium();
+      if (sp <= 0.0)
+            return;
+      const qreal left = qMax(ups(Grip::START).p.x(), outer->ups(Grip::START).p.x());
+      const qreal right = qMin(ups(Grip::END).p.x(), outer->ups(Grip::END).p.x());
+      if (right - left < 0.5 * sp)
+            return;
+
+      // Compare facing edges at the crowns, not both outer edges. Each
+      // path bbox includes the endpoint height, so using its opposite edge
+      // would mistake the noteheads for the ribbon's inner boundary.
+      const bool up = tie()->up();
+      const qreal outward = up ? -1.0 : 1.0;
+      const QRectF innerBounds = collisionBounds();
+      const QRectF outerBounds = outer->collisionBounds();
+      const qreal innerOuterY = up ? innerBounds.top() : innerBounds.bottom();
+      const qreal outerCrownY = up ? outerBounds.top() : outerBounds.bottom();
+      // Match Studio's use of twice the *computed* mid-thickness of the
+      // outer ribbon, which can be thinner for very short ties.
+      const QPointF span = outer->ups(Grip::END).pos() - outer->ups(Grip::START).pos();
+      const qreal mag = outer->staff() ? outer->staff()->mag(outer->tick()) : 1.0;
+      const qreal ribbonWidth = 2.0 * tieCurveThickness(std::hypot(span.x(), span.y()) / sp,
+            sp, outer->styleP(Sid::tieEndWidth), outer->styleP(Sid::tieMidWidth),
+            outer->score()->styleS(Sid::minTieLength).val() * mag, mag) * mag;
+      const qreal outerInnerY = outerCrownY - outward * ribbonWidth;
+      const qreal clearance = outward * (outerInnerY - innerOuterY);
+      const qreal gap = 0.15 * sp;
+      if (clearance >= gap)
+            return;
+
+      // Align the gap between adjacent ribbons to the nearest half-space
+      // when that boundary is near the staff. This prevents tightly packed
+      // curves from straddling a staff line, while leaving distant ledger
+      // chords free of an artificial staff-position snap.
+      qreal midY = (innerOuterY + outerInnerY) * 0.5;
+      const Staff* st = staff();
+      if (st) {
+            const qreal halfLineDist = st->lineDistance(tick()) * sp * 0.5;
+            if (halfLineDist > 0.0) {
+                  const int halfLine = int(std::round(midY / halfLineDist));
+                  if (halfLine >= -1 && halfLine <= 2 * st->lines(tick()) - 1)
+                        midY = halfLine * halfLineDist;
+                  }
+            }
+
+      // As in 4.7.5, resolve the two facing crowns after individual staff-line
+      // clearance, rather than limiting separation to shoulder-height bounds.
+      // The crown moves by about 0.75 of its control-point height change.
+      // Studio's group resolver applies the raw shoulder correction once;
+      // doubling it would over-separate the ribbons.  Keep this automatic
+      // correction separate from the user's saved Bezier grip offsets.
+      const qreal insideTargetY = midY - outward * 0.5 * gap;
+      const qreal outsideTargetY = midY + outward * 0.5 * gap;
+      const qreal insideCorrection = outward * (insideTargetY - innerOuterY);
+      const qreal outsideCorrection = outward * (outsideTargetY - outerInnerY);
+      stackedShoulderOffset += insideCorrection;
+      outer->stackedShoulderOffset += outsideCorrection;
+      computeBezier();
+      setbbox(path.boundingRect());
+      outer->computeBezier();
+      outer->setbbox(outer->path.boundingRect());
+      }
+
+//---------------------------------------------------------
 //   finalizeSegment
 //    compute the bezier and adjust the bbox for the curve
 //---------------------------------------------------------
 
 void TieSegment::finalizeSegment()
       {
-      // Partial ties already share their free endpoints and minimum lengths
-      // with repeat spacing. Do not pull shorter chord ties across that edge.
+      // Incoming ordinary ties share a free endpoint at the system start.
+      // Header spacing already reserves the hanging minimum for the longest
+      // tie and the normal minimum for shorter tied chord notes. Extending
+      // every END segment here to the hanging minimum would move their free
+      // ends independently, defeating that common anchor.
+      // Leave outgoing hanging-tie minimums in place for now.
       if (!tie()->isPartial() && !isEdited() && !isNudged()
+          && spannerSegmentType() != SpannerSegmentType::END
           && (spannerSegmentType() != SpannerSegmentType::SINGLE || !tie()->endNote())) {
             const qreal minimum = score()->styleP(Sid::minHangingTieLength);
-            if (ups(Grip::END).p.x() - ups(Grip::START).p.x() < minimum) {
-                  if (spannerSegmentType() == SpannerSegmentType::END)
-                        ups(Grip::START).p.rx() = ups(Grip::END).p.x() - minimum;
-                  else
-                        ups(Grip::END).p.rx() = ups(Grip::START).p.x() + minimum;
-                  }
+            if (ups(Grip::END).p.x() - ups(Grip::START).p.x() < minimum)
+                  ups(Grip::END).p.rx() = ups(Grip::START).p.x() + minimum;
             }
+      adjustVertical();
       computeBezier();
       setbbox(path.boundingRect());
       }
@@ -648,6 +984,7 @@ void TieSegment::adjustX()
             const Chord* chord = note->chord();
             const bool start = !tie()->isIncoming();
             QPointF& point = ups(start ? Grip::START : Grip::END).p;
+            const qreal originalX = point.x();
             const qreal sp = spatium();
             const qreal top = point.y() - (tie()->up() ? .3 : .15) * sp;
             const qreal bottom = point.y() + (tie()->up() ? .15 : .3) * sp;
@@ -674,8 +1011,44 @@ void TieSegment::adjustX()
                               : qMin(point.x(), head.left() - .2 * sp));
                         }
                   }
+            automaticGripOffset[start ? 0 : 1].rx() += point.x() - originalX;
             return;
             }
+      // Use the same initial notehead attachment and clearance rules for
+      // ordinary pitched ties as for partial ties and l.v. ties. Unlike the
+      // legacy offsets below, these are applied relative to the *actual*
+      // endpoint rather than adding a second margin to the notehead inset.
+      // Keep tablature on the existing fret/stem path for this first pass.
+      const Note* startNote = tie()->startNote();
+      const Note* endNote = tie()->endNote();
+      const bool standardStart = startNote && startNote->staff()
+            && !startNote->staff()->isTabStaff(startNote->tick());
+      const bool standardEnd = endNote && endNote->staff()
+            && !endNote->staff()->isTabStaff(endNote->tick());
+      if (standardStart && (!endNote || standardEnd)) {
+            if (isNudged() || isEdited())
+                  return;
+            if (isSingleBeginType()) {
+                  const QPointF anchor = tieNoteAttachment(startNote, tie()->up(),
+                        tie()->isInside(), true, false);
+                  const QPointF cleared = tieNoteAttachment(startNote, tie()->up(),
+                        tie()->isInside(), true, true);
+                  const qreal shift = qMax(qreal(0.0), cleared.x() - anchor.x());
+                  ups(Grip::START).p.rx() += shift;
+                  automaticGripOffset[0].rx() += shift;
+                  }
+            if (endNote && isSingleEndType()) {
+                  const QPointF anchor = tieNoteAttachment(endNote, tie()->up(),
+                        tie()->isInside(), false, false);
+                  const QPointF cleared = tieNoteAttachment(endNote, tie()->up(),
+                        tie()->isInside(), false, true);
+                  const qreal shift = qMin(qreal(0.0), cleared.x() - anchor.x());
+                  ups(Grip::END).p.rx() += shift;
+                  automaticGripOffset[1].rx() += shift;
+                  }
+            return;
+            }
+
       const bool incoming = tie()->isPartial() && tie()->isIncoming();
       Note* sn = incoming ? nullptr : tie()->startNote();
       Note* en = incoming ? tie()->startNote() : tie()->endNote();
@@ -693,6 +1066,29 @@ void TieSegment::adjustX()
 
       if (isNudged() || isEdited())
             return;
+
+      // Ledger-line ink clearance is a tie-engraving rule, independent of
+      // which horizontal spacing engine the score uses.  Standard pitched
+      // ties take the optical-attachment path above; keep this fallback
+      // consistent for mixed-staff and legacy attachment cases as well.
+      const bool useLedgerInk = spannerSegmentType() == SpannerSegmentType::SINGLE && sc && ec
+            && sc->measure() == ec->measure() && !sc->staffMove() && !ec->staffMove()
+            && !beginGrace && !endGrace && sn->line() == en->line() && tie()->isInside();
+      const auto ledgerNeedsHorizontalRoom = [&](const LedgerLine* ledger, const Chord* chord, qreal gripY) {
+            // For an ordinary level tie above the staff, the curve leaves
+            // the grip away from a ledger on the opposite side. Allow
+            // horizontal overlap only if the ink also clears vertically.
+            if (useLedgerInk && gripY < 0 && !chord->staffMove()) {
+                  const qreal ledgerY = chord->y() + ledger->y();
+                  const qreal away = tie()->up() ? ledgerY - gripY : gripY - ledgerY;
+                  const qreal mag = staff() ? staff()->mag(tie()->tick()) : 1.0;
+                  const qreal stroke = qMax(score()->styleP(Sid::tieMidWidth),
+                                            score()->styleP(Sid::tieEndWidth)) * mag;
+                  if (away > ledger->lineWidth() * 0.5 + stroke)
+                        return false;
+                  }
+            return qAbs(gripY - ledger->y()) < spatium() * 0.5;
+            };
 
       // ADJUST LEFT GRIP -----------
       if (sc && ((spannerSegmentType() == SpannerSegmentType::SINGLE || spannerSegmentType() == SpannerSegmentType::BEGIN))) {
@@ -731,7 +1127,7 @@ void TieSegment::adjustX()
                         // adjust for ledger lines
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie start
-                              if (qAbs(p1.y() - currLedger->y()) < spatium() * 0.5) {
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, p1.y())) {
                                     xo = qMax(xo, (currLedger->x() + currLedger->len() + chordOffset));
                                     break;
                                     }
@@ -766,6 +1162,7 @@ void TieSegment::adjustX()
                         }
                   }
             ups(Grip::START).p += QPointF(xo, 0);
+            automaticGripOffset[0].rx() += xo;
             }
 
       // ADJUST RIGHT GRIP ----------
@@ -787,7 +1184,7 @@ void TieSegment::adjustX()
                         qreal chordOffset = (ec->x() + en->x()) - chord->x(); // en->x() for right-offset notes
                         for (LedgerLine* currLedger = chord->ledgerLines(); currLedger; currLedger = currLedger->next()) {
                               // search through ledger lines and see if any are within .5sp of tie end
-                              if (qAbs(p2.y() - currLedger->y()) < spatium() * 0.5)
+                              if (ledgerNeedsHorizontalRoom(currLedger, chord, p2.y()))
                                     xo = qMin(xo, currLedger->x() - chordOffset);
                               }
 
@@ -821,6 +1218,7 @@ void TieSegment::adjustX()
                   }
             xo = (beginGrace || endGrace ? 0.0 : xo) - offsetMargin;
             ups(Grip::END).p += QPointF(xo, 0);
+            automaticGripOffset[1].rx() += xo;
             }
       }
 
@@ -837,8 +1235,81 @@ void TieSegment::setAutoAdjust(const QPointF& offset)
             _shape.translate(diff);
             for (int i = 0; i < int(Grip::GRIPS); ++i)
                   _ups[i].p += diff;
+            automaticGripOffset[0] += diff;
+            automaticGripOffset[1] += diff;
             autoAdjustOffset = offset;
             }
+      }
+
+//---------------------------------------------------------
+//   preserveAutomaticShoulderHeight
+//    A first edit bypasses layoutSegment's automatic shoulder limits. Encode
+//    their current effect in the editable Bezier grips so a horizontal nudge
+//    does not suddenly change the arch. Unlike temporary shoulder limits,
+//    these grip offsets also survive saving and reopening an edited tie.
+//---------------------------------------------------------
+
+void TieSegment::preserveAutomaticShoulderHeight()
+      {
+      const QPointF start = ups(Grip::START).pos();
+      const QPointF end   = ups(Grip::END).pos();
+      const QPointF vector = end - start;
+      const qreal sp = spatium();
+      if (vector.x() <= 0.0 || sp <= 0.0)
+            return;
+
+      const qreal length = std::hypot(vector.x(), vector.y());
+      const qreal height = tieCurveHeight(length, sp, shoulderHeightMin, shoulderHeightMax)
+            + stackedShoulderOffset;
+      const qreal unrestrainedHeight = tieCurveHeight(length, sp, 0.3, 2.0);
+      const qreal delta = height - unrestrainedHeight;
+      if (qFuzzyIsNull(delta)) {
+            stackedShoulderOffset = 0.0;
+            return;
+            }
+
+      // computeBezier() derives the control-point height in coordinates
+      // rotated by the tie's angle, then applies Bezier user offsets there.
+      // Express the compensating displacement in the unrotated grip space.
+      const qreal angle = std::atan2(vector.y(), vector.x());
+      QTransform rotation;
+      rotation.rotateRadians(angle);
+      const QPointF correction = rotation.map(QPointF(0.0, tie()->up() ? -delta : delta));
+      ups(Grip::BEZIER1).off += correction;
+      ups(Grip::BEZIER2).off += correction;
+      stackedShoulderOffset = 0.0;
+      }
+
+//---------------------------------------------------------
+//   consolidateAutomaticGripOffsets
+//    Keep the endpoints fixed when user editing disables automatic placement.
+//    The manual offset is relative to the unadjusted notehead attachment.
+//---------------------------------------------------------
+
+// Avoid interpreting floating-point cancellation in the automatically
+// calculated grip offsets as a manual edit. This tolerance is many orders
+// smaller than a visible nudge, and is measured in local staff-space units.
+static bool tieGripOffsetIsEffectivelyZero(const QPointF& offset, qreal sp)
+      {
+      const qreal tolerance = qMax(qreal(1.0e-10), qAbs(sp) * qreal(1.0e-8));
+      return qAbs(offset.x()) <= tolerance && qAbs(offset.y()) <= tolerance;
+      }
+
+void TieSegment::consolidateAutomaticGripOffsets()
+      {
+      const qreal sp = spatium();
+      for (int i = 0; i < 2; ++i) {
+            const Grip grip = i == 0 ? Grip::START : Grip::END;
+            const QPointF adjustment = automaticGripOffset[i];
+            if (!tieGripOffsetIsEffectivelyZero(adjustment, sp)) {
+                  ups(grip).p -= adjustment;
+                  ups(grip).off += adjustment;
+                  if (tieGripOffsetIsEffectivelyZero(ups(grip).off, sp))
+                        ups(grip).off = QPointF();
+                  }
+            automaticGripOffset[i] = QPointF();
+            }
+      autoAdjustOffset = QPointF();
       }
 
 //---------------------------------------------------------
@@ -847,8 +1318,9 @@ void TieSegment::setAutoAdjust(const QPointF& offset)
 
 bool TieSegment::isEdited() const
       {
+      const qreal sp = spatium();
       for (int i = 0; i < int(Grip::GRIPS); ++i) {
-            if (!_ups[i].off.isNull())
+            if (!tieGripOffsetIsEffectivelyZero(_ups[i].off, sp))
                   return true;
             }
       return false;
@@ -882,6 +1354,45 @@ void Tie::slurPos(SlurPos* sp)
       const Note* en = isPartial() ? sn : endNote();
       bool useTablature = staff() && staff()->isTabStaff(tick());
       const StaffType* stt = useTablature ? staff()->staffType(tick()) : 0;
+      if (!useTablature) {
+            // Pitched ties share one note-local optical attachment calculation
+            // with partial ties and l.v. marks. This is the unadjusted anchor;
+            // TieSegment::adjustX() separately handles nearby ink.
+            Chord* sc = sn->chord();
+            Chord* ec = en ? en->chord() : nullptr;
+            calculateIsInside();
+            sp->system1 = sc->measure()->system();
+            sp->system2 = ec ? ec->measure()->system() : sp->system1;
+            sp->p1 = sn->pos() + sc->pos() + sc->segment()->pos() + sc->measure()->pos()
+                  + tieNoteAttachment(sn, up(), isInside(), true, false);
+            if (sc->isGrace())
+                  sp->p1 += sc->parent()->pos();
+            if (sp->system1 && sc->vStaffIdx() != vStaffIdx())
+                  sp->p1.ry() += sp->system1->staff(sc->vStaffIdx())->y()
+                        - sp->system1->staff(vStaffIdx())->y();
+            if (!ec) {
+                  // The 3.x one-ended tie retains its existing hanging length.
+                  sp->p2 = sp->p1 + QPointF(score()->styleP(Sid::minHangingTieLength), 0.0);
+                  return;
+                  }
+            sp->p2 = en->pos() + ec->pos() + ec->segment()->pos() + ec->measure()->pos()
+                  + tieNoteAttachment(en, up(), isInside(), false, false);
+            if (ec->isGrace())
+                  sp->p2 += ec->parent()->pos();
+            if (sp->system2 && ec->vStaffIdx() != vStaffIdx())
+                  sp->p2.ry() += sp->system2->staff(ec->vStaffIdx())->y()
+                        - sp->system2->staff(vStaffIdx())->y();
+
+            // Two identical staff positions should have level endpoints. If
+            // the two noteheads differ in size, keep the outermost attachment.
+            if (sn->line() == en->line() && sc->vStaffIdx() == ec->vStaffIdx()) {
+                  const qreal y = up() ? qMin(sp->p1.y(), sp->p2.y())
+                        : qMax(sp->p1.y(), sp->p2.y());
+                  sp->p1.setY(y);
+                  sp->p2.setY(y);
+                  }
+            return;
+            }
       qreal _spatium    = spatium();
       qreal hw          = sn->tabHeadWidth(stt);   // if stt == 0, defaults to headWidth()
       qreal __up        = _up ? -1.0 : 1.0;
@@ -1078,14 +1589,18 @@ bool Tie::readProperties(XmlReader& xml)
 // landing chord: spacing must be able to move that chord to make room.
 qreal Tie::incomingStartOffset() const
       {
-      const Note* note = startNote();
-      if (!isPartial() || !isIncoming() || !note)
+      // A regular tie crossing a system boundary is incoming at endNote();
+      // an incoming partial tie owns its only note in startNote(). Both
+      // reserve the same free endpoint beyond the system header.
+      const Note* note = isPartial() ? startNote() : endNote();
+      if ((isPartial() && !isIncoming()) || !note)
             return 0.0;
       const Chord* chord = note->chord();
       const Measure* measure = chord->measure();
       const System* system = measure->system();
       const qreal sp = spatium();
-      if (!system)
+      if (!system || (!isPartial() && (!startNote() ||
+            startNote()->chord()->measure()->system() == system)))
             return 0.0;
       if (measure == system->firstMeasure()) {
             const Segment* firstCR = measure->first(SegmentType::ChordRest);
@@ -1136,8 +1651,12 @@ qreal Tie::incomingStartOffset() const
 
 qreal Tie::incomingEndOffset()
       {
-      Note* note = startNote();
-      if (!isPartial() || !isIncoming() || !note || !note->chord()->measure()->system())
+      Note* note = isPartial() ? startNote() : endNote();
+      if ((isPartial() && !isIncoming()) || !note || !note->chord()->measure()->system())
+            return 0;
+      // Only the END half of a regular cross-system tie needs this reserve.
+      if (!isPartial() && (!startNote() ||
+            startNote()->chord()->measure()->system() == note->chord()->measure()->system()))
             return 0;
       calculateDirection();
       SlurPos positions;
@@ -1147,9 +1666,11 @@ qreal Tie::incomingEndOffset()
       probe.setSpanner(this);
       probe.setTrack(track());
       probe.setParent(positions.system2);
-      probe.setSpannerSegmentType(SpannerSegmentType::SINGLE);
-      if (!spannerSegments().empty())
+      probe.setSpannerSegmentType(isPartial() ? SpannerSegmentType::SINGLE : SpannerSegmentType::END);
+      if (isPartial() && !spannerSegments().empty())
             probe.ups(Grip::END).off = frontSegment()->ups(Grip::END).off;
+      else if (!isPartial() && nsegments() > 1)
+            probe.ups(Grip::END).off = backSegment()->ups(Grip::END).off;
       qreal freeX = note->chord()->measure()->x() + incomingStartOffset();
       if (freeX >= positions.p2.x())
             freeX = positions.p2.x() - qMax(.1 * spatium(), score()->styleP(Sid::minHangingTieLength));
@@ -1450,8 +1971,10 @@ TieSegment* Tie::layoutBack(System* system)
       TieSegment* segment = segmentAt(1);
       segment->setSystem(system);
 
-      qreal x = qMin(system->firstNoteRestSegmentX(true),
-            sPos.p2.x() - score()->styleP(Sid::minHangingTieLength));
+      // All incoming ordinary ties share the system's free-end position.
+      // Minimum hanging length belongs to horizontal spacing (including
+      // voice 2), not to an individual clamp on the tie's start anchor.
+      const qreal x = system->firstNoteRestSegmentX(true);
 
       segment->layoutSegment(QPointF(x, sPos.p2.y()), sPos.p2);
       segment->setSpannerSegmentType(SpannerSegmentType::END);

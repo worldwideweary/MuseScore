@@ -736,10 +736,13 @@ void Measure::layout2()
       MeasureBase::layout();  // layout LAYOUT_BREAK elements
 
       //---------------------------------------------------
-      //    layout ties
+      //    layout remaining note-attached spanners
       //---------------------------------------------------
 
-      Fraction stick = system()->measures().front()->tick();
+      // Score::layoutSystem() has already laid out and separated the ties
+      // of each chord after horizontal spacing. Re-running the per-tie
+      // layoutFor()/layoutBack() here would discard the transient stacked
+      // shoulder corrections before drawing. Keep the other spanner updates.
       int tracks = score()->ntracks();
       static const SegmentType st { SegmentType::ChordRest };
       for (int track = 0; track < tracks; ++track) {
@@ -754,7 +757,7 @@ void Measure::layout2()
 
                   if (cr->isChord()) {
                         Chord* c = toChord(cr);
-                        c->layoutSpanners(system(), stick);
+                        c->layoutSpanners();
                         }
                   }
             }
