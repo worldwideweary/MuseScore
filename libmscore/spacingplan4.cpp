@@ -3173,7 +3173,7 @@ void publishStudioSpacingResult4(Score* score, System* system, bool useStudioPla
 // Adapter-only edit predicates: evaluated at the same points as the original
 // SlurSegment code.  The native editor continues to own undo transactions,
 // captured endpoints/generation, and the eventual command-state request.
-bool studioSlurOffsetDragEligible4(const SlurSegment* segment)
+static bool studioSlurOffsetDragEligible4(const SlurSegment* segment)
 {
     if (!segment) return false;
     const Score* score = segment->score();
@@ -3184,7 +3184,7 @@ bool studioSlurOffsetDragEligible4(const SlurSegment* segment)
             && !segment->links() && !slur->links();
 }
 
-bool studioSlurOffsetPropertiesEligible4(const ElementEditData* data)
+static bool studioSlurOffsetPropertiesEligible4(const ElementEditData* data)
 {
     if (!data || data->propertyData.empty()) return false;
     for (const PropertyData& property : data->propertyData) {
@@ -3193,6 +3193,41 @@ bool studioSlurOffsetPropertiesEligible4(const ElementEditData* data)
             && property.id != Pid::OFFSET) return false;
     }
     return true;
+}
+
+// Capture after SlurTieSegment::startEditDrag(), as before. The segment owns
+// only value snapshots; the optional planner owns the eligibility contract.
+void SlurSegment::captureStudioOffsetEdit4()
+{
+    const Slur* s = slur();
+    _offsetEdit4.clean = studioSlurOffsetDragEligible4(this);
+    _offsetEdit4.start = s->startElement();
+    _offsetEdit4.generation = score()->cmdState().generation4();
+    _offsetEdit4.end = s->endElement();
+    _offsetEdit4.tick = s->tick();
+    _offsetEdit4.tick2 = s->tick2();
+    _offsetEdit4.track = s->track();
+    _offsetEdit4.track2 = s->track2();
+}
+
+// Classify and consume before the native endEditDrag undo write. Do not move
+// the generation test after that call: undo may invalidate horizontal reuse.
+bool SlurSegment::classifyStudioOffsetEdit4(const ElementEditData* data)
+{
+    const Slur* s = slur();
+    const bool offsetOnly = _offsetEdit4.clean && studioSlurOffsetPropertiesEligible4(data)
+          && _offsetEdit4.generation == score()->cmdState().generation4() && !links() && !s->links()
+          && score()->cmdState().updateMode() == UpdateMode::DoNothing
+          && _offsetEdit4.start == s->startElement() && _offsetEdit4.end == s->endElement()
+          && _offsetEdit4.tick == s->tick() && _offsetEdit4.tick2 == s->tick2()
+          && _offsetEdit4.track == s->track() && _offsetEdit4.track2 == s->track2();
+    _offsetEdit4.clean = false;
+    return offsetOnly;
+}
+
+bool SlurSegment::studioOffsetEditGenerationUnchanged4() const
+{
+    return _offsetEdit4.generation == score()->cmdState().generation4();
 }
 
 bool studioSlurEndAnchorEditEligible4(const SlurSegment* segment, bool endGrip,

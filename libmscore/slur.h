@@ -46,6 +46,11 @@ class SlurSegment final : public SlurTieSegment {
             Fraction tick, tick2;
             int track = -1, track2 = -1;
             } _offsetEdit4;
+      // Implemented in the optional spacing module: snapshot and classify a
+      // bounded offset-only edit without moving native undo or edit ownership.
+      void captureStudioOffsetEdit4();
+      bool classifyStudioOffsetEdit4(const ElementEditData*);
+      bool studioOffsetEditGenerationUnchanged4() const;
       void changeAnchor(EditData&, Element*) override;
 
    public:

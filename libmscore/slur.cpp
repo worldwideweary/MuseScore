@@ -40,32 +40,16 @@ namespace Ms {
 void SlurSegment::startEditDrag(EditData& ed)
       {
       SlurTieSegment::startEditDrag(ed);
-      const Slur* s = slur();
-      _offsetEdit4.clean = studioSlurOffsetDragEligible4(this);
-      _offsetEdit4.start = s->startElement();
-      _offsetEdit4.generation = score()->cmdState().generation4();
-      _offsetEdit4.end = s->endElement();
-      _offsetEdit4.tick = s->tick();
-      _offsetEdit4.tick2 = s->tick2();
-      _offsetEdit4.track = s->track();
-      _offsetEdit4.track2 = s->track2();
+      captureStudioOffsetEdit4();
       }
 
 void SlurSegment::endEditDrag(EditData& ed)
       {
-      const Slur* s = slur();
-      const ElementEditData* data = ed.getData(this);
-      bool offsetOnly = _offsetEdit4.clean && studioSlurOffsetPropertiesEligible4(data)
-            && _offsetEdit4.generation == score()->cmdState().generation4() && !links() && !s->links()
-            && score()->cmdState().updateMode() == UpdateMode::DoNothing
-            && _offsetEdit4.start == s->startElement() && _offsetEdit4.end == s->endElement()
-            && _offsetEdit4.tick == s->tick() && _offsetEdit4.tick2 == s->tick2()
-            && _offsetEdit4.track == s->track() && _offsetEdit4.track2 == s->track2();
-      _offsetEdit4.clean = false;
+      const bool offsetOnly = classifyStudioOffsetEdit4(ed.getData(this));
       // This known commit writes only the captured offsets/flags and GENERATED.
       // Keep normal undo bookkeeping and layout notifications, then classify it.
       SlurTieSegment::endEditDrag(ed);
-      if (offsetOnly && _offsetEdit4.generation == score()->cmdState().generation4())
+      if (offsetOnly && studioOffsetEditGenerationUnchanged4())
             score()->cmdState().requestSlurOffset4(this);
       }
 

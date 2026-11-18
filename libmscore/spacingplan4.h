@@ -358,11 +358,9 @@ public:
     void publishAfterPlacement(Score*, System*) const;
 };
 
-// Studio-only editing eligibility.  The native editor retains its undo writes,
-// endpoint snapshot, edit generation check and layout notifications.  These
-// queries do not mutate any score state or request incremental layout.
-bool studioSlurOffsetDragEligible4(const SlurSegment*);
-bool studioSlurOffsetPropertiesEligible4(const ElementEditData*);
+// Studio-only anchor editing eligibility; bounded offset-edit snapshot
+// capture/classification is implemented in spacingplan4.cpp as SlurSegment
+// members, leaving native undo and layout requests at their original sites.
 bool studioSlurEndAnchorEditEligible4(const SlurSegment*, bool endGrip,
                                       const ChordRest* start, const ChordRest* end,
                                       const ChordRest* candidate);
