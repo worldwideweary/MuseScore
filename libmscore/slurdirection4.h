@@ -26,6 +26,10 @@ Direction resolveSpacingSlurDirection4(const SpacingSlurDirectionFacts4&);
 // inputs, never inside collision queries. Failure preserves result.
 bool prepareSlurDirection4(Slur*, Direction& result);
 
+// Rendering entry point: selects the Studio direction producer only when
+// the optional horizontal-spacing style is enabled.  Failure preserves result.
+bool prepareStudioSlurDirection4(Slur*, Direction& result);
+
 // Read-only native adapter after required note-line/stem producer work. Does
 // not establish readiness itself. Uses current prepared inputs, never Slur::up,
 // and never calls updateLine/computeUp or repairs raw anchors. Failure is atomic.

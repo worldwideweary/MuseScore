@@ -2,6 +2,7 @@
 // Licensed under GNU GPL version 2; see LICENSE.GPL.
 #include "slurdirection4.h"
 #include "slur.h"
+#include "score.h"
 #include "chord.h"
 #include "beam.h"
 #include "measure.h"
@@ -101,6 +102,14 @@ static bool slurDirectionImpl4(const Slur* slur, Direction& result, bool refresh
 bool prepareSlurDirection4(Slur* slur, Direction& result)
 {
     return slurDirectionImpl4(slur, result, true);
+}
+
+// Native rendering keeps its legacy direction fallback if Studio spacing
+// is disabled or the optional producer cannot certify a direction.
+bool prepareStudioSlurDirection4(Slur* slur, Direction& result)
+{
+    return slur && slur->score() && slur->score()->styleB(Sid::spacingLayout4)
+        && prepareSlurDirection4(slur, result);
 }
 
 bool resolvePreparedSlurDirection4(const Slur* slur, Direction& result)

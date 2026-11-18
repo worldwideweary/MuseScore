@@ -34,5 +34,9 @@ bool fitGraceSlurCurve4(const SpacingShape4&, const Chord* target, qreal spatium
 // leading beam edge, including the rounded end-stroke radius.
 bool adjustGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end, QString* reason = nullptr,
                                       bool allowVisualEdits = false, GraceMergedSlurQuery4* query = nullptr);
+// Rendering entry point for ordinary, non-partial slurs.  The Studio style
+// gate lives here, leaving native slurPos() with only the integration call.
+bool applyStudioGraceMergedSlurBeamAnchors4(const Slur*, QPointF& start, QPointF& end,
+                                           GraceMergedSlurQuery4* query);
 }
 #endif

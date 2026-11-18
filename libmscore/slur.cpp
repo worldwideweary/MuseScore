@@ -1498,8 +1498,7 @@ void Slur::slurPos(SlurPos* sp)
       if (constrainLeftAnchor)
             sp->p1.setY(sp->p2.y() + __up * 0.25 * _spatium);
 
-      if (!isIncoming() && !isOutgoing() && score()->styleB(Sid::spacingLayout4))
-            adjustGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2, nullptr, true, _graceQuery4);
+      applyStudioGraceMergedSlurBeamAnchors4(this, sp->p1, sp->p2, _graceQuery4);
       }
 
 //---------------------------------------------------------
@@ -1641,7 +1640,7 @@ SpannerSegment* Slur::layoutSystem(System* system)
                   setTick2(tick());
                   }
             Direction preparedDirection = Direction::AUTO;
-            if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+            if (prepareStudioSlurDirection4(this, preparedDirection))
                   _up = preparedDirection == Direction::UP;
             else switch (_slurDirection) {
                   case Direction::UP:
@@ -1776,7 +1775,7 @@ void Slur::layout()
             setTick2(tick());
             }
       Direction preparedDirection = Direction::AUTO;
-      if (score()->styleB(Sid::spacingLayout4) && prepareSlurDirection4(this, preparedDirection))
+      if (prepareStudioSlurDirection4(this, preparedDirection))
             _up = preparedDirection == Direction::UP;
       else switch (_slurDirection) {
             case Direction::UP:

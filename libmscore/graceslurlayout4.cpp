@@ -198,6 +198,16 @@ bool fitGraceSlurCurve4(const SpacingShape4& physical, const Chord* target, qrea
     return fail("Grace slur clearance exceeds bounded fitting passes");
 }
 
+// Preserve the original slurPos eligibility and keep the bounded
+// grace-beam query unchanged.  No geometry is published on failure.
+bool applyStudioGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& start, QPointF& end, GraceMergedSlurQuery4* query)
+{
+    if (!slur || slur->isIncoming() || slur->isOutgoing()
+        || !slur->score() || !slur->score()->styleB(Sid::spacingLayout4))
+        return false;
+    return adjustGraceMergedSlurBeamAnchors4(slur, start, end, nullptr, true, query);
+}
+
 bool adjustGraceMergedSlurBeamAnchors4(const Slur* slur, QPointF& startPoint, QPointF& endPoint, QString* reason, bool allowVisualEdits,
                                       GraceMergedSlurQuery4* query)
 {
