@@ -8,6 +8,7 @@
 #include <vector>
 #include <utility>
 #include "shape.h"
+#include "sym.h"
 
 namespace Ms {
 class Element;
@@ -15,7 +16,6 @@ class Segment;
 class Shape;
 class ChordRest;
 class Clef;
-enum class SymId : short;
 
 enum class SpacingIdentity4 { ITEM, UNCLASSIFIED, AMBIGUOUS, LEGACY_SPACER, SHARED_ITEM };
 // LEGACY_SPACER records a known producer's aggregate bound. It is retained in
