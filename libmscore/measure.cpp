@@ -4896,9 +4896,10 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
             // but still consider it for spacing of previous segment
             if (!ns)
                   ns = s->next(SegmentType::BarLineType);
-            qreal studioMinimum = 0;
-            const qreal studioOffset = studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)
-                  ? crossBeamSpacingOffset4(s, ns, &studioMinimum) : 0;
+            const bool useStudioWidth = studioRhythm && s->isChordRestType()
+                  && s->ticks() > Fraction(0, 1);
+            const StudioSegmentWidth4 studioWidth = useStudioWidth
+                  ? studioSegmentWidth4(s, ns) : StudioSegmentWidth4{};
             qreal w;
 
             if (ns) {
@@ -4927,7 +4928,7 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                         isSystemHeader = false;
                         }
                   else {
-                        w = s->minHorizontalDistance(ns, false, studioOffset < 0);
+                        w = s->minHorizontalDistance(ns, false, studioWidth.offset < 0);
                         }
 // printf("  min %f <%s>(%d) <%s>(%d)\n", s->x(), s->subTypeName(), s->enabled(), ns->subTypeName(), ns->enabled());
 #if 1
@@ -4983,13 +4984,8 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                   }
             else
                   w = s->minRight();
-            if (studioRhythm && s->isChordRestType() && s->ticks() > Fraction(0, 1)) {
-                  s->setSpacingWidthOffset4(studioOffset);
-                  w = qMax(w, 3.5 * spatium() * segmentSpacingStretch4(s) + studioOffset);
-                  // Retain Evolution's collision floor for either sign, and
-                  // Studio's stem/beamlet clearance for up-to-down transitions.
-                  w = qMax(w, studioMinimum);
-                  }
+            if (useStudioWidth)
+                  w = applyStudioSegmentWidth4(s, studioWidth, w, spatium());
             s->setWidth(w);
             x += w;
             s = s->next();

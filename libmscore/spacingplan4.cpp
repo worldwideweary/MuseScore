@@ -146,7 +146,7 @@ static bool secondarySpacingBeamlet4(const Chord* chord)
     return true;
 }
 
-qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal* minimumWidth)
+static qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal* minimumWidth)
 {
     if (minimumWidth)
         *minimumWidth = 0;
@@ -201,6 +201,28 @@ qreal crossBeamSpacingOffset4(const Segment* segment, const Segment* next, qreal
             *minimumWidth = 2 * displacement;
     }
     return canAdjust ? (upDown ? displacement : -displacement) : 0;
+}
+
+// Compute the Studio-only signed cross-beam contribution before the caller
+// measures ordinary segment collisions. The collision minimum is retained for
+// the later floor, after the caller finishes its native collision pass.
+StudioSegmentWidth4 studioSegmentWidth4(const Segment* segment, const Segment* next)
+{
+    StudioSegmentWidth4 result;
+    result.offset = crossBeamSpacingOffset4(segment, next, &result.minimum);
+    return result;
+}
+
+// Apply the Studio rhythmic width floor after the caller has measured its
+// collisions. Preserve the original write/weight/floor order exactly.
+qreal applyStudioSegmentWidth4(Segment* segment, const StudioSegmentWidth4& studio,
+                              qreal width, qreal measureSpatium)
+{
+    segment->setSpacingWidthOffset4(studio.offset);
+    width = qMax(width, 3.5 * measureSpatium * segmentSpacingStretch4(segment) + studio.offset);
+    // Evolution's collision floor applies to both signed offsets; additionally
+    // reserve stem/beamlet clearance for up-to-down cross-staff transitions.
+    return qMax(width, studio.minimum);
 }
 
 // Keep Studio's direction-certificate allocation, invalidation and lifetime

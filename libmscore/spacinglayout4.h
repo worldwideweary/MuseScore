@@ -10,9 +10,15 @@
 namespace Ms {
 class Segment;
 double segmentSpacingStretch4(const Segment*);
-// Studio-only fixed offset for a cross-staff beam boundary. The minimum is
-// returned separately from the signed offset; native sizing is unchanged.
-qreal crossBeamSpacingOffset4(const Segment*, const Segment*, qreal* minimumWidth = nullptr);
+// The Studio width contribution is read before native collision clearance;
+// its rhythmic minimum is applied afterwards. Native sizing stays separate.
+struct StudioSegmentWidth4 {
+    qreal offset { 0 };
+    qreal minimum { 0 };
+};
+StudioSegmentWidth4 studioSegmentWidth4(const Segment*, const Segment*);
+qreal applyStudioSegmentWidth4(Segment*, const StudioSegmentWidth4&,
+                              qreal measuredWidth, qreal measureSpatium);
 
 // Flexible widths exclude fixed cross-beam offsets. The returned common force
 // follows Studio stretchSegmentsToWidth; collision floors remain unstretched
