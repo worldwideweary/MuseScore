@@ -1974,6 +1974,111 @@ void Chord::layout()
             layoutPitched();
       }
 
+// Match the Studio terminal grace clearance for a plain single crushed
+// note. Use the flag at its real stem attachment, even on the first pass,
+// when the generated Hook may not yet exist.
+static bool nativeSingleCrushedNoteX(const Chord* main, Chord* grace, qreal& x)
+      {
+      const auto plain = [](const Chord* chord) {
+            if (chord->notes().size() != 1 || chord->beam() || chord->staffMove()
+                || chord->isNudged() || chord->isSmall() || !chord->addToSkyline()
+                || chord->tremolo() || chord->arpeggio() || chord->tuplet()
+                || !chord->el().empty() || !chord->lyrics().empty() || !chord->articulations().empty()
+                || !chord->stem() || !chord->stem()->addToSkyline() || chord->stem()->isNudged()
+                || !qFuzzyIsNull(chord->stem()->userLen()))
+                  return false;
+            const Note* note = chord->notes().front();
+            return note->visible() && !note->bbox().isEmpty() && !note->isNudged()
+                && !note->isSmall() && !note->mirror() && !note->accidental()
+                && note->el().empty() && note->dots().empty() && !note->tieFor() && !note->tieBack()
+                && !note->partialTie(true) && !note->partialTie(false)
+                && note->spannerFor().empty() && note->spannerBack().empty();
+            };
+      if (!main->staff() || !main->staff()->isPitchedStaff(main->tick()) || !main->segment()
+          || main->durationType().hooks() || grace->noteType() != NoteType::ACCIACCATURA
+          || !grace->graceNotes().empty() || grace->track() != main->track()
+          || !plain(main) || !plain(grace))
+            return false;
+      for (const Element* item : main->segment()->elist()) {
+            if (item && item != main && item->vStaffIdx() == main->vStaffIdx())
+                  return false;
+            }
+
+      const int hooks = grace->durationType().hooks();
+      if (!hooks || (grace->hook() && (grace->hook()->isNudged() || !grace->hook()->addToSkyline())))
+            return false;
+
+      struct Footprint {
+            QRectF bounds;
+            ElementType type;
+            qreal mag;
+            };
+      const auto parts = [](const Chord* chord) {
+            std::vector<Footprint> result;
+            const auto add = [&](const Element* item) {
+                  if (item && item->addToSkyline())
+                        result.push_back({ item->bbox().translated(item->pos()), item->type(), item->mag() });
+                  };
+            add(chord->notes().front());
+            add(chord->stem());
+            add(chord->stemSlash());
+            for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next())
+                  add(line);
+            return result;
+            };
+      auto graceParts = parts(grace);
+      const auto mainParts = parts(main);
+      Hook flag(grace->score());
+      flag.setParent(grace);
+      flag.setHookType(grace->up() ? hooks : -hooks);
+      flag.layout();
+      if (flag.bbox().isEmpty())
+            return false;
+      QPointF flagPos = grace->stem()->hookPos();
+      flagPos.rx() -= grace->stem()->width();
+      graceParts.push_back({ flag.bbox().translated(flagPos), ElementType::HOOK, flag.mag() });
+
+      const qreal sp = main->score()->spatium();
+      const qreal clearance = 0.2 * grace->spatium();
+      const qreal graceToMain = 0.45 * sp;
+      qreal distance = graceToMain + grace->notes().front()->headWidth() / 2;
+      for (const auto& left : graceParts) {
+            for (const auto& right : mainParts) {
+                  if (left.bounds.isNull() || right.bounds.isNull())
+                        continue;
+                  const bool leftHead = left.type == ElementType::NOTE;
+                  const bool rightHead = right.type == ElementType::NOTE;
+                  const bool leftStem = left.type == ElementType::STEM;
+                  const bool rightStem = right.type == ElementType::STEM;
+                  const bool leftLedger = left.type == ElementType::LEDGER_LINE;
+                  const bool rightLedger = right.type == ElementType::LEDGER_LINE;
+                  const bool sameVoicePair = (leftHead || leftStem) && (rightHead || rightStem);
+                  if (!sameVoicePair && left.bounds.width() != 0 && right.bounds.width() != 0
+                      && !(left.bounds.bottom() + clearance > right.bounds.top()
+                           && left.bounds.top() < right.bounds.bottom() + clearance))
+                        continue;
+                  qreal padding = 0.1 * sp;
+                  if (leftStem && rightStem)
+                        padding = 0.85 * sp;
+                  else if ((leftHead && rightStem) || (leftStem && rightHead))
+                        padding = main->score()->styleP(Sid::minNoteDistance);
+                  else if (leftLedger && rightLedger)
+                        padding = 0.25 * sp;
+                  else if ((leftLedger && (rightHead || rightStem)) || (rightLedger && (leftHead || leftStem))
+                           || (left.type == ElementType::HOOK && rightHead))
+                        padding = 0.35 * sp;
+                  else if (left.type == ElementType::HOOK && rightLedger)
+                        padding = qMax(0.35 * sp - main->score()->styleP(Sid::ledgerLineLength), 0.25 * sp);
+                  padding = qMax(padding * (left.mag + right.mag) / 2, 0.1 * grace->spatium());
+                  if (leftHead && rightHead)
+                        padding = qMax(padding, graceToMain);
+                  distance = qMax(distance, left.bounds.right() - right.bounds.left() + padding);
+                  }
+            }
+      x = -distance;
+      return true;
+      }
+
 //---------------------------------------------------------
 //   layoutPitched
 //---------------------------------------------------------
@@ -2260,7 +2365,11 @@ void Chord::layoutPitched()
               qreal xl = -(_spaceLw + minNoteDistance) - chordX;
               for (int i = gnb-1; i >= 0; --i) {
                     Chord* g = graceNotesBefore.value(i);
-                    xl -= g->_spaceRw/* * 1.2*/;
+                    qreal terminalX;
+                    if (gnb == 1 && gna.empty() && qFuzzyIsNull(chordX) && nativeSingleCrushedNoteX(this, g, terminalX))
+                          xl = terminalX;
+                    else
+                          xl -= g->_spaceRw/* * 1.2*/;
                     g->setPos(xl, 0);
                     xl -= g->_spaceLw + minNoteDistance * graceMag;
                     }
