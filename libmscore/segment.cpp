@@ -2650,11 +2650,15 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             return qMax(w, 0.0) + ns->extraLeadingSpace().val() * spatium();
             }
 
+      const Fraction span = isChordRestType() && ns && ns->isChordRestType() && ns->measure() == measure()
+            ? ns->rtick() - rtick() : Fraction(0, 1);
+      const bool subdivided = span > Fraction(0, 1) && !measure()->isMMRest()
+            && span < shortestNativeChordRest(this);
       qreal ww = -DBL_MAX;        // can remain negative
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
             if (score()->staff(staffIdx) && !score()->staff(staffIdx)->show())
                   continue;
-            qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx)) : 0.0;
+            qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx), subdivided) : 0.0;
             // first chordrest of a staff should clear the widest header for any staff
             // so make sure segment is as wide as it needs to be
             if (systemHeaderGap && !above)
@@ -2719,9 +2723,7 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                   if (isGap)
                         return 0.0;
                   const qreal padding = score()->styleP(Sid::minNoteDistance);
-                  const Fraction span = ns && ns->isChordRestType() && ns->measure() == measure()
-                        ? ns->rtick() - rtick() : Fraction(0, 1);
-                  if (!measure()->isMMRest() && span > Fraction(0, 1) && span < shortestNativeChordRest(this)) {
+                  if (subdivided) {
                         // An interleaved onset does not in itself need a
                         // notehead's width. Keep actual shape clearance and
                         // let the rhythmic span supply the natural advance.

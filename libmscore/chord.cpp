@@ -3744,8 +3744,25 @@ Shape Chord::shape() const
                   shape.add(chord->shape().translated(chord->pos()));
             for (LedgerLine* l = _ledgerLines; l; l = l->next())
                   shape.add(l->shape().translated(l->pos()));
-            if (!qFuzzyIsNull(_spaceLw) || !qFuzzyIsNull(_spaceRw))
-                  shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw);
+            if (!qFuzzyIsNull(_spaceLw) || !qFuzzyIsNull(_spaceRw)) {
+                  bool noteheadBand = !_notes.empty() && !isGrace() && _graceNotes.empty()
+                        && !staffMove() && !(beam() && beam()->cross())
+                        && staff() && !staff()->isTabStaff(tick());
+                  if (noteheadBand) {
+                        qreal left = 0.0;
+                        qreal right = 0.0;
+                        for (const Note* note : _notes) {
+                              const qreal headX = note->x() + ipos().x();
+                              left = qMin(left, headX);
+                              right = qMax(right, headX + note->headWidth());
+                              }
+                        // Keep synthetic room for annotations or attachments
+                        // beyond the actual heads, even in subdivided gaps.
+                        noteheadBand = (-_spaceLw >= left || qFuzzyCompare(_spaceLw, -left))
+                              && (_spaceRw <= right || qFuzzyCompare(_spaceRw, right));
+                        }
+                  shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, noteheadBand);
+                  }
             }
       return shape;
       }

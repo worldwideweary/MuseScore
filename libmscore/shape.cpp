@@ -21,13 +21,14 @@ namespace Ms {
 //    This is a simple solution but has its drawbacks too.
 //---------------------------------------------------------
 
-void Shape::addHorizontalSpacing(HorizontalSpacingType type, qreal leftEdge, qreal rightEdge)
+void Shape::addHorizontalSpacing(HorizontalSpacingType type, qreal leftEdge, qreal rightEdge, bool noteheadBand)
       {
       constexpr qreal eps = 100 * std::numeric_limits<qreal>::epsilon();
       const qreal y = eps * int(type);
       if (leftEdge == rightEdge) // HACK zero-width shapes collide with everything currently.
             rightEdge += eps;
       add(QRectF(leftEdge, y, rightEdge - leftEdge, 0));
+      back().noteheadSpacingBand = noteheadBand;
       }
 
 //---------------------------------------------------------
@@ -61,13 +62,8 @@ void Shape::translateY(qreal yo)
 
 Shape Shape::translated(const QPointF& pt) const
       {
-      Shape s;
-      for (const ShapeElement& r : *this)
-#ifndef NDEBUG
-            s.add(r.translated(pt), r.text);
-#else
-            s.add(r.translated(pt));
-#endif
+      Shape s(*this);
+      s.translate(pt);
       return s;
       }
 
@@ -78,13 +74,15 @@ Shape Shape::translated(const QPointF& pt) const
 //    so they don’t touch.
 //-------------------------------------------------------------------
 
-qreal Shape::minHorizontalDistance(const Shape& a) const
+qreal Shape::minHorizontalDistance(const Shape& a, bool kernNoteheadBands) const
       {
       qreal dist = -DBL_MAX;      // min real
-      for (const QRectF& r2 : a) {
+      for (const ShapeElement& r2 : a) {
             qreal by1 = r2.top();
             qreal by2 = r2.bottom();
-            for (const QRectF& r1 : *this) {
+            for (const ShapeElement& r1 : *this) {
+                  if (kernNoteheadBands && r1.noteheadSpacingBand && r2.noteheadSpacingBand)
+                        continue;
                   qreal ay1 = r1.top();
                   qreal ay2 = r1.bottom();
                   if (Ms::intersects(ay1, ay2, by1, by2)

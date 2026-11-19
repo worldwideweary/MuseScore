@@ -26,6 +26,7 @@ class Segment;
 //---------------------------------------------------------
 
 struct ShapeElement : public QRectF {
+      bool noteheadSpacingBand = false;
 #ifndef NDEBUG
       const char* text;
       void dump() const;
@@ -63,14 +64,14 @@ class Shape : public std::vector<ShapeElement> {
       void remove(const QRectF&);
       void remove(const Shape&);
 
-      void addHorizontalSpacing(HorizontalSpacingType type, qreal left, qreal right);
+      void addHorizontalSpacing(HorizontalSpacingType type, qreal left, qreal right, bool noteheadBand = false);
 
       void translate(const QPointF&);
       void translateX(qreal);
       void translateY(qreal);
       Shape translated(const QPointF&) const;
 
-      qreal minHorizontalDistance(const Shape&) const;
+      qreal minHorizontalDistance(const Shape&, bool kernNoteheadBands = false) const;
       qreal minVerticalDistance(const Shape&) const;
       qreal topDistance(const QPointF&) const;
       qreal bottomDistance(const QPointF&) const;
