@@ -4960,7 +4960,11 @@ void Measure::computeMinWidth(Segment* s, qreal x, bool isSystemHeader)
                               if (s->isChordRestType() || ps == s || !foundAtLeastOneCrSegment)
                                     w += d;
                               x = xx;
-                              break;
+                              // Compact rhythmic gaps can leave more than one
+                              // earlier onset in reach. Keep checking so an
+                              // adjacent correction cannot hide an older one.
+                              if (!s->isChordRestType())
+                                    break;
                               }
                         }
 #endif

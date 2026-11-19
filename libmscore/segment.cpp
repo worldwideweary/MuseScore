@@ -31,6 +31,7 @@
 #include "navigate.h"
 #include "part.h"
 #include "repeat.h"
+#include "rest.h"
 #include "score.h"
 #include "segment.h"
 #include "symbol.h"
@@ -2521,6 +2522,44 @@ qreal courtesySignaturePadding(const Element* left, const Element* right)
       }
 }
 
+// The onset span can be shorter than any sounding duration at that onset
+// when another voice or staff attacks before the current notes end.
+static Fraction shortestNativeChordRest(const Segment* segment)
+      {
+      Fraction shortest = segment->measure()->ticks();
+      for (const Element* e : segment->elist()) {
+            if (!e || !e->isChordRest() || !e->staff()->show()
+                || (e->isRest() && toRest(e)->isGap())
+                || (!e->visible() && segment->measure()->hasVoices(e->staffIdx())))
+                  continue;
+            const Fraction ticks = toChordRest(e)->actualTicks();
+            if (ticks > Fraction(0, 1) && ticks < shortest)
+                  shortest = ticks;
+            }
+      return shortest;
+      }
+
+qreal Segment::nativeRhythmicWeight(const Fraction& span) const
+      {
+      if (!(span > Fraction(0, 1)))
+            return 0.0;
+      Fraction duration = shortestNativeChordRest(this);
+      if (!(duration > Fraction(0, 1)))
+            duration = span;
+      if (duration != span) {
+            if (const Segment* previous = prev(SegmentType::ChordRest)) {
+                  const Segment* following = previous->nextActive();
+                  const Fraction previousSpan = (following ? following->rtick() : measure()->ticks()) - previous->rtick();
+                  const Fraction previousDuration = shortestNativeChordRest(previous);
+                  if (previousSpan > Fraction(0, 1) && previousDuration > Fraction(0, 1)
+                      && previousDuration != previousSpan && previousDuration < duration)
+                        duration = previousDuration;
+                  }
+            }
+      const qreal ratio = (duration / Fraction(1, 4)).toDouble();
+      return std::pow(1.5, std::log2(ratio)) * (span / duration).toDouble();
+      }
+
 qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
       {
       // Studio applies header spacing to clefs/keys/meters, not to the
@@ -2679,8 +2718,18 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                         }
                   if (isGap)
                         return 0.0;
-                  // minimum distance between notes is one note head width
-                  w = qMax(w, score()->noteHeadWidth()) + score()->styleP(Sid::minNoteDistance);
+                  const qreal padding = score()->styleP(Sid::minNoteDistance);
+                  const Fraction span = ns && ns->isChordRestType() && ns->measure() == measure()
+                        ? ns->rtick() - rtick() : Fraction(0, 1);
+                  if (!measure()->isMMRest() && span > Fraction(0, 1) && span < shortestNativeChordRest(this)) {
+                        // An interleaved onset does not in itself need a
+                        // notehead's width. Keep actual shape clearance and
+                        // let the rhythmic span supply the natural advance.
+                        const qreal advance = 3.5 * spatium() * nativeRhythmicWeight(span);
+                        w = qMax(advance, ww + padding);
+                        }
+                  else
+                        w = qMax(w, score()->noteHeadWidth()) + padding;
                   }
             }
       else if (nst == SegmentType::ChordRest) {
