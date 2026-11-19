@@ -13,6 +13,7 @@
 #include <QMap>
 #include <QVector>
 #include <cmath>
+#include <memory>
 
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
@@ -270,6 +271,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void annotatedFollowingSystems_data();
       void annotatedFollowingSystems();
       void tieDeletionUndoRedo();
+      void lastSystemFillUsesNaturalWidth();
       };
 
 void TestIncrementalLayout::untouchedBoundary()
@@ -403,6 +405,41 @@ void TestIncrementalLayout::tieDeletionUndoRedo()
       difference = checkAgainstFullLayout(score);
       QVERIFY2(difference.isEmpty(), qPrintable(QString("After Redo: ") + difference));
       delete score;
+      }
+
+void TestIncrementalLayout::lastSystemFillUsesNaturalWidth()
+      {
+      if (qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
+            QSKIP("Native natural spacing explicitly disabled");
+
+      // H18 fills 21.04% at natural width versus 24.54% by the old estimate.
+      // The preceding forced line break leaves one measure on the last system.
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-last-system-fill.mscx"));
+      QVERIFY(score);
+      QCOMPARE(score->styleD(Sid::lastSystemFillLimit), qreal(0.21));
+      const Measure* last = score->lastMeasure();
+      QVERIFY(last && last->prevMeasure() && last->system() && last->prevMeasure()->system());
+      const auto fullWidth = [&]() { return last->prevMeasure()->system()->width(); };
+      const auto finalWidth = [&]() { return last->system()->width(); };
+      const qreal tolerance = score->spatium() * 0.001;
+
+      QVERIFY(last->system() != last->prevMeasure()->system());
+      const qreal justifiedWidth = fullWidth();
+      QVERIFY(justifiedWidth > 0.0);
+      QVERIFY(qAbs(finalWidth() - justifiedWidth) < tolerance);
+
+      score->setStyleValue(Sid::lastSystemFillLimit, 0.22);
+      score->doLayout();
+      QVERIFY(last->system() != last->prevMeasure()->system());
+      QVERIFY(qAbs(fullWidth() - justifiedWidth) < tolerance);
+      const qreal fill = finalWidth() / justifiedWidth;
+      QVERIFY2(fill >= 0.21 && fill < 0.22,
+               qPrintable(QString("Expected a short system at 22%, got a fill ratio of %1").arg(fill)));
+
+      score->setStyleValue(Sid::lastSystemFillLimit, 0.21);
+      score->doLayout();
+      QVERIFY(last->system() != last->prevMeasure()->system());
+      QVERIFY(qAbs(finalWidth() - justifiedWidth) < tolerance);
       }
 
 QTEST_MAIN(TestIncrementalLayout)

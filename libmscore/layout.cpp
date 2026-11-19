@@ -4827,10 +4827,11 @@ System* Score::collectSystem(LayoutContext& lc)
             bool haveNaturalPlan = false;
             std::vector<NativeNaturalMeasureSpacing> naturalPlan;
             const qreal fillLimit = styleD(Sid::lastSystemFillLimit);
-            const bool previewNatural = qEnvironmentVariableIntValue("MSCORE_NATIVE_NATURAL_SPACING") == 1;
+            // Temporary opt-out for comparing the old width decision.
+            const bool useNaturalSpacing = qgetenv("MSCORE_NATIVE_NATURAL_SPACING") != "0";
             // A later measure or horizontal frame in the same section still
             // calls for justification. Only terminal systems need a width test.
-            if (systemWidth > 0.0 && (minWidth / systemWidth < fillLimit || (previewNatural && fillLimit > 0.0))) {
+            if (systemWidth > 0.0 && (minWidth / systemWidth < fillLimit || (useNaturalSpacing && fillLimit > 0.0))) {
                   const MeasureBase* last = system->measures().empty() ? nullptr : system->measures().back();
                   const MeasureBase* next = last && last->sectionBreak() ? nullptr : lc.curMeasure;
                   while (next && !next->isMeasure() && !next->isHBox()) {
@@ -4841,7 +4842,7 @@ System* Score::collectSystem(LayoutContext& lc)
                         next = next->next();
                         }
                   if (!next) {
-                        if (previewNatural)
+                        if (useNaturalSpacing)
                               haveNaturalPlan = planNativeNaturalSpacing(system, systemWidth, naturalPlan, fillBase);
                         leaveUnjustified = fillBase / systemWidth < fillLimit;
                         if (leaveUnjustified)
