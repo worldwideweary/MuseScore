@@ -79,6 +79,49 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
+// Use sounding durations for rhythmic weight, independently of the
+// collision floors computed by Measure::computeMinWidth().
+static Fraction shortestNativeChordRest(const Segment* segment)
+      {
+      Fraction shortest = segment->measure()->ticks();
+      for (const Element* e : segment->elist()) {
+            if (!e || !e->isChordRest() || !e->staff()->show()
+                || (e->isRest() && toRest(e)->isGap())
+                || (!e->visible() && segment->measure()->hasVoices(e->staffIdx())))
+                  continue;
+            const Fraction ticks = toChordRest(e)->actualTicks();
+            if (ticks > Fraction(0, 1) && ticks < shortest)
+                  shortest = ticks;
+            }
+      return shortest;
+      }
+
+static qreal nativePooledSpringWeight(const Segment* segment)
+      {
+      const Fraction ticks = segment->ticks();
+      Fraction duration = shortestNativeChordRest(segment);
+      if (!(ticks > Fraction(0, 1)))
+            return 0.0;
+      if (!(duration > Fraction(0, 1)))
+            duration = ticks;
+      if (duration != ticks) {
+            // Studio 4.7.5 spaces subdivisions of a sounding value
+            // proportionally, carrying the shorter reference across
+            // adjacent subdivided onsets within this measure.
+            const Segment* previous = segment->prev(SegmentType::ChordRest);
+            if (previous && previous->ticks() > Fraction(0, 1)) {
+                  const Fraction previousDuration = shortestNativeChordRest(previous);
+                  if (previousDuration > Fraction(0, 1) && previousDuration != previous->ticks()
+                      && previousDuration < duration)
+                        duration = previousDuration;
+                  }
+            }
+      // Keep the existing native pooled slope; the 3.x measureSpacing
+      // style still scales minimum measure widths in its existing role.
+      const qreal ratio = (duration / Fraction(1, 4)).toDouble();
+      return std::pow(1.5, std::log2(ratio)) * (ticks / duration).toDouble();
+      }
+
 // Native system-wide spring solver. Reuse rhythmic weights and collision
 // floors while distributing the remaining width across the system.
 static bool applyNativePooledSprings(System* system, qreal addedWidth)
@@ -120,20 +163,7 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
                   minimum += s.width();
                   proposed[&s] = s.width();
                   if (s.isChordRestType() && s.ticks().isNotZero()) {
-                        // A pooled solver must give the same duration the same
-                        // weight in every measure.  The native 3.x formula
-                        // divides by each measure's shortest duration; mixing
-                        // those per-measure weights starves whole-measure rests
-                        // and overexpands dense measures (notably M29/M31).
-                        //
-                        // Diagnostic experiment: match the reference 4.7.5
-                        // quarter-note-based duration slope of 1.5.  Do not
-                        // change the native natural widths or tie minima.
-                        const qreal ratio = qreal(s.ticks().ticks())
-                              / qreal(Fraction(1, 4).ticks());
-                        if (ratio <= 0.0)
-                              return false;
-                        const qreal str = std::pow(1.5, std::log2(ratio));
+                        const qreal str = nativePooledSpringWeight(&s);
                         if (!std::isfinite(str) || str <= 0.0)
                               return false;
                         springs.emplace(s.width() / str, Spring { &s, str });
