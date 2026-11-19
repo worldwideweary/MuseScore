@@ -79,6 +79,65 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
+// Preview natural rhythmic advances on short terminal systems. Preserve all
+// native collision floors and validate the entire system before publishing it.
+static bool applyNativeNaturalSpacing(System* system, qreal systemWidth)
+      {
+      struct MeasureSpacing {
+            Measure* measure;
+            qreal width;
+            std::vector<std::pair<Segment*, qreal>> segments;
+            };
+      std::vector<MeasureSpacing> plan;
+      qreal total = system->leftMargin();
+      for (MeasureBase* mb : system->measures()) {
+            if (!mb->isMeasure())
+                  return false;
+            Measure* m = toMeasure(mb);
+            if (m->isMMRest() || !qFuzzyCompare(m->score()->styleD(Sid::measureSpacing), qreal(1.5)))
+                  return false;
+            MeasureSpacing entry { m, 0.0, {} };
+            const qreal scale = 3.5 * m->spatium() * qBound(qreal(0.1), m->userStretch(), qreal(10.0));
+            for (Segment& s : m->segments()) {
+                  if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                        continue;
+                  if (!qFuzzyIsNull(s.extraLeadingSpace().val()))
+                        return false;
+                  if (entry.segments.empty())
+                        entry.width = s.x();
+                  qreal width = s.width();
+                  if (s.isChordRestType()) {
+                        const qreal weight = s.nativeRhythmicWeight(s.ticks());
+                        if (!std::isfinite(weight) || weight <= 0.0)
+                              return false;
+                        width = qMax(width, scale * weight);
+                        }
+                  if (!std::isfinite(width) || width < 0.0)
+                        return false;
+                  entry.width += width;
+                  entry.segments.emplace_back(&s, width);
+                  }
+            if (entry.segments.empty() || !std::isfinite(entry.width)
+                || entry.width < m->score()->styleP(Sid::minMeasureWidth))
+                  return false;
+            total += entry.width;
+            plan.push_back(std::move(entry));
+            }
+      if (plan.empty() || total > systemWidth)
+            return false;
+
+      for (const MeasureSpacing& entry : plan) {
+            qreal x = entry.segments.front().first->x();
+            for (const auto& segment : entry.segments) {
+                  segment.first->rxpos() = x;
+                  segment.first->setWidth(segment.second);
+                  x += segment.second;
+                  }
+            entry.measure->bbox().setWidth(entry.width);
+            }
+      return true;
+      }
+
 // Native system-wide spring solver. Reuse rhythmic weights and collision
 // floors while distributing the remaining width across the system.
 static bool applyNativePooledSprings(System* system, qreal addedWidth)
@@ -4707,6 +4766,7 @@ System* Score::collectSystem(LayoutContext& lc)
       // stretch incomplete row
       //
       const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_SPACING_TRACE");
+      bool nativeNatural = false;
       auto traceSpacing = [&](const char* stage, qreal extra, bool pooled) {
             if (traceMeasure <= 0)
                   return;
@@ -4717,8 +4777,8 @@ System* Score::collectSystem(LayoutContext& lc)
                   if (m->no() + 1 != traceMeasure)
                         continue;
                   const qreal sp = m->spatium();
-                  qDebug("[native-spacing] %s measure=%d width/sp=%.4f systemMin/sp=%.4f target/sp=%.4f extra/sp=%.4f pooled=%d",
-                         stage, traceMeasure, m->width() / sp, minWidth / sp, systemWidth / sp, extra / sp, int(pooled));
+                  qDebug("[native-spacing] %s measure=%d width/sp=%.4f systemMin/sp=%.4f target/sp=%.4f extra/sp=%.4f pooled=%d natural=%d",
+                         stage, traceMeasure, m->width() / sp, minWidth / sp, systemWidth / sp, extra / sp, int(pooled), int(nativeNatural));
                   for (const Segment& s : m->segments()) {
                         if (!s.enabled() || !s.visible() || s.allElementsInvisible())
                               continue;
@@ -4757,6 +4817,7 @@ System* Score::collectSystem(LayoutContext& lc)
                   qDebug("==layoutSystem %6d old %.1f new %.1f", system->measures().front()->tick().ticks(), minWidth, mw);
 #endif
             rest = systemWidth - minWidth;
+            bool leaveUnjustified = false;
             //
             // Below the fill limit, leave terminal systems at their
             // natural width. A later measure or horizontal frame in the
@@ -4771,11 +4832,15 @@ System* Score::collectSystem(LayoutContext& lc)
                               }
                         next = next->next();
                         }
-                  if (!next)
+                  if (!next) {
+                        leaveUnjustified = true;
                         rest = 0.0;
+                        }
                   }
             spacingExtra = rest;
             traceSpacing("before", spacingExtra, false);
+            if (leaveUnjustified && qEnvironmentVariableIntValue("MSCORE_NATIVE_NATURAL_SPACING") == 1)
+                  nativeNatural = applyNativeNaturalSpacing(system, systemWidth);
             nativePooled = applyNativePooledSprings(system, rest);
             rest /= totalWeight;
             }
@@ -4794,9 +4859,9 @@ System* Score::collectSystem(LayoutContext& lc)
                   Measure* m = toMeasure(mb);
                   qreal stretch = m->basicStretch();
                   int weight = m->layoutWeight();
-                  if (!nativePooled)
+                  if (!nativePooled && !nativeNatural)
                         ww += rest * weight * stretch;
-                  if (nativePooled)
+                  if (nativePooled || nativeNatural)
                         m->layoutElementsAfterSpacing(ww);
                   else
                         m->stretchMeasure(ww);
