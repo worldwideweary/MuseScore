@@ -27,6 +27,7 @@ class Segment;
 
 struct ShapeElement : public QRectF {
       bool kernableChordBand = false;
+      qreal beforeGraceAccidentalInset = 0.0;
 #ifndef NDEBUG
       const char* text;
       void dump() const;
@@ -71,7 +72,7 @@ class Shape : public std::vector<ShapeElement> {
       void translateY(qreal);
       Shape translated(const QPointF&) const;
 
-      qreal minHorizontalDistance(const Shape&, bool kernChordBands = false) const;
+      qreal minHorizontalDistance(const Shape&, bool kernChordBands = false, bool kernBeforeGrace = false) const;
       qreal minVerticalDistance(const Shape&) const;
       qreal topDistance(const QPointF&) const;
       qreal bottomDistance(const QPointF&) const;

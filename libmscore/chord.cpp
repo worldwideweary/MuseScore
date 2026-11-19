@@ -3740,8 +3740,42 @@ Shape Chord::shape() const
                   if (e->addToSkyline())
                         shape.add(e->shape().translated(e->pos()));
                   }
-            for (Chord* chord : _graceNotes)    // process grace notes last, needed for correct shape calculation
-                  shape.add(chord->shape().translated(chord->pos()));
+            const Chord* firstBeforeGrace = nullptr;
+            qreal accidentalInset = 0.0;
+            if (!_graceNotes.empty() && !isGrace() && !isNudged() && qFuzzyIsNull(ipos().x())
+                && !staffMove() && !(beam() && beam()->cross()) && staff() && !staff()->isTabStaff(tick())) {
+                  const auto before = graceNotesBefore();
+                  if (before.size() == _graceNotes.size()) {
+                        const Chord* first = before.front();
+                        if (first->notes().size() == 1 && first->addToSkyline() && !first->isNudged()
+                            && !first->staffMove() && !(first->beam() && first->beam()->cross())) {
+                              const Note* note = first->notes().front();
+                              const Accidental* acc = note->accidental();
+                              if (acc && acc->visible() && acc->addToSkyline() && !acc->bbox().isEmpty()
+                                  && !note->fixed() && !note->isNudged()) {
+                                    const qreal left = qMin(qreal(0.0), note->x());
+                                    const qreal accLeft = note->x() + acc->pos().x()
+                                          - score()->styleP(Sid::accidentalDistance) * staff()->mag(first);
+                                    const qreal leading = score()->styleP(Sid::minNoteDistance) * staff()->mag(this)
+                                          * score()->styleD(Sid::graceNoteMag);
+                                    // Match the bands laid out by layoutPitched.
+                                    // Any additional left reservation keeps its full width.
+                                    if (accLeft < left && qFuzzyCompare(first->_spaceLw, -accLeft)
+                                        && qFuzzyCompare(_spaceLw, first->_spaceLw - first->x() + leading)) {
+                                          firstBeforeGrace = first;
+                                          accidentalInset = left - accLeft;
+                                          }
+                                    }
+                              }
+                        }
+                  }
+            for (Chord* chord : _graceNotes) {
+                  Shape graceShape = chord->shape().translated(chord->pos());
+                  // The chord's own spacing band is appended last.
+                  if (chord == firstBeforeGrace && !graceShape.empty())
+                        graceShape.back().beforeGraceAccidentalInset = accidentalInset;
+                  shape.add(graceShape);
+                  }
             for (LedgerLine* l = _ledgerLines; l; l = l->next())
                   shape.add(l->shape().translated(l->pos()));
             if (!qFuzzyIsNull(_spaceLw) || !qFuzzyIsNull(_spaceRw)) {
@@ -3778,6 +3812,7 @@ Shape Chord::shape() const
                               && (_spaceRw <= headRight || qFuzzyCompare(_spaceRw, headRight));
                         }
                   shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, kernableChordBand);
+                  shape.back().beforeGraceAccidentalInset = accidentalInset;
                   }
             }
       return shape;
