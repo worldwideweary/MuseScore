@@ -4749,7 +4749,33 @@ System* Score::collectSystem(LayoutContext& lc)
       //
       // stretch incomplete row
       //
+      const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_SPACING_TRACE");
+      auto traceSpacing = [&](const char* stage, qreal extra, bool pooled) {
+            if (traceMeasure <= 0)
+                  return;
+            for (MeasureBase* mb : system->measures()) {
+                  if (!mb->isMeasure())
+                        continue;
+                  const Measure* m = toMeasure(mb);
+                  if (m->no() + 1 != traceMeasure)
+                        continue;
+                  const qreal sp = m->spatium();
+                  qDebug("[native-spacing] %s measure=%d width/sp=%.4f systemMin/sp=%.4f target/sp=%.4f extra/sp=%.4f pooled=%d",
+                         stage, traceMeasure, m->width() / sp, minWidth / sp, systemWidth / sp, extra / sp, int(pooled));
+                  for (const Segment& s : m->segments()) {
+                        if (!s.enabled() || !s.visible() || s.allElementsInvisible())
+                              continue;
+                        const Fraction ticks = s.ticks();
+                        const qreal weight = s.isChordRestType() ? nativePooledSpringWeight(&s) : 0.0;
+                        const int tick = (s.tick() - m->tick()).ticks();
+                        qDebug("[native-spacing] %s tick=%d span=%d/%d rhythmic=%d x/sp=%.4f width/sp=%.4f weight=%.6f",
+                               stage, tick, ticks.numerator(), ticks.denominator(), int(s.isChordRestType()),
+                               s.x() / sp, s.width() / sp, weight);
+                        }
+                  }
+            };
       qreal rest;
+      qreal spacingExtra = 0.0;
       bool nativePooled = false;
       if (MScore::noHorizontalStretch)
             rest = 0;
@@ -4785,6 +4811,8 @@ System* Score::collectSystem(LayoutContext& lc)
                   else
                         rest = minWidth;
                   }
+            spacingExtra = rest;
+            traceSpacing("before", spacingExtra, false);
             nativePooled = applyNativePooledSprings(system, rest);
             rest /= totalWeight;
             }
@@ -4825,6 +4853,7 @@ System* Score::collectSystem(LayoutContext& lc)
             pos.rx() += ww;
             }
       system->setWidth(pos.x());
+      traceSpacing("after", spacingExtra, nativePooled);
 
       for (System *bSystem : brokenSystems)
             bSystem->clear();
