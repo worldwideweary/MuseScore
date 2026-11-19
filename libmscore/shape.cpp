@@ -21,14 +21,14 @@ namespace Ms {
 //    This is a simple solution but has its drawbacks too.
 //---------------------------------------------------------
 
-void Shape::addHorizontalSpacing(HorizontalSpacingType type, qreal leftEdge, qreal rightEdge, bool noteheadBand)
+void Shape::addHorizontalSpacing(HorizontalSpacingType type, qreal leftEdge, qreal rightEdge, bool kernableBand)
       {
       constexpr qreal eps = 100 * std::numeric_limits<qreal>::epsilon();
       const qreal y = eps * int(type);
       if (leftEdge == rightEdge) // HACK zero-width shapes collide with everything currently.
             rightEdge += eps;
       add(QRectF(leftEdge, y, rightEdge - leftEdge, 0));
-      back().noteheadSpacingBand = noteheadBand;
+      back().kernableChordBand = kernableBand;
       }
 
 //---------------------------------------------------------
@@ -74,14 +74,14 @@ Shape Shape::translated(const QPointF& pt) const
 //    so they don’t touch.
 //-------------------------------------------------------------------
 
-qreal Shape::minHorizontalDistance(const Shape& a, bool kernNoteheadBands) const
+qreal Shape::minHorizontalDistance(const Shape& a, bool kernChordBands) const
       {
       qreal dist = -DBL_MAX;      // min real
       for (const ShapeElement& r2 : a) {
             qreal by1 = r2.top();
             qreal by2 = r2.bottom();
             for (const ShapeElement& r1 : *this) {
-                  if (kernNoteheadBands && r1.noteheadSpacingBand && r2.noteheadSpacingBand)
+                  if (kernChordBands && r1.kernableChordBand && r2.kernableChordBand)
                         continue;
                   qreal ay1 = r1.top();
                   qreal ay2 = r1.bottom();

@@ -3745,23 +3745,39 @@ Shape Chord::shape() const
             for (LedgerLine* l = _ledgerLines; l; l = l->next())
                   shape.add(l->shape().translated(l->pos()));
             if (!qFuzzyIsNull(_spaceLw) || !qFuzzyIsNull(_spaceRw)) {
-                  bool noteheadBand = !_notes.empty() && !isGrace() && _graceNotes.empty()
+                  bool kernableChordBand = !_notes.empty() && !isGrace() && _graceNotes.empty()
                         && !staffMove() && !(beam() && beam()->cross())
                         && staff() && !staff()->isTabStaff(tick());
-                  if (noteheadBand) {
-                        qreal left = 0.0;
-                        qreal right = 0.0;
+                  if (kernableChordBand) {
+                        qreal headLeft = 0.0;
+                        qreal headRight = 0.0;
+                        qreal accidentalLeft = 0.0;
+                        bool hasTie = false;
+                        const qreal accidentalPadding = score()->styleP(Sid::accidentalDistance) * staff()->mag(this);
                         for (const Note* note : _notes) {
                               const qreal headX = note->x() + ipos().x();
-                              left = qMin(left, headX);
-                              right = qMax(right, headX + note->headWidth());
+                              headLeft = qMin(headLeft, headX);
+                              headRight = qMax(headRight, headX + note->headWidth());
+                              const Accidental* accidental = note->accidental();
+                              if (accidental && accidental->visible() && accidental->addToSkyline() && !note->fixed()
+                                  && !accidental->bbox().isEmpty()) {
+                                    // Match layoutPitched's left reservation.
+                                    const qreal x = accidental->pos().x() + headX - accidentalPadding;
+                                    accidentalLeft = qMin(accidentalLeft, x);
+                                    }
+                              hasTie = hasTie || note->tieBack() || note->tieFor()
+                                    || note->partialTie(true) || note->partialTie(false);
                               }
-                        // Keep synthetic room for annotations or attachments
-                        // beyond the actual heads, even in subdivided gaps.
-                        noteheadBand = (-_spaceLw >= left || qFuzzyCompare(_spaceLw, -left))
-                              && (_spaceRw <= right || qFuzzyCompare(_spaceRw, right));
+                        // A printed accidental has its own collision rectangle
+                        // in Note::shape(). Do not let its synthetic reservation
+                        // compete with a neighboring chord at every height.
+                        // Keep extra reservations for other chord features.
+                        const bool canKernAccidental = !hasTie && !_arpeggio && !_endsGlissando;
+                        const qreal left = canKernAccidental ? qMin(headLeft, accidentalLeft) : headLeft;
+                        kernableChordBand = (-_spaceLw >= left || qFuzzyCompare(_spaceLw, -left))
+                              && (_spaceRw <= headRight || qFuzzyCompare(_spaceRw, headRight));
                         }
-                  shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, noteheadBand);
+                  shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, kernableChordBand);
                   }
             }
       return shape;
