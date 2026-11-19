@@ -25,6 +25,8 @@ namespace Ms {
 
 class StemSlash final : public Element {
       QLineF line;
+      qreal _lineWidth4 = 0; // Computed geometry only; zero selects legacy width.
+      qreal lineWidth() const;
 
    public:
       StemSlash(Score* s = 0) : Element(s)   {}
