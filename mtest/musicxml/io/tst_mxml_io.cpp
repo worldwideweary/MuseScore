@@ -35,7 +35,7 @@ class TestMxmlIO : public QObject, public MTest
       {
       Q_OBJECT
 
-      void mxmlIoTest(const char* file, bool exportLayout = false);
+      void mxmlIoTest(const char* file, bool exportLayout = false, bool separateReference = false);
       void mxmlIoTestRef(const char* file);
       void mxmlIoTestRefBreaks(const char* file);
       void mxmlMscxExportTestRef(const char* file, bool exportLayout = false);
@@ -200,7 +200,7 @@ private slots:
       void keysig2() { mxmlIoTest("testKeysig2"); }
       void layoutCleanup1() { mxmlImportTestRef("testLayoutCleanup1"); }
       void layoutCleanup2() { mxmlImportTestRef("testLayoutCleanup2"); }
-      void layout() { mxmlIoTest("testLayout", true); }
+      void layout() { mxmlIoTest("testLayout", true, true); }
       void lessWhiteSpace() { mxmlIoTestRef("testLessWhiteSpace"); }
       void lines1() { mxmlIoTest("testLines1"); }
       void lines2() { mxmlIoTest("testLines2"); }
@@ -422,7 +422,7 @@ static void fixupScore(Score* score)
 //   read a MusicXML file, write to a new file and verify both files are identical
 //---------------------------------------------------------
 
-void TestMxmlIO::mxmlIoTest(const char* file, bool exportLayout)
+void TestMxmlIO::mxmlIoTest(const char* file, bool exportLayout, bool separateReference)
       {
       MScore::debugMode = true;
       preferences.setCustomPreference<MusicxmlExportBreaks>(PREF_EXPORT_MUSICXML_EXPORTBREAKS, MusicxmlExportBreaks::MANUAL);
@@ -435,7 +435,8 @@ void TestMxmlIO::mxmlIoTest(const char* file, bool exportLayout)
       fixupScore(score);
       score->doLayout();
       QVERIFY(saveMusicXml(score, QString(file) + ".xml"));
-      QVERIFY(saveCompareMusicXmlScore(score, QString(file) + ".xml", DIR + file + ".xml"));
+      const QString expected = DIR + file + (separateReference ? "_ref.xml" : ".xml");
+      QVERIFY(saveCompareMusicXmlScore(score, QString(file) + ".xml", expected));
       delete score;
       }
 
