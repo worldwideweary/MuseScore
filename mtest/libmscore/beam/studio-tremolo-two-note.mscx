@@ -3,6 +3,7 @@
   <Score>
     <Division>480</Division>
     <Style>
+      <lastSystemFillLimit>0</lastSystemFillLimit>
       <Spatium>1.75</Spatium>
     </Style>
     <Part>
