@@ -4758,15 +4758,21 @@ System* Score::collectSystem(LayoutContext& lc)
 #endif
             rest = systemWidth - minWidth;
             //
-            // don’t stretch last system of a section (or the last of the piece),
-            // if accumulated minWidth is <= lastSystemFillLimit
-            //
-            if ((lc.curMeasure == 0  || (lm && lm->sectionBreak()))
-               && ((minWidth / systemWidth) <= styleD(Sid::lastSystemFillLimit))) {
-                  if (minWidth > rest)
-                        rest = rest * .5;
-                  else
-                        rest = minWidth;
+            // Below the fill limit, leave terminal systems at their
+            // natural width. A later measure or horizontal frame in the
+            // same section still calls for justification.
+            if (systemWidth > 0.0 && minWidth / systemWidth < styleD(Sid::lastSystemFillLimit)) {
+                  const MeasureBase* last = system->measures().empty() ? nullptr : system->measures().back();
+                  const MeasureBase* next = last && last->sectionBreak() ? nullptr : lc.curMeasure;
+                  while (next && !next->isMeasure() && !next->isHBox()) {
+                        if (next->sectionBreak()) {
+                              next = nullptr;
+                              break;
+                              }
+                        next = next->next();
+                        }
+                  if (!next)
+                        rest = 0.0;
                   }
             spacingExtra = rest;
             traceSpacing("before", spacingExtra, false);
