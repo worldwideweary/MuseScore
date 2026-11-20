@@ -1658,16 +1658,21 @@ void Slur::slurPos(SlurPos* sp)
 
       qreal __up = _up ? -1.0 : 1.0;
       static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      const bool scaleLocalGraceTip = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
-            && scr->segment() && scr->segment() == ecr->segment()
+      const bool localGrace = scr->segment() == ecr->segment();
+      const bool scaleGraceTips = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
+            && sp->system1 == sp->system2
+            && (localGrace || (sc->isGrace() && !sc->isGraceAfter()) || (ec->isGrace() && !ec->isGraceAfter()))
             && scr->track() == track() && ecr->track() == track()
             && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
             && staff() && staff()->isPitchedStaff(tick()) && staff()->lines(tick()) >= 2
             && partialDirection() < 0 && !isHammerOnPullOff() && lineType() == 0;
       // Scale the notehead clearance before checking staff lines. Stem and
-      // beam anchor rules replace this default where applicable.
+      // beam anchor rules replace this default where applicable. Like a local
+      // grace slur, a slur to or from a pre-grace at a different beat uses
+      // the smaller clearance at its grace end.
       const auto headClearance = [&](const ChordRest* cr) {
-            const qreal mag = scaleLocalGraceTip && cr->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0;
+            const qreal mag = scaleGraceTips && cr->isGrace() && (localGrace || !cr->isGraceAfter())
+                  ? score()->styleD(Sid::graceNoteMag) : 1.0;
             return _spatium * .9 * __up * mag;
             };
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
