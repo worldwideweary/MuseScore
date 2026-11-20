@@ -4356,7 +4356,7 @@ void alignHarmonies(const System* system, const std::vector<Segment*>& sl, bool 
 //   processLines
 //---------------------------------------------------------
 
-static void processLines(System* system, std::vector<Spanner*> lines, bool align = false)
+static void processLines(System* system, std::vector<Spanner*> lines, bool align = false, bool separateSlurTips = false)
       {
       std::vector<SpannerSegment*> segments;
       for (Spanner* sp : lines) {
@@ -4364,6 +4364,9 @@ static void processLines(System* system, std::vector<Spanner*> lines, bool align
             if (ss->autoplace())
                   segments.push_back(ss);
             }
+
+      if (separateSlurTips)
+            SlurSegment::separateSharedTips(segments);
 
       if (align && segments.size() > 1) {
             const int nstaves = system->staves()->size();
@@ -5305,14 +5308,15 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                         }
                   }
             }
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1) {
+      const bool fitSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      if (fitSlurs) {
             // The beamed slur fitter clears shorter, contained slurs using
             // their freshly laid out geometry.
             std::stable_sort(spanner.begin(), spanner.end(), [](const Spanner* a, const Spanner* b) {
                   return a->ticks() < b->ticks();
                   });
             }
-      processLines(system, spanner);
+      processLines(system, spanner, false, fitSlurs);
       for (auto s : spanner) {
             Slur* slur = toSlur(s);
             ChordRest* scr = s->startCR();

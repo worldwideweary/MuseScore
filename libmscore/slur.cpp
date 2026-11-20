@@ -1074,6 +1074,72 @@ void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       setbbox(path.boundingRect());
       }
 
+void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segments)
+      {
+      struct Adjustment {
+            SlurSegment* segment;
+            QPointF start;
+            QPointF end;
+            };
+      struct ChordTips {
+            std::vector<size_t> starts;
+            std::vector<size_t> ends;
+            };
+      std::vector<Adjustment> adjustments;
+      std::map<const ChordRest*, ChordTips> chords;
+      for (SpannerSegment* segment : segments) {
+            if (!segment->isSlurSegment())
+                  continue;
+            SlurSegment* s = toSlurSegment(segment);
+            if (!s->_hasOrdinaryFit || !s->addToSkyline() || s->isEdited() || s->isNudged()
+                || s->spannerSegmentType() != SpannerSegmentType::SINGLE
+                || s->_ordinaryFit[3].x() - s->_ordinaryFit[0].x() < 0.8 * s->spatium())
+                  continue;
+            const size_t index = adjustments.size();
+            adjustments.push_back({ s, QPointF(), QPointF() });
+            chords[s->slur()->startCR()].starts.push_back(index);
+            chords[s->slur()->endCR()].ends.push_back(index);
+            }
+      const auto tip = [&](size_t index, Grip grip) {
+            const SlurSegment* s = adjustments[index].segment;
+            return s->ups(grip).pos() + s->pos();
+            };
+      const auto sameSide = [&](size_t a, size_t b) {
+            const SlurSegment* first = adjustments[a].segment;
+            const SlurSegment* last = adjustments[b].segment;
+            return first != last && first->vStaffIdx() == last->vStaffIdx() && first->slur()->up() == last->slur()->up();
+            };
+      for (const auto& entry : chords) {
+            for (size_t in : entry.second.ends) {
+                  const QPointF end = tip(in, Grip::END);
+                  const qreal sp = adjustments[in].segment->spatium();
+                  for (size_t out : entry.second.starts) {
+                        if (!sameSide(in, out))
+                              continue;
+                        const QPointF start = tip(out, Grip::START);
+                        const qreal gap = start.x() - end.x();
+                        if (qAbs(start.y() - end.y()) >= 0.25 * sp || qAbs(gap) >= 0.4 * sp)
+                              continue;
+                        const qreal move = qMin(0.2 * sp, (0.4 * sp - gap) * 0.5);
+                        adjustments[in].end.rx() = qMin(adjustments[in].end.x(), -move);
+                        adjustments[out].start.rx() = qMax(adjustments[out].start.x(), move);
+                        }
+                  }
+            }
+      for (const auto& a : adjustments) {
+            if (a.start.isNull() && a.end.isNull())
+                  continue;
+            auto& fit = a.segment->_ordinaryFit;
+            fit[0] += a.start;
+            fit[1] += a.start * 0.5;
+            fit[2] += a.end * 0.5;
+            fit[3] += a.end;
+            for (int i : { 1, 2 })
+                  fit[i].setX(qBound(fit[0].x(), fit[i].x(), fit[3].x()));
+            a.segment->computeBezier();
+            }
+      }
+
 //---------------------------------------------------------
 //   layoutSegment
 //---------------------------------------------------------
