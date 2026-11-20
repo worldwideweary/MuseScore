@@ -1691,7 +1691,7 @@ void TestSpanners::nativeSlursOverTies()
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
-            const Slur* slur = toSlur(entry.second);
+            Slur* slur = toSlur(entry.second);
             const SlurSegment* segment = slur->frontSegment();
             QVERIFY(segment && slur->startCR() && slur->endCR());
             const qreal sign = slur->up() ? -1.0 : 1.0;

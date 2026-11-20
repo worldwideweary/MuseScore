@@ -800,7 +800,7 @@ static bool nativeBeamedSlurObstacles(const SlurSegment* segment, std::vector<QR
 // two staves, put the supported glyphs into the slur's staff frame first.
 static bool crossStaffSlurObstacles(const SlurSegment* segment, std::vector<QRectF>& obstacles, bool& overBeams)
       {
-      const Slur* slur = segment->slur();
+      Slur* slur = segment->slur();
       const ChordRest* start = slur->startCR();
       const ChordRest* end = slur->endCR();
       const System* system = segment->system();
@@ -1559,14 +1559,13 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
       if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE) {
             QPointF first = p1;
             QPointF last = p2;
-            const Slur* s = slur();
-            if (!crossStaff && system() && staff() && s->partialDirection() < 0
-                && !s->isHammerOnPullOff() && s->lineType() == 0
-                && s->startCR() && s->endCR() && !s->startCR()->isGrace() && !s->endCR()->isGrace()
-                && s->startCR()->vStaffIdx() == vStaffIdx() && s->endCR()->vStaffIdx() == vStaffIdx()
-                && staff()->isPitchedStaff(s->tick())) {
-                  clearSlurTipFromTie(this, s->startCR(), true, first);
-                  clearSlurTipFromTie(this, s->endCR(), false, last);
+            if (!crossStaff && system() && staff() && slur()->partialDirection() < 0
+                && !slur()->isHammerOnPullOff() && slur()->lineType() == 0
+                && startCR && endCR && !startCR->isGrace() && !endCR->isGrace()
+                && startCR->vStaffIdx() == vStaffIdx() && endCR->vStaffIdx() == vStaffIdx()
+                && staff()->isPitchedStaff(slur()->tick())) {
+                  clearSlurTipFromTie(this, startCR, true, first);
+                  clearSlurTipFromTie(this, endCR, false, last);
                   if (last.x() - first.x() < 0.4 * spatium()) {
                         first.setX(p1.x());
                         last.setX(p2.x());
