@@ -258,14 +258,20 @@ void TestKeySig::nativeSignatureSpacing()
       for (Sid sid : {Sid::keysigAccidentalDistance, Sid::keysigNaturalDistance})
             score->setStyleValue(sid, imported.value(sid));
 
-      for (int i = 0; i < signatures.size(); ++i) {
-            signatures[i]->layout();
-            const auto edited = signatures[i]->keySigEvent().keySymbols();
-            QCOMPARE(edited.size(), base[i].size());
-            for (int j = 0; j + 1 < edited.size(); ++j) {
-                  const SymId left = expected[i][j], right = expected[i][j + 1];
-                  const qreal added = left != right ? 0.4 : left == natural ? 0.3 : 0.2;
-                  QVERIFY(qAbs(step(edited, j) - step(base[i], j) - added) < 1e-6);
+      // The shared Studio gaps still apply with a zero flat adjustment.
+      // A negative adjustment tightens only pairs of flats, including courtesies.
+      for (qreal adjustment : {qreal(0.0), qreal(-0.1)}) {
+            score->setStyleValue(Sid::keysigFlatDistanceAdjustment, Spatium(adjustment));
+            for (int i = 0; i < signatures.size(); ++i) {
+                  signatures[i]->layout();
+                  const auto edited = signatures[i]->keySigEvent().keySymbols();
+                  QCOMPARE(edited.size(), base[i].size());
+                  for (int j = 0; j + 1 < edited.size(); ++j) {
+                        const SymId left = expected[i][j], right = expected[i][j + 1];
+                        const qreal added = left != right ? 0.4 : left == natural ? 0.3 : 0.2;
+                        const qreal flatOnly = left == flat && right == flat ? adjustment : 0.0;
+                        QVERIFY(qAbs(step(edited, j) - step(base[i], j) - added - flatOnly) < 1e-6);
+                        }
                   }
             }
 
@@ -275,6 +281,7 @@ void TestKeySig::nativeSignatureSpacing()
       QVERIFY(saved);
       QCOMPARE(saved->styleS(Sid::keysigAccidentalDistance).val(), qreal(0.5));
       QCOMPARE(saved->styleS(Sid::keysigNaturalDistance).val(), qreal(0.7));
+      QCOMPARE(saved->styleS(Sid::keysigFlatDistanceAdjustment).val(), qreal(-0.1));
       }
 
 QTEST_MAIN(TestKeySig)

@@ -210,6 +210,8 @@ void KeySig::layout()
       const qreal stepDistance = staff() ? staff()->lineDistance(tick()) * 0.5 : 0.5;
       const qreal accidentalGap = score()->styleS(Sid::keysigAccidentalDistance).val();
       const qreal naturalGap = score()->styleS(Sid::keysigNaturalDistance).val();
+      const qreal flatAdjustment = score()->styleS(Sid::keysigFlatDistanceAdjustment).val();
+      const qreal flatGap = flatAdjustment == 0.0 ? accidentalGap : qMax(qreal(0.0), accidentalGap + flatAdjustment);
       const auto append = [&](SymId sym, qreal legacyX, int line) {
             qreal x = legacyX;
             if (spaceByGlyph) {
@@ -222,6 +224,8 @@ void KeySig::layout()
                               gap *= 2.0;
                         else if (sym == SymId::accidentalNatural)
                               gap = naturalGap;
+                        else if (sym == SymId::accidentalFlat)
+                              gap = flatGap;
                         x = prev.spos.x() + symWidth(prev.sym) / _spatium + gap;
 
                         // Staggered signs can nest when their opposing cutouts clear.

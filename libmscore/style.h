@@ -167,6 +167,7 @@ enum class Sid : short {
       keysigLeftMargin,
       keysigAccidentalDistance,
       keysigNaturalDistance,
+      keysigFlatDistanceAdjustment,
       ambitusMargin,
       timesigLeftMargin,
       timesigScale,

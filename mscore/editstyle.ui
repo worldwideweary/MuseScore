@@ -4011,6 +4011,141 @@ By default, they will be placed such as that their right end are at the same lev
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="keySigSpacingGroup">
+          <property name="title">
+           <string>Key Signature Spacing</string>
+          </property>
+          <layout class="QGridLayout" name="keySigSpacingLayout" columnstretch="0,0,0,1">
+           <item row="0" column="0">
+            <widget class="QLabel" name="keysigAccidentalDistanceLabel">
+             <property name="text">
+              <string>Accidental gap:</string>
+             </property>
+             <property name="buddy">
+              <cstring>keysigAccidentalDistance</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="keysigAccidentalDistance">
+             <property name="toolTip">
+              <string>Set the base gap between accidentals in a key signature.</string>
+             </property>
+             <property name="suffix">
+              <string> sp</string>
+             </property>
+             <property name="decimals">
+              <number>3</number>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.050000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QToolButton" name="resetKeysigAccidentalDistance">
+             <property name="toolTip">
+              <string>Reset 'Accidental gap' to default</string>
+             </property>
+             <property name="text">
+              <string notr="true"/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="keysigFlatDistanceAdjustmentLabel">
+             <property name="text">
+              <string>Flat gap adjustment:</string>
+             </property>
+             <property name="buddy">
+              <cstring>keysigFlatDistanceAdjustment</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="keysigFlatDistanceAdjustment">
+             <property name="toolTip">
+              <string>Adjust the gap between two flats relative to the accidental gap. Use a negative value for tighter spacing. Zero uses the base gap.</string>
+             </property>
+             <property name="suffix">
+              <string> sp</string>
+             </property>
+             <property name="decimals">
+              <number>3</number>
+             </property>
+             <property name="minimum">
+              <double>-10.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.050000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QToolButton" name="resetKeysigFlatDistanceAdjustment">
+             <property name="toolTip">
+              <string>Reset 'Flat gap adjustment' to default</string>
+             </property>
+             <property name="text">
+              <string notr="true"/>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="keysigNaturalDistanceLabel">
+             <property name="text">
+              <string>Natural gap:</string>
+             </property>
+             <property name="buddy">
+              <cstring>keysigNaturalDistance</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QDoubleSpinBox" name="keysigNaturalDistance">
+             <property name="toolTip">
+              <string>Set the gap between consecutive cancellation naturals in a key signature.</string>
+             </property>
+             <property name="suffix">
+              <string> sp</string>
+             </property>
+             <property name="decimals">
+              <number>3</number>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.050000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QToolButton" name="resetKeysigNaturalDistance">
+             <property name="toolTip">
+              <string>Reset 'Natural gap' to default</string>
+             </property>
+             <property name="text">
+              <string notr="true"/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QGroupBox" name="accidentalsGroup">
           <property name="title">
            <string>Tuning</string>
@@ -14259,6 +14394,12 @@ By default, they will be placed such as that their right end are at the same lev
   <tabstop>resetAccidentalsOctaveColumnsAlignLeft</tabstop>
   <tabstop>accidentalsBracketsBadding</tabstop>
   <tabstop>resetAccidentalsBracketPadding</tabstop>
+  <tabstop>keysigAccidentalDistance</tabstop>
+  <tabstop>resetKeysigAccidentalDistance</tabstop>
+  <tabstop>keysigFlatDistanceAdjustment</tabstop>
+  <tabstop>resetKeysigFlatDistanceAdjustment</tabstop>
+  <tabstop>keysigNaturalDistance</tabstop>
+  <tabstop>resetKeysigNaturalDistance</tabstop>
   <tabstop>accidentalTable</tabstop>
   <tabstop>radioKeySigNatNone</tabstop>
   <tabstop>radioKeySigNatBefore</tabstop>
