@@ -601,6 +601,38 @@ static QPointF nativeSlurChordOrigin(const Chord* chord)
       return origin;
       }
 
+static const QLineF* nativeGraceSlurBeam(const Chord* chord)
+      {
+      const Beam* beam = chord->beam();
+      if (!chord->isGrace() || chord->staffMove() || !chord->staff()
+          || !chord->staff()->isPitchedStaff(chord->tick()) || !chord->measure() || !beam
+          || beam->cross() || !beam->parent() || beam->system() != chord->measure()->system())
+            return nullptr;
+      const QLineF* line = beam->primarySegment4();
+      return line && line->dx() > 0.0 ? line : nullptr;
+      }
+
+static qreal nativeGraceBeamHalfWidth(const Beam* beam, const QLineF& line)
+      {
+      return 0.5 * beam->score()->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
+            * std::hypot(qreal(1.0), line.dy() / line.dx());
+      }
+
+static qreal nativeGraceBeamTipY(const Chord* chord, bool up, qreal x, qreal fallback)
+      {
+      const QLineF* line = nativeGraceSlurBeam(chord);
+      if (!line)
+            return fallback;
+      const Beam* beam = chord->beam();
+      const QPointF origin = beam->pagePos() - chord->pagePos();
+      const qreal t = (x - origin.x() - line->x1()) / line->dx();
+      // The anchor uses the existing stem X, which can fall slightly inside
+      // or outside the beam edge. Sample the nearest point on this beam.
+      const qreal beamY = origin.y() + line->pointAt(qBound(qreal(0.0), t, qreal(1.0))).y();
+      const qreal gap = qMax(0.20, 0.35 * chord->score()->styleD(Sid::graceNoteMag)) * chord->spatium();
+      return beamY + (up ? -1.0 : 1.0) * (nativeGraceBeamHalfWidth(beam, *line) + gap);
+      }
+
 static void appendNativeSlurChordObstacles(const SlurSegment* segment, const Chord* chord, bool endpoint,
                                           std::vector<QRectF>& obstacles)
       {
@@ -1703,6 +1735,8 @@ void Slur::slurPos(SlurPos* sp)
                         // Studio 4.7.5 instead uses stemPosX + 0.15sp * chordMag
                         // + half the scaled stem width * direction (-1 up, +1 down).
                         xo       = stem1->pos().x();
+                        if (previewGraceTips)
+                              yo = nativeGraceBeamTipY(sc, _up, xo + (note1 && !note1->mirror() ? note1->x() : 0.0), yo);
 
                         // account for articulations
                         yo = fixArticulations(yo, sc, __up, true);
@@ -1824,6 +1858,8 @@ void Slur::slurPos(SlurPos* sp)
                               // Studio 4.7.5 uses the same signed half stem width as
                               // at the start but subtracts 0.15sp * chordMag.
                               xo = stem2->pos().x();
+                              if (previewGraceTips)
+                                    yo = nativeGraceBeamTipY(ec, _up, xo + (note2 && !note2->mirror() ? note2->x() : 0.0), yo);
 
                               // account for articulations
                               yo = fixArticulations(yo, ec, __up, true);

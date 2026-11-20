@@ -4955,6 +4955,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //  may change.
       //-------------------------------------------------------------
 
+      static const bool fitGraceSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
                   if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show()) {
@@ -4970,6 +4971,22 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   if (isTopBeam(cr)) {
                         Beam* b = cr->beam();
                         b->layout();
+                        }
+                  // Grace beams are normally laid out during page collection,
+                  // after a system's slurs. Prepare beams that stay on the
+                  // owner's staff so slurs see the drawn beam and stem tips.
+                  if (fitGraceSlurs && e->isChord() && e->vStaffIdx() == e->staffIdx()
+                      && e->staff()->isPitchedStaff(cr->tick())) {
+                        for (Chord* grace : toChord(e)->graceNotes()) {
+                              Beam* beam = grace->beam();
+                              if (!beam || beam->empty() || beam->elements().front() != grace || beam->cross())
+                                    continue;
+                              const auto& members = beam->elements();
+                              if (std::all_of(members.begin(), members.end(), [e](const ChordRest* member) {
+                                    return member->parent() == e && member->vStaffIdx() == e->vStaffIdx();
+                                    }))
+                                    beam->layout();
+                              }
                         }
                   }
             }
