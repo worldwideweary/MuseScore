@@ -524,6 +524,15 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;
       const SpannerSegmentType type = spannerSegmentType();
+      static const bool traceEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_TRACE") == 1;
+      const ChordRest* traceStart = traceEnabled ? slur()->startCR() : nullptr;
+      const ChordRest* traceEnd = traceEnabled ? slur()->endCR() : nullptr;
+      const bool trace = type == SpannerSegmentType::SINGLE && slur()->partialDirection() < 0
+            && system() && staff() && traceStart && traceEnd
+            && traceStart->measure() && traceEnd->measure()
+            && !traceStart->isGrace() && !traceEnd->isGrace()
+            && traceStart->vStaffIdx() == vStaffIdx() && traceEnd->vStaffIdx() == vStaffIdx()
+            && !staff()->isTabStaff(traceStart->tick());
       const bool incoming = slur()->isIncoming() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::BEGIN);
       const bool outgoing = slur()->isOutgoing() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::END);
       // Partial slurs already receive repeat-aware contours and one-note
@@ -604,8 +613,18 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   }
             }
 
+      const qreal staffOriginY = ipos().y();
+      const qreal beforeStartY = ups(Grip::START).pos().y();
+      const qreal beforeEndY = ups(Grip::END).pos().y();
+      const auto crownY = [this]() {
+            const QRectF bounds = path.boundingRect();
+            return slur()->up() ? bounds.top() : bounds.bottom();
+            };
+
       computeBezier();
 
+      const qreal beforeCrownY = trace ? crownY() : 0.0;
+      qreal overlap = 0.0;
       if (autoplace() && system()) {
             bool up = slur()->up();
             Segment* ls = system()->lastMeasure()->last();
@@ -662,9 +681,26 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   gdist = 0.0;
                   }
             if (intersection && gdist > 0.0) {
+                  overlap = gdist;
                   qreal min = minDistance + gdist;
                   rypos() += up ? -min : min;
                   }
+            }
+      if (trace) {
+            const qreal sp = spatium();
+            const qreal shift = ipos().y() - staffOriginY;
+            const qreal lineStep = staffType() ? staffType()->lineDistance().val() : 1.0;
+            qDebug("[native-slur] measures=%d-%d ticks=%d-%d staff=%d up=%d autoplace=%d edited=%d"
+                   " lineStep/sp=%.3f lineWidth/sp=%.3f span/sp=%.3f rawTipsY/sp=%.3f,%.3f"
+                   " preFitTipsY/sp=%.3f,%.3f finalTipsY/sp=%.3f,%.3f"
+                   " crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f overlap/sp=%.3f heightAdded/sp=%.3f",
+                   traceStart->measure()->no() + 1, traceEnd->measure()->no() + 1,
+                   traceStart->tick().ticks(), traceEnd->tick().ticks(), staffIdx() + 1,
+                   slur()->up(), autoplace(), isEdited() || isNudged(), lineStep,
+                   score()->styleS(Sid::staffLineWidth).val(), (p2.x() - p1.x()) / sp,
+                   p1.y() / sp, p2.y() / sp, beforeStartY / sp, beforeEndY / sp,
+                   (ups(Grip::START).pos().y() + shift) / sp, (ups(Grip::END).pos().y() + shift) / sp,
+                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, overlap / sp, _extraHeight / sp);
             }
       layoutHopoText();
       QRectF bounds = path.boundingRect();
