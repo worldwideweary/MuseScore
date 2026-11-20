@@ -1393,6 +1393,9 @@ void TestSpanners::nativePreGraceSlurFit()
       QVERIFY(score && score->styleB(Sid::beamLayout4));
       int beamedPairs = 0;
       int betweenBeats = 0;
+      Slur* inner = nullptr;
+      Slur* acrossBarline = nullptr;
+      Slur* next = nullptr;
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
@@ -1405,6 +1408,14 @@ void TestSpanners::nativePreGraceSlurFit()
             const qreal sp = segment->spatium();
             SlurPos anchors;
             slur->slurPos(&anchors);
+            if (slur->up() && start->isGrace() && start->tick().ticks() == 1440) {
+                  if (start->segment() == end->segment())
+                        inner = slur;
+                  else if (end->tick().ticks() == 1920)
+                        acrossBarline = slur;
+                  }
+            if (slur->up() && start->tick().ticks() == 1920 && end->isGrace())
+                  next = slur;
             if (slur->up() && start->isGrace() && end->isGrace() && start->beam()
                 && start->beam() == end->beam() && start->up() && end->up()) {
                   const Beam* beam = start->beam();
@@ -1451,6 +1462,33 @@ void TestSpanners::nativePreGraceSlurFit()
             }
       QCOMPARE(beamedPairs, 2);
       QCOMPARE(betweenBeats, 2);
+      QVERIFY(inner && acrossBarline && next);
+      QCOMPARE(inner->startCR(), acrossBarline->startCR());
+      QCOMPARE(acrossBarline->endCR(), next->startCR());
+
+      const Chord* owner = toChord(inner->endCR());
+      const auto graces = owner->graceNotesBefore();
+      QCOMPARE(graces.size(), 2);
+      const Chord* last = graces.back();
+      QVERIFY(last->beam() && last->beam() == graces.front()->beam());
+      const Note* graceHead = last->upNote();
+      const Note* ownerHead = owner->upNote();
+      const qreal gap = ownerHead->pagePos().x() + ownerHead->bbox().left()
+            - graceHead->pagePos().x() - graceHead->bbox().right();
+      const qreal sp = inner->frontSegment()->spatium();
+      QVERIFY2(gap >= 0.63 * sp, qPrintable(QString("Grace beam to parent: %1sp").arg(gap / sp)));
+
+      const auto tip = [](const Slur* slur, Grip grip) {
+            const SlurSegment* s = slur->frontSegment();
+            return s->ups(grip).pos() + s->pos();
+            };
+      const QPointF insideStart = tip(inner, Grip::START);
+      const QPointF outsideStart = tip(acrossBarline, Grip::START);
+      QVERIFY(qAbs(insideStart.x() - outsideStart.x()) < 0.02 * sp);
+      QVERIFY2(insideStart.y() - outsideStart.y() > 0.55 * sp, "Nested tips touch at the grace beam");
+
+      const qreal tipGap = tip(next, Grip::START).x() - tip(acrossBarline, Grip::END).x();
+      QVERIFY2(tipGap > 0.32 * sp, qPrintable(QString("Incoming to outgoing slur tips: %1sp").arg(tipGap / sp)));
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()
