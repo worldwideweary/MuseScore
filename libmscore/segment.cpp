@@ -38,6 +38,7 @@
 #include "sig.h"
 #include "staff.h"
 #include "staffstate.h"
+#include "stem.h"
 #include "system.h"
 #include "tie.h"
 #include "tuplet.h"
@@ -2522,6 +2523,59 @@ qreal courtesySignaturePadding(const Element* left, const Element* right)
       }
 }
 
+// Studio 4.7's key-signature padding is non-kerning: vertically clear notes
+// must still leave space after the rightmost sign on their own staff.
+static qreal keyChangeClearance(const Segment* signature, const Segment* next)
+      {
+      const Score* score = signature->score();
+      const qreal sp = score->spatium();
+      const qreal notePadding = 1.75 * sp;
+      const qreal ledgerPadding = qMax(notePadding - score->styleP(Sid::ledgerLineLength), 0.25 * sp);
+      qreal distance = 0.0;
+      for (const Element* e : next->elist()) {
+            if (!e || !(e->isChord() || e->isRest()) || !e->addToSkyline())
+                  continue;
+            const int staffIdx = e->vStaffIdx();
+            if (staffIdx < 0 || staffIdx >= int(score->nstaves()))
+                  continue;
+            const Staff* staff = score->staff(staffIdx);
+            if (!staff->show() || staff->isTabStaff(next->tick()))
+                  continue;
+            const Element* key = signature->element(staffIdx * VOICES);
+            if (!key || !key->isKeySig() || !key->addToSkyline() || key->bbox().isEmpty())
+                  continue;
+
+            const qreal keyRight = key->x() + key->bbox().right();
+            const auto reserve = [&](const Element* item, qreal parentX, qreal padding) {
+                  if (item && item->addToSkyline() && !item->bbox().isEmpty()) {
+                        const qreal left = parentX + item->x() + item->bbox().left();
+                        const qreal scale = 0.5 * (key->mag() + item->mag());
+                        distance = qMax(distance, keyRight - left + padding * scale);
+                        }
+                  };
+
+            if (e->isRest()) {
+                  if (!toRest(e)->isGap())
+                        reserve(e, 0.0, notePadding);
+                  continue;
+                  }
+
+            const Chord* chord = toChord(e);
+            for (const Note* note : chord->notes()) {
+                  if (!note->addToSkyline())
+                        continue;
+                  reserve(note, chord->x(), notePadding);
+                  reserve(note->accidental(), chord->x() + note->x(), 1.6 * sp);
+                  }
+            reserve(chord->stem(), chord->x(), notePadding);
+            if (staff->showLedgerLines(next->tick())) {
+                  for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next())
+                        reserve(line, chord->x(), ledgerPadding);
+                  }
+            }
+      return distance;
+      }
+
 // The onset span can be shorter than any sounding duration at that onset
 // when another voice or staff attacks before the current notes end.
 static Fraction shortestNativeChordRest(const Segment* segment)
@@ -2750,8 +2804,11 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                   // not header
                   if (st == SegmentType::Clef)
                         w = ww + score()->styleP(Sid::midClefKeyRightMargin);
-                  else if (st == SegmentType::KeySig)
+                  else if (st == SegmentType::KeySig) {
                         w += score()->styleP(Sid::midClefKeyRightMargin);
+                        if (segmentType() == SegmentType::KeySig && ns->measure() == measure() && !measure()->isMMRest())
+                              w = qMax(w, keyChangeClearance(this, ns));
+                        }
                   else
                         w += score()->styleP(Sid::barNoteDistance);
 

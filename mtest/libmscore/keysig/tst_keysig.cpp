@@ -14,6 +14,8 @@
 #include <memory>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
+#include "libmscore/chord.h"
+#include "libmscore/note.h"
 #include "libmscore/measure.h"
 #include "libmscore/keysig.h"
 #include "libmscore/undo.h"
@@ -41,6 +43,7 @@ class TestKeySig : public QObject, public MTest
       void preferSharpFlat();
       void keysigMode();
       void nativeSignatureSpacing();
+      void nativeKeyChangeClearance();
       };
 
 //---------------------------------------------------------
@@ -282,6 +285,42 @@ void TestKeySig::nativeSignatureSpacing()
       QCOMPARE(saved->styleS(Sid::keysigAccidentalDistance).val(), qreal(0.5));
       QCOMPARE(saved->styleS(Sid::keysigNaturalDistance).val(), qreal(0.7));
       QCOMPARE(saved->styleS(Sid::keysigFlatDistanceAdjustment).val(), qreal(-0.1));
+      }
+
+//---------------------------------------------------------
+//   nativeKeyChangeClearance
+//---------------------------------------------------------
+
+void TestKeySig::nativeKeyChangeClearance()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-key-signature-spacing.mscx"));
+      QVERIFY(score);
+
+      // The first notes in K2 and K6 are both below the last key glyph.
+      // The note still needs a horizontal gap from the signature's right edge.
+      int measureNo = 0;
+      int checked = 0;
+      for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            ++measureNo;
+            if (measureNo != 2 && measureNo != 6)
+                  continue;
+            QVERIFY(!m->isFirstInSystem());
+            Segment* keySegment = m->findSegment(SegmentType::KeySig, m->tick());
+            Segment* chordSegment = m->findSegment(SegmentType::ChordRest, m->tick());
+            QVERIFY(keySegment && chordSegment && keySegment->nextActive() == chordSegment);
+            const Element* key = keySegment->element(0);
+            const Element* e = chordSegment->element(0);
+            QVERIFY(key && !key->bbox().isEmpty() && e && e->isChord());
+            const Chord* chord = toChord(e);
+            QCOMPARE(chord->notes().size(), size_t(1));
+            const Note* note = chord->notes().front();
+            const qreal keyRight = keySegment->x() + key->x() + key->bbox().right();
+            const qreal noteLeft = chordSegment->x() + chord->x() + note->x() + note->bbox().left();
+            const qreal gap = (noteLeft - keyRight) / score->spatium();
+            QVERIFY2(gap >= 1.74 && gap <= 1.85, qPrintable(QString::number(gap)));
+            ++checked;
+            }
+      QCOMPARE(checked, 2);
       }
 
 QTEST_MAIN(TestKeySig)
