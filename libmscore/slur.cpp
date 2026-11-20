@@ -1783,11 +1783,31 @@ void Slur::slurPos(SlurPos* sp)
                   // clear the stem (x)
                   // allow slight overlap (y) as per Gould
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
+                  const bool flagGrace = scaleGraceTips && sc->isGraceBefore() && !sc->beam() && sc->hook()
+                        && sc->hook()->visible() && !sc->hook()->bbox().isEmpty();
+                  const qreal graceMag = flagGrace ? score()->styleD(Sid::graceNoteMag) : 1.0;
                   qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
+                  if (flagGrace)
+                        yadj = -0.5 * graceMag;
                   yadj *= _spatium * __up;
-                  pt += QPointF(0.35 * _spatium, yadj);
+                  pt += QPointF(qMax(0.20, 0.35 * graceMag) * _spatium, yadj);
                   // account for articulations
                   pt.ry() = fixArticulations(pt.y(), sc, __up, true);
+                  if (flagGrace) {
+                        const Hook* flag = sc->hook();
+                        const QRectF bounds = flag->bbox().translated(flag->pos());
+                        if (bounds.contains(pt)) {
+                              // As in Studio, approximate the open side of
+                              // the curved flag; its bbox encloses empty ink.
+                              const QString family = score()->scoreFont()->family();
+                              const qreal slope = family == "Gonville" || family == "MuseJazz" ? 1.5 : 1.0;
+                              const qreal cutout = qMax(0.0, bounds.width() / slope - qAbs(yadj));
+                              pt.setX(qMax(pt.x(), sc->stemPosX() + cutout));
+                              }
+                        // pt.x() is already relative to the chord, not the
+                        // notehead, so cancel the generic notehead offset.
+                        pt.rx() += sc->pageX() - sp->system1->pagePos().x() - sp->p1.x();
+                        }
                   sp->p1 += pt;
                   }
                   break;
