@@ -62,6 +62,7 @@ class TestSpanners : public QObject, public MTest
       void nativeNestedBeamedSlurFit();
       void nativeCrossStaffSlurs();
       void nativeSlursOverTies();
+      void nativeSystemBreakSlur();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1712,6 +1713,35 @@ void TestSpanners::nativeSlursOverTies()
             ++checked;
             }
       QCOMPARE(checked, 2);
+      }
+
+void TestSpanners::nativeSystemBreakSlur()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-system-break-slur.mscx"));
+      QVERIFY(score && !score->styleB(Sid::angleHangingSlursAwayFromStaff));
+      const Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up());
+      QCOMPARE(slur->spannerSegments().size(), size_t(3));
+      const SlurSegment* first = slur->frontSegment();
+      const SlurSegment* middle = slur->segmentAt(1);
+      const SlurSegment* last = slur->backSegment();
+      const qreal sp = first->spatium();
+      const auto y = [](const SlurSegment* s, Grip grip) { return s->ups(grip).p.y(); };
+      for (const SlurSegment* s : { first, middle }) {
+            const qreal right = s->system()->lastMeasure()->endingXForOpenEndedLines();
+            QVERIFY(qAbs(s->ups(Grip::END).p.x() - right) < 1e-6 * sp);
+            }
+      QVERIFY(qAbs(y(first, Grip::START) - y(first, Grip::END) - 0.25 * sp) < 1e-6 * sp);
+      QVERIFY(qAbs(y(last, Grip::END) - y(last, Grip::START) - 0.25 * sp) < 1e-6 * sp);
+      QVERIFY(y(middle, Grip::START) > y(middle, Grip::END));
       }
 
 QTEST_MAIN(TestSpanners)

@@ -1374,6 +1374,51 @@ static void clearSlurTipFromTie(const SlurSegment* segment, const ChordRest* anc
             tip.rx() += (atStart ? 0.35 : -0.35) * segment->spatium();
       }
 
+static const ChordRest* continuationBoundaryChord(const System* system, int track, bool first)
+      {
+      const auto& measures = system->measures();
+      for (size_t i = 0; i < measures.size(); ++i) {
+            const MeasureBase* mb = measures[first ? i : measures.size() - i - 1];
+            if (!mb->isMeasure())
+                  continue;
+            const Measure* measure = toMeasure(mb);
+            for (const Segment* s = first ? measure->first() : measure->last(); s; s = first ? s->next() : s->prev()) {
+                  if (!s->enabled() || !s->isChordRestType())
+                        continue;
+                  const Element* element = s->element(track);
+                  if (element && element->isChordRest())
+                        return toChordRest(element);
+                  }
+            }
+      return nullptr;
+      }
+
+static qreal continuationChordEdge(const ChordRest* cr, const SlurSegment* segment, qreal fallback)
+      {
+      if (!cr || !cr->isChord() || cr->vStaffIdx() != segment->vStaffIdx())
+            return fallback;
+      const Chord* chord = toChord(cr);
+      if (chord->notes().empty())
+            return fallback;
+      const bool up = segment->slur()->up();
+      const Note* note = up ? chord->upNote() : chord->downNote();
+      qreal y = note->y() + (up ? note->bbox().top() : note->bbox().bottom());
+      const auto include = [&](const Element* item) {
+            if (!item || !item->visible() || item->bbox().isEmpty())
+                  return;
+            const qreal edge = item->y() + (up ? item->bbox().top() : item->bbox().bottom());
+            y = up ? qMin(y, edge) : qMax(y, edge);
+            };
+      const bool stemSide = chord->stem() && chord->up() == up;
+      if (stemSide) {
+            include(chord->stem());
+            include(chord->hook());
+            }
+      else
+            y += (up ? -0.4 : 0.4) * segment->spatium();
+      return chord->y() + y;
+      }
+
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool crossStaff)
       {
       _hasOrdinaryFit = false;
@@ -1392,9 +1437,41 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
       const bool traceGrace = trace && (traceStart->isGrace() || traceEnd->isGrace());
       const bool incoming = slur()->isIncoming() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::BEGIN);
       const bool outgoing = slur()->isOutgoing() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::END);
-      // Partial slurs already receive repeat-aware contours and one-note
-      // constraints from slurPosChord(). Preserve those calculated anchors.
-      if (slur()->partialDirection() < 0) {
+      static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const ChordRest* startCR = slur()->startCR();
+      const ChordRest* endCR = slur()->endCR();
+      const bool continued = previewEnabled && type != SpannerSegmentType::SINGLE
+            && slur()->partialDirection() < 0 && !slur()->isHammerOnPullOff()
+            && system() && staff() && staff()->isPitchedStaff(tick())
+            && startCR && endCR && !startCR->isGrace() && !endCR->isGrace()
+            && startCR->vStaffIdx() == vStaffIdx() && endCR->vStaffIdx() == vStaffIdx();
+      if (continued) {
+            const qreal sp = spatium();
+            const qreal sign = slur()->up() ? -1.0 : 1.0;
+            if (type == SpannerSegmentType::END || type == SpannerSegmentType::MIDDLE) {
+                  const ChordRest* first = continuationBoundaryChord(system(), slur()->effectiveTrack2(), true);
+                  qreal y = continuationChordEdge(first, this, p1.y());
+                  if (type == SpannerSegmentType::END && first == endCR)
+                        y = p2.y() + sign * 0.25 * sp;
+                  ups(Grip::START).p = QPointF(system()->firstNoteRestSegmentX(true), y);
+                  }
+            if (type == SpannerSegmentType::BEGIN || type == SpannerSegmentType::MIDDLE) {
+                  const ChordRest* last = continuationBoundaryChord(system(), slur()->track(), false);
+                  const qreal startY = ups(Grip::START).p.y();
+                  qreal y = continuationChordEdge(last, this, startY);
+                  if (type == SpannerSegmentType::BEGIN && last == startCR)
+                        y = startY + sign * 0.25 * sp;
+                  // Limit the contour's movement toward the staff. Let it
+                  // follow the music freely in the outer direction.
+                  if (sign * (y - startY) < -2.5 * sp)
+                        y = startY - sign * 2.5 * sp;
+                  const qreal x = system()->lastMeasure()->endingXForOpenEndedLines();
+                  if (x > ups(Grip::START).p.x())
+                        ups(Grip::END).p = QPointF(x, y);
+                  }
+            }
+      // Partial slurs already receive repeat-aware contours from slurPosChord().
+      else if (slur()->partialDirection() < 0) {
             auto contourY = [&](Measure* measure, bool first, qreal fallback) {
                   if (!measure)
                         return fallback;
@@ -1431,9 +1508,9 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
             const bool up = slur()->up();
             const qreal height = spatium();
             if (endIsHanging)
-                  ups(Grip::END).p.ry() = up ? qMin(ups(Grip::END).p.y(), p1.y() - height) : qMax(ups(Grip::END).p.y(), p1.y() + height);
+                  ups(Grip::END).p.ry() = up ? qMin(ups(Grip::END).p.y(), ups(Grip::START).p.y() - height) : qMax(ups(Grip::END).p.y(), ups(Grip::START).p.y() + height);
             if (startIsHanging)
-                  ups(Grip::START).p.ry() = up ? qMin(ups(Grip::START).p.y(), p2.y() - height) : qMax(ups(Grip::START).p.y(), p2.y() + height);
+                  ups(Grip::START).p.ry() = up ? qMin(ups(Grip::START).p.y(), ups(Grip::END).p.y() - height) : qMax(ups(Grip::START).p.y(), ups(Grip::END).p.y() + height);
             }
       _extraHeight = 0.0;
 
@@ -1478,7 +1555,6 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
             return slur()->up() ? bounds.top() : bounds.bottom();
             };
 
-      static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       std::array<QPointF, 4> initialFit;
       if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE) {
             QPointF first = p1;
