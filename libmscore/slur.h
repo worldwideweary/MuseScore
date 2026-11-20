@@ -13,6 +13,8 @@
 #ifndef __SLUR_H__
 #define __SLUR_H__
 
+#include <array>
+
 #include "slurtie.h"
 
 namespace Ms {
@@ -23,6 +25,10 @@ namespace Ms {
 //---------------------------------------------------------
 
 class SlurSegment final : public SlurTieSegment {
+      // Automatic baseline only. The four user offsets remain independent.
+      std::array<QPointF, 4> _ordinaryFit;
+      bool _hasOrdinaryFit = false;
+      void drawOrdinaryFit(const QPointF& shoulderDelta);
 
    protected:
       qreal _extraHeight = 0.0;

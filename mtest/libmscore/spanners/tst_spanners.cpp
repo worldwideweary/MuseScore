@@ -52,6 +52,7 @@ class TestSpanners : public QObject, public MTest
       void initTestCase();
       void tieLayoutStylesRoundTrip();
       void partialSlurHangingAngles();
+      void nativeOrdinarySlurFit();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1218,6 +1219,50 @@ void TestSpanners::laissezVibChordGeometry()
       score->style().set(Sid::tieDotsPlacement, 1); // before dots
       score->doLayout();
       QVERIFY(middle->x() < afterX);
+      }
+
+void TestSpanners::nativeOrdinarySlurFit()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-slur-fit.mscx"));
+      QVERIFY(score);
+
+      int checked = 0;
+      Slur* editedSlur = nullptr;
+      QPointF editedTip;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && slur->startCR() && slur->endCR());
+            const int measure = slur->startCR()->measure()->no() + 1;
+            QVERIFY(measure == 2 || measure == 4 || measure == 6);
+            const qreal expected = measure == 2 ? 0.77 : measure == 4 ? 0.29 : 3.23;
+            const qreal sp = segment->spatium();
+            for (Grip tip : { Grip::START, Grip::END }) {
+                  const qreal y = (segment->y() + segment->ups(tip).pos().y()) / sp;
+                  QVERIFY2(qAbs(y - expected) < 0.16, qPrintable(QString("M%1 tip=%2").arg(measure).arg(y)));
+                  }
+            if (measure == 2) {
+                  // An offset should be relative to the snapped tip even after a fresh layout.
+                  const QPointF initial = segment->ups(Grip::START).pos();
+                  const QPointF delta(0.0, -0.25 * sp);
+                  segment->setSlurOffset(Grip::START, delta);
+                  segment->computeBezier();
+                  QVERIFY(QLineF(segment->ups(Grip::START).pos(), initial + delta).length() < 1e-6 * sp);
+                  editedSlur = slur;
+                  editedTip = initial + delta;
+                  }
+            ++checked;
+            }
+      QCOMPARE(checked, 3);
+      QVERIFY(editedSlur);
+      score->doLayout();
+      const SlurSegment* edited = editedSlur->frontSegment();
+      QVERIFY(edited);
+      QVERIFY(QLineF(edited->ups(Grip::START).pos(), editedTip).length() < 1e-6 * edited->spatium());
       }
 
 QTEST_MAIN(TestSpanners)
