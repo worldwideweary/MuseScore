@@ -802,9 +802,9 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       const bool trace = type == SpannerSegmentType::SINGLE && slur()->partialDirection() < 0
             && system() && staff() && traceStart && traceEnd
             && traceStart->measure() && traceEnd->measure()
-            && !traceStart->isGrace() && !traceEnd->isGrace()
             && traceStart->vStaffIdx() == vStaffIdx() && traceEnd->vStaffIdx() == vStaffIdx()
             && !staff()->isTabStaff(traceStart->tick());
+      const bool traceGrace = trace && (traceStart->isGrace() || traceEnd->isGrace());
       const bool incoming = slur()->isIncoming() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::BEGIN);
       const bool outgoing = slur()->isOutgoing() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::END);
       // Partial slurs already receive repeat-aware contours and one-note
@@ -973,7 +973,34 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   rypos() += up ? -min : min;
                   }
             }
-      if (trace) {
+      if (traceGrace && traceStart->isChord() && traceEnd->isChord()) {
+            const qreal sp = spatium();
+            const qreal shift = ipos().y() - staffOriginY;
+            const auto anchor = [&](const Chord* chord, const QPointF& raw, Grip grip) -> QString {
+                  if (!chord->segment() || chord->notes().empty() || (chord->isGrace() && !chord->parent()))
+                        return QStringLiteral("unavailable");
+                  const Note* note = slur()->up() ? chord->upNote() : chord->downNote();
+                  QPointF center = chord->measure()->pos() + chord->segment()->pos()
+                        + chord->pos() + note->pos() + note->bbox().center();
+                  if (chord->isGrace())
+                        center += chord->parent()->pos();
+                  const QPointF before = (raw - center) / sp;
+                  const QPointF final = (ups(grip).pos() + QPointF(0.0, shift) - center) / sp;
+                  return QString::asprintf("kind=%s index=%d pitch=%d beam=%d rawXY/sp=%.3f,%.3f finalXY/sp=%.3f,%.3f",
+                        chord->isGraceAfter() ? "after" : chord->isGrace() ? "before" : "main",
+                        chord->isGrace() ? chord->graceIndex() : -1, note->pitch(), chord->beam() != nullptr,
+                        before.x(), before.y(), final.x(), final.y());
+                  };
+            const QString first = anchor(toChord(traceStart), p1, Grip::START);
+            const QString last = anchor(toChord(traceEnd), p2, Grip::END);
+            qDebug("[native-grace-slur] measures=%d-%d ticks=%d-%d track=%d up=%d span/sp=%.3f"
+                   " start={%s} end={%s} crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f heightAdded/sp=%.3f",
+                   traceStart->measure()->no() + 1, traceEnd->measure()->no() + 1,
+                   traceStart->tick().ticks(), traceEnd->tick().ticks(), slur()->track(), slur()->up(),
+                   (p2.x() - p1.x()) / sp, qPrintable(first), qPrintable(last),
+                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, _extraHeight / sp);
+            }
+      else if (trace && !traceGrace) {
             const qreal sp = spatium();
             const qreal shift = ipos().y() - staffOriginY;
             const qreal lineStep = staffType() ? staffType()->lineDistance().val() : 1.0;
