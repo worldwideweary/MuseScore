@@ -1974,7 +1974,7 @@ void Chord::layout()
             layoutPitched();
       }
 
-static bool nativePlainGraceSpacingChord(const Chord* chord)
+static bool nativePlainSpacingChord(const Chord* chord)
       {
       if (chord->notes().size() != 1 || chord->staffMove()
           || chord->isNudged() || chord->isSmall() || !chord->addToSkyline()
@@ -2076,7 +2076,7 @@ static bool nativeSingleCrushedNoteX(const Chord* main, Chord* grace, qreal& x)
       if (!main->staff() || !main->staff()->isPitchedStaff(main->tick()) || !main->segment()
           || main->durationType().hooks() || grace->noteType() != NoteType::ACCIACCATURA
           || !grace->graceNotes().empty() || grace->track() != main->track()
-          || main->beam() || grace->beam() || !nativePlainGraceSpacingChord(main) || !nativePlainGraceSpacingChord(grace)
+          || main->beam() || grace->beam() || !nativePlainSpacingChord(main) || !nativePlainSpacingChord(grace)
           || main->notes().front()->accidental() || grace->notes().front()->accidental())
             return false;
       for (const Element* item : main->segment()->elist()) {
@@ -2408,7 +2408,7 @@ void Chord::layoutPitched()
                           const bool ordinaryBeam = std::all_of(graceNotesBefore.begin(), graceNotesBefore.end(),
                                 [g](const Chord* c) {
                                       return c->beam() == g->beam() && c->up() == g->up() && !c->hook()
-                                            && nativePlainGraceSpacingChord(c);
+                                            && nativePlainSpacingChord(c);
                                       });
                           if (ordinaryBeam) {
                                 const Note* note = next->notes().front();
@@ -3944,7 +3944,7 @@ Shape Chord::shape() const
                   Shape graceShape = chord->shape().translated(chord->pos());
                   // The chord's own spacing band is appended last.
                   if (chord == firstBeforeGrace && !graceShape.empty())
-                        graceShape.back().beforeGraceAccidentalInset = accidentalInset;
+                        graceShape.back().leadingAccidentalInset = accidentalInset;
                   shape.add(graceShape);
                   }
             for (LedgerLine* l = _ledgerLines; l; l = l->next())
@@ -3981,9 +3981,18 @@ Shape Chord::shape() const
                         const qreal left = canKernAccidental ? qMin(headLeft, accidentalLeft) : headLeft;
                         kernableChordBand = (-_spaceLw >= left || qFuzzyCompare(_spaceLw, -left))
                               && (_spaceRw <= headRight || qFuzzyCompare(_spaceRw, headRight));
+                        if (kernableChordBand && canKernAccidental && accidentalLeft < headLeft
+                            && qFuzzyCompare(_spaceLw, -accidentalLeft) && !beam() && !_hook
+                            && nativePlainSpacingChord(this)) {
+                              const Accidental* accidental = _notes.front()->accidental();
+                              if (accidental && !accidental->isNudged())
+                                    // Drop only the accidental's contribution to the full-height
+                                    // reservation. Its local shape still clears notes and stems.
+                                    accidentalInset = headLeft - accidentalLeft;
+                              }
                         }
                   shape.addHorizontalSpacing(Shape::SPACING_GENERAL, -_spaceLw, _spaceRw, kernableChordBand);
-                  shape.back().beforeGraceAccidentalInset = accidentalInset;
+                  shape.back().leadingAccidentalInset = accidentalInset;
                   }
             }
       return shape;

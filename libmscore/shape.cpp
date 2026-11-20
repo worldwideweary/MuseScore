@@ -74,7 +74,7 @@ Shape Shape::translated(const QPointF& pt) const
 //    so they don’t touch.
 //-------------------------------------------------------------------
 
-qreal Shape::minHorizontalDistance(const Shape& a, bool kernChordBands, bool kernBeforeGrace) const
+qreal Shape::minHorizontalDistance(const Shape& a, bool kernChordBands, bool kernLeadingAccidentals) const
       {
       qreal dist = -DBL_MAX;      // min real
       for (const ShapeElement& r2 : a) {
@@ -88,8 +88,8 @@ qreal Shape::minHorizontalDistance(const Shape& a, bool kernChordBands, bool ker
                   const bool sameBand = qFuzzyIsNull(r1.height()) && qFuzzyIsNull(r2.height()) && ay1 == by1;
                   if (Ms::intersects(ay1, ay2, by1, by2) || sameBand
                      || (qFuzzyIsNull(r1.width()) || qFuzzyIsNull(r2.width()))) {
-                        const qreal inset = kernBeforeGrace && sameBand && r1.kernableChordBand
-                              ? r2.beforeGraceAccidentalInset : 0.0;
+                        const qreal inset = kernLeadingAccidentals && sameBand && r1.kernableChordBand
+                              ? r2.leadingAccidentalInset : 0.0;
                         dist = qMax(dist, r1.right() - r2.left() - inset);
                         }
                   }

@@ -2654,12 +2654,12 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
             ? ns->rtick() - rtick() : Fraction(0, 1);
       const bool rhythmicPair = span > Fraction(0, 1) && !measure()->isMMRest();
       const bool subdivided = rhythmicPair && span < shortestNativeChordRest(this);
-      const bool kernBeforeGrace = rhythmicPair && !systemHeaderGap;
+      const bool kernLeadingAccidentals = rhythmicPair && !systemHeaderGap;
       qreal ww = -DBL_MAX;        // can remain negative
       for (unsigned staffIdx = 0; staffIdx < _shapes.size(); ++staffIdx) {
             if (score()->staff(staffIdx) && !score()->staff(staffIdx)->show())
                   continue;
-            qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx), subdivided, kernBeforeGrace) : 0.0;
+            qreal d = ns ? staffShape(staffIdx).minHorizontalDistance(ns->staffShape(staffIdx), subdivided, kernLeadingAccidentals) : 0.0;
             // first chordrest of a staff should clear the widest header for any staff
             // so make sure segment is as wide as it needs to be
             if (systemHeaderGap && !above)
