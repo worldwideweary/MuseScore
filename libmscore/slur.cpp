@@ -944,6 +944,34 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
       return false;
       }
 
+static qreal nativeSlurRibbonWidth(const SlurSegment* segment, const QPointF& first, const QPointF& last)
+      {
+      const Score* score = segment->score();
+      Slur* slur = segment->slur();
+      const qreal sp = segment->spatium();
+      const qreal mag = segment->staff()->mag(slur->tick());
+      const qreal endWidth = score->styleP(Sid::slurEndWidth);
+      const qreal normal = qMax(0.0, score->styleP(Sid::slurMidWidth) - endWidth);
+      const qreal length = QLineF(first, last).length() / sp;
+      const qreal shortLimit = 4.0 * mag;
+      const qreal minimum = score->styleS(Sid::minTieLength).val() * mag;
+      qreal width = normal;
+      // Studio applies its short tie/slur thickness rule in the curve's
+      // own frame. A steep arc can be long even with little horizontal span.
+      if (length < shortLimit && minimum < shortLimit) {
+            const qreal amount = qBound(qreal(0.0), (length - minimum) / (shortLimit - minimum), qreal(1.0));
+            const qreal shortest = qMax(0.0, 0.15 * sp - endWidth);
+            width = qMin(normal, shortest + (normal - shortest) * amount);
+            }
+      const ChordRest* start = slur->startCR();
+      const ChordRest* end = slur->endCR();
+      // Use the grace-note scale for a local grace group. Slurs between
+      // rhythmic positions retain the ordinary ribbon ceiling.
+      if (start && end && start->segment() == end->segment() && (start->isGrace() || end->isGrace()))
+            width = qMin(width, normal * qBound(qreal(0.0), score->styleD(Sid::graceNoteMag), qreal(1.0)));
+      return width * mag;
+      }
+
 static QPointF ordinarySlurThickness(qreal width, const QPointF& first, const QPointF& last)
       {
       const qreal angle = std::atan2(last.y() - first.y(), last.x() - first.x());
@@ -965,7 +993,7 @@ void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       ups(Grip::DRAG).p = (first + last) * 0.5;
       ups(Grip::SHOULDER).p = (c1 + c2) * 0.5;
 
-      const qreal w = (score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth)) * staff()->mag(slur()->tick());
+      const qreal w = nativeSlurRibbonWidth(this, first, last);
       const QPointF thickness = ordinarySlurThickness(w, first, last);
       const auto outline = [&](const QPointF& t) {
             QPainterPath result;
@@ -1113,9 +1141,8 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       qreal beforeCrownY = trace ? crownY() : 0.0;
       if (trace && _hasOrdinaryFit) {
             const bool up = slur()->up();
-            const qreal w = (score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth))
-                  * staff()->mag(slur()->tick());
-            const QPointF t = ordinarySlurThickness(up ? -qAbs(w) : qAbs(w), initialFit[0], initialFit[3]);
+            const qreal w = nativeSlurRibbonWidth(this, initialFit[0], initialFit[3]);
+            const QPointF t = ordinarySlurThickness(up ? -w : w, initialFit[0], initialFit[3]);
             QPainterPath initial(initialFit[0]);
             initial.cubicTo(initialFit[1] + t, initialFit[2] + t, initialFit[3]);
             const QRectF bounds = initial.boundingRect();
@@ -1203,12 +1230,15 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                   };
             const QString first = anchor(toChord(traceStart), p1, Grip::START);
             const QString last = anchor(toChord(traceEnd), p2, Grip::END);
+            const qreal ribbon = _hasOrdinaryFit
+                  ? nativeSlurRibbonWidth(this, ups(Grip::START).pos(), ups(Grip::END).pos()) / sp : -1.0;
             qDebug("[native-grace-slur] measures=%d-%d ticks=%d-%d track=%d up=%d span/sp=%.3f"
-                   " start={%s} end={%s} crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f heightAdded/sp=%.3f studioFit=%d",
+                   " start={%s} end={%s} crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f heightAdded/sp=%.3f"
+                   " studioFit=%d ribbonOffset/sp=%.3f",
                    traceStart->measure()->no() + 1, traceEnd->measure()->no() + 1,
                    traceStart->tick().ticks(), traceEnd->tick().ticks(), slur()->track(), slur()->up(),
                    (p2.x() - p1.x()) / sp, qPrintable(first), qPrintable(last),
-                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, _extraHeight / sp, _hasOrdinaryFit);
+                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, _extraHeight / sp, _hasOrdinaryFit, ribbon);
             }
       else if (trace && !traceGrace) {
             const qreal sp = spatium();

@@ -1333,17 +1333,30 @@ void TestSpanners::nativeAfterGraceSlurFit()
       std::unique_ptr<MasterScore> score(readScore(DIR + "../layout/native-after-grace-rest-clearance.mscx"));
       QVERIFY(score);
       int lowEnds = 0;
+      int levelGraceSlurs = 0;
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
             Slur* slur = toSlur(entry.second);
             QVERIFY(slur->endCR() && slur->endCR()->isChord() && slur->endCR()->isGraceAfter());
             const Chord* grace = toChord(slur->endCR());
-            if (grace->upNote()->pitch() != 53)
-                  continue;
             const SlurSegment* segment = slur->frontSegment();
             QVERIFY(segment && grace->stem());
             const qreal sp = segment->spatium();
+            QVERIFY(slur->startCR() && slur->startCR()->isChord());
+            const Chord* owner = toChord(slur->startCR());
+            if (grace->upNote()->pitch() == owner->upNote()->pitch()) {
+                  const CubicBezier center(segment->ups(Grip::START).pos(), segment->ups(Grip::BEZIER1).pos(),
+                                           segment->ups(Grip::BEZIER2).pos(), segment->ups(Grip::END).pos());
+                  // A nearly level arc has its crown near the midpoint.
+                  // Measure the ink over the centerline, excluding the
+                  // separate pen stroke, to catch a full-width ribbon.
+                  const qreal ribbon = (center.pointAtPercent(0.5).y() - segment->bbox().top()) / sp;
+                  QVERIFY2(ribbon > 0.04 && ribbon < 0.085, "Local grace slur ribbon is not tapered");
+                  ++levelGraceSlurs;
+                  }
+            if (grace->upNote()->pitch() != 53)
+                  continue;
             QVERIFY(grace->stem()->height() > 3.5 * sp);
             SlurPos base;
             slur->slurPos(&base);
@@ -1353,6 +1366,7 @@ void TestSpanners::nativeAfterGraceSlurFit()
             ++lowEnds;
             }
       QCOMPARE(lowEnds, 2);
+      QCOMPARE(levelGraceSlurs, 3);
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()
