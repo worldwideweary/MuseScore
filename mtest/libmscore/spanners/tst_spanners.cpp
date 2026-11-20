@@ -12,7 +12,9 @@
 
 #include <QtTest/QtTest>
 #include <QFileInfo>
+#include <cmath>
 #include "mtest/testutils.h"
+#include "libmscore/beam.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
 #include "libmscore/notedot.h"
@@ -56,6 +58,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurFit();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
+      void nativePreGraceSlurFit();
       void nativeNestedBeamedSlurFit();
       void partialTieAttachments();
       void laissezVibChordGeometry();
@@ -1380,6 +1383,74 @@ void TestSpanners::nativeAfterGraceSlurFit()
       QCOMPARE(lowEnds, 2);
       QCOMPARE(levelGraceSlurs, 3);
       QCOMPARE(fallingGraceSlurs, 1);
+      }
+
+void TestSpanners::nativePreGraceSlurFit()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-pre-grace-slurs.mscx"));
+      QVERIFY(score && score->styleB(Sid::beamLayout4));
+      int beamedPairs = 0;
+      int betweenBeats = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            ChordRest* start = slur->startCR();
+            ChordRest* end = slur->endCR();
+            QVERIFY(start && start->isChord() && end && end->isChord());
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && segment->system());
+            const qreal sp = segment->spatium();
+            SlurPos anchors;
+            slur->slurPos(&anchors);
+            if (slur->up() && start->isGrace() && end->isGrace() && start->beam()
+                && start->beam() == end->beam() && start->up() && end->up()) {
+                  const Beam* beam = start->beam();
+                  const QLineF* line = beam->primarySegment4();
+                  QVERIFY(line && line->dx() > 0.0);
+                  const QPointF beamOrigin = beam->pagePos()
+                        - QPointF(segment->system()->pagePos().x(), segment->system()->staffYpage(segment->vStaffIdx()));
+                  const qreal halfWidth = 0.5 * score->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
+                        * std::hypot(qreal(1.0), line->dy() / line->dx());
+                  const auto point = [&](Grip grip) { return segment->ups(grip).pos() + segment->pos(); };
+                  const auto gap = [&](const QPointF& p) {
+                        const qreal t = qBound(0.0, (p.x() - beamOrigin.x() - line->x1()) / line->dx(), 1.0);
+                        return (beamOrigin.y() + line->pointAt(t).y() - halfWidth - p.y()) / sp;
+                        };
+                  QVERIFY(qAbs(point(Grip::START).x() - anchors.p1.x()) < 1e-6 * sp);
+                  QVERIFY(qAbs(point(Grip::END).x() - anchors.p2.x()) < 1e-6 * sp);
+                  const CubicBezier curve(point(Grip::START), point(Grip::BEZIER1), point(Grip::BEZIER2), point(Grip::END));
+                  for (qreal t : { 0.25, 0.5, 0.75 })
+                        QVERIFY(gap(curve.pointAtPercent(t)) > 0.12);
+                  // The level pair's rendered slur should stay near the beam.
+                  // With provisional stem lengths its tips were too high.
+                  if (start->tick().ticks() == 480) {
+                        for (Grip grip : { Grip::START, Grip::END }) {
+                              const qreal clearance = gap(point(grip));
+                              QVERIFY2(clearance > 0.15 && clearance < 0.55,
+                                       qPrintable(QString("Level grace beam to slur tip: %1sp").arg(clearance)));
+                              }
+                        }
+                  ++beamedPairs;
+                  }
+            if (!slur->up() && start->segment() != end->segment()) {
+                  const ChordRest* cr = start->isGrace() ? start : end;
+                  if (!cr->isGrace() || cr->isGraceAfter())
+                        continue;
+                  QVERIFY(cr->up());
+                  const Chord* grace = toChord(cr);
+                  const qreal noteY = cr->measure()->y() + cr->segment()->y() + cr->parent()->y()
+                        + cr->y() + grace->downNote()->y();
+                  const qreal anchorY = cr == start ? anchors.p1.y() : anchors.p2.y();
+                  const qreal expected = 0.9 * score->styleD(Sid::graceNoteMag) * sp;
+                  QVERIFY(qAbs(anchorY - noteY - expected) < 0.02 * sp);
+                  ++betweenBeats;
+                  }
+            }
+      QCOMPARE(beamedPairs, 2);
+      QCOMPARE(betweenBeats, 2);
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()
