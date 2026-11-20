@@ -1397,6 +1397,7 @@ void TestSpanners::nativePreGraceSlurFit()
       Slur* inner = nullptr;
       Slur* acrossBarline = nullptr;
       Slur* next = nullptr;
+      Slur* levelPair = nullptr;
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
@@ -1445,18 +1446,21 @@ void TestSpanners::nativePreGraceSlurFit()
                         };
                   QVERIFY(qAbs(point(Grip::START).x() - anchors.p1.x()) < 1e-6 * sp);
                   QVERIFY(qAbs(point(Grip::END).x() - anchors.p2.x()) < 1e-6 * sp);
-                  const Chord* firstGrace = toChord(start);
-                  QVERIFY(firstGrace->stem());
-                  const qreal stemX = firstGrace->pageX() + firstGrace->stem()->x() - segment->system()->pagePos().x();
-                  const qreal stemInset = (point(Grip::START).x() - stemX) / sp;
-                  QVERIFY2(stemInset > 0.07 && stemInset < 0.16,
-                           qPrintable(QString("Beamed grace tip inset: %1sp").arg(stemInset)));
+                  for (Grip grip : { Grip::START, Grip::END }) {
+                        const Chord* grace = toChord(grip == Grip::START ? start : end);
+                        QVERIFY(grace->stem());
+                        const qreal stemX = grace->pageX() + grace->stem()->x() - segment->system()->pagePos().x();
+                        const qreal stemInset = (point(grip).x() - stemX) / sp;
+                        QVERIFY2(qAbs(stemInset) < 0.02,
+                                 qPrintable(QString("Beamed grace tip inset: %1sp").arg(stemInset)));
+                        }
                   const CubicBezier curve(point(Grip::START), point(Grip::BEZIER1), point(Grip::BEZIER2), point(Grip::END));
                   for (qreal t : { 0.25, 0.5, 0.75 })
                         QVERIFY(gap(curve.pointAtPercent(t)) > 0.12);
                   // The level pair's rendered slur should stay near the beam.
                   // With provisional stem lengths its tips were too high.
                   if (start->tick().ticks() == 480) {
+                        levelPair = slur;
                         for (Grip grip : { Grip::START, Grip::END }) {
                               const qreal clearance = gap(point(grip));
                               QVERIFY2(clearance > 0.15 && clearance < 0.55,
@@ -1509,6 +1513,37 @@ void TestSpanners::nativePreGraceSlurFit()
 
       const qreal tipGap = tip(next, Grip::START).x() - tip(acrossBarline, Grip::END).x();
       QVERIFY2(tipGap > 0.32 * sp, qPrintable(QString("Incoming to outgoing slur tips: %1sp").arg(tipGap / sp)));
+
+      // Lift the end of the short beam slur and of the long slur into
+      // a grace. Their fitted shoulders should follow during the edit.
+      QVERIFY(levelPair);
+      for (Slur* slur : { levelPair, next }) {
+            SlurSegment* segment = slur->frontSegment();
+            const QPointF first = tip(slur, Grip::START);
+            const QPointF last = tip(slur, Grip::END);
+            const QPointF rightControl = tip(slur, Grip::BEZIER2);
+            const QPointF rightOffset = segment->ups(Grip::BEZIER2).off;
+            const auto midpoint = [&]() {
+                  return CubicBezier(tip(slur, Grip::START), tip(slur, Grip::BEZIER1),
+                                     tip(slur, Grip::BEZIER2), tip(slur, Grip::END)).pointAtPercent(0.5);
+                  };
+            const QPointF before = midpoint();
+            const QPointF lift(0.0, -2.0 * sp);
+            const QPointF endOffset = segment->ups(Grip::END).off;
+            segment->ups(Grip::END).off += lift;
+            segment->computeBezier();
+            QCOMPARE(tip(slur, Grip::START), first);
+            QCOMPARE(tip(slur, Grip::END), last + lift);
+            QVERIFY(midpoint().y() < before.y() - 0.55 * sp);
+            QVERIFY(tip(slur, Grip::BEZIER2).y() < rightControl.y() - 0.55 * sp);
+            QCOMPARE(segment->ups(Grip::BEZIER2).off, rightOffset);
+            const QPointF lifted = midpoint();
+            segment->computeBezier();
+            QCOMPARE(midpoint(), lifted);
+            segment->ups(Grip::END).off = endOffset;
+            segment->computeBezier();
+            QCOMPARE(midpoint(), before);
+            }
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()
