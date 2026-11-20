@@ -1594,6 +1594,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
       const bool useModernLayout = score()->styleB(Sid::beamLayout4) && !_userModified[dIdx]
             && !staff()->isTabStaff(tick())
             && beam4SupportsTremolos(this);
+      bool modernPlaced = false;
 
       if (useModernLayout && !_cross)
             beam4ResetRests(this, crl);
@@ -1637,6 +1638,7 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
                   QPointF start, end;
                   if (!layoutBeam4(this, crl, start, end, _beamDist))
                         return false;
+                  modernPlaced = true;
                   // Studio anchors include the outside stem edges. The 3.x
                   // segment builder expects the first stem's centre line.
                   const qreal dx = end.x() - start.x();
@@ -2113,6 +2115,16 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
 
       if (useModernLayout && !_cross)
             beam4AdjustRests(this, crl, beamSegments);
+
+      static const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_BEAM_TRACE");
+      if (traceMeasure > 0 && c1->measure()->no() + 1 == traceMeasure) {
+            const qreal dx = c2->stemPosX() + c2->pageX() - c1->stemPosX() - c1->pageX();
+            qDebug("[native-beam] measure=%d ticks=%d-%d track=%d fragment=%d modern=%d manual=%d up=%d grace=%d"
+                   " lines=%d,%d levels=%d dx/sp=%.4f y/sp=%.4f,%.4f dy/sp=%.4f originY/sp=%.4f",
+                   traceMeasure, c1->tick().ticks(), c2->tick().ticks(), track(), frag, modernPlaced,
+                   _userModified[dIdx], _up, _isGrace, c1->line(), c2->line(), beamLevels, dx / _spatium,
+                   py1 / _spatium, py2 / _spatium, (py2 - py1) / _spatium, _pagePos.y() / _spatium);
+            }
 
       //
       //  calculate stem length

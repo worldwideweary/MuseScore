@@ -2458,10 +2458,15 @@ void Chord::layoutPitched()
               }
        if (!gna.empty()) {
             qreal xr = _spaceRw;
-            int n = gna.size();
-            for (int i = 0; i <= n - 1; i++) {
-                  Chord* g = gna.value(i);
-                  xr += g->_spaceLw + g->_spaceRw + minNoteDistance * graceMag;
+            const qreal gap = minNoteDistance * graceMag;
+            for (Chord* g : gna) {
+                  // Segment shapes are built before layout2() packs the group
+                  // against the following segment. Put each grace in its
+                  // reserved space now so its ink cannot appear at the main
+                  // chord's origin and obstruct a preceding after-grace.
+                  xr += gap + g->_spaceLw;
+                  g->setPos(xr, 0.0);
+                  xr += g->_spaceRw;
                   }
            if (xr > _spaceRw)
                  _spaceRw = xr;

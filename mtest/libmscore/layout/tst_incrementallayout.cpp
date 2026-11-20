@@ -272,6 +272,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void annotatedFollowingSystems();
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
+      void afterGraceOctaveKeepsPreviousGracePosition();
       };
 
 void TestIncrementalLayout::untouchedBoundary()
@@ -440,6 +441,44 @@ void TestIncrementalLayout::lastSystemFillUsesNaturalWidth()
       score->doLayout();
       QVERIFY(last->system() != last->prevMeasure()->system());
       QVERIFY(qAbs(finalWidth() - justifiedWidth) < tolerance);
+      }
+
+void TestIncrementalLayout::afterGraceOctaveKeepsPreviousGracePosition()
+      {
+      if (qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
+            QSKIP("Native natural spacing explicitly disabled");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-after-grace-spacing.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure();
+      QVERIFY(measure);
+      Segment* first = measure->first(SegmentType::ChordRest);
+      QVERIFY(first && first->element(0) && first->element(0)->isChord());
+      Segment* second = first->next(SegmentType::ChordRest);
+      QVERIFY(second && second->element(0) && second->element(0)->isChord());
+      const auto left = toChord(first->element(0))->graceNotesAfter();
+      const auto right = toChord(second->element(0))->graceNotesAfter();
+      QCOMPARE(left.size(), 1);
+      QCOMPARE(right.size(), 1);
+      Note* note = right.front()->upNote();
+      QCOMPARE(note->pitch(), 72);
+      QVERIFY(!right.front()->ledgerLines());
+      const qreal graceX = left.front()->x();
+      const qreal chordDistance = second->x() - first->x();
+      const qreal tolerance = score->spatium() * 1e-4;
+
+      score->startCmd();
+      score->undoChangePitch(note, note->pitch() + 12, note->tpc1(), note->tpc2());
+      score->endCmd();
+      QCOMPARE(note->pitch(), 84);
+      QVERIFY(right.front()->ledgerLines());
+      for (int pass = 0; pass < 2; ++pass) {
+            QVERIFY(qAbs(second->x() - first->x() - chordDistance) < tolerance);
+            QVERIFY2(qAbs(left.front()->x() - graceX) < tolerance,
+                     qPrintable(QString("Preceding after-grace moved by %1sp")
+                                .arg((left.front()->x() - graceX) / score->spatium())));
+            if (pass == 0)
+                  score->doLayout();
+            }
       }
 
 QTEST_MAIN(TestIncrementalLayout)

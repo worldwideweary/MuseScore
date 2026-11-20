@@ -1236,6 +1236,8 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     const QPointF origin = data.origin();
     int dictator = std::lround(((isStartDictator ? start : end).y() - origin.y()) / quarter);
     int pointer = std::lround(((isStartDictator ? end : start).y() - origin.y()) / quarter);
+    const int initialDictator = dictator;
+    const int initialPointer = pointer;
     const int lines = item->score()->staff(closestStaff)->lines(first->tick());
     const int firstTarget = minStaffOverlap(data.up, lines, strokeCount(ldata, first), data.beamSpacing,
                                            qFuzzyCompare(data.mag(), 1.0) && !data.isGrace);
@@ -1276,6 +1278,14 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
     if (special != SlopeConstraint::FLAT)
         addMiddleLineSlant(ldata, dictator, pointer, std::max(beamsD, beamsP), target, interval,
                           special == SlopeConstraint::SMALL_SLOPE ? 1 : slant);
+    static const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_BEAM_TRACE");
+    if (beam && traceMeasure > 0 && first->measure()->no() + 1 == traceMeasure) {
+        qDebug("[native-beam-solver] measure=%d ticks=%d-%d track=%d leftControls=%d"
+               " rawY/sp=%.4f,%.4f initialQuarter=%d,%d targetQuarter=%d desiredSlantQuarter=%d finalQuarter=%d,%d",
+               traceMeasure, first->tick().ticks(), last->tick().ticks(), beam->track(), isStartDictator,
+               (start.y() - origin.y()) / data.spatium, (end.y() - origin.y()) / data.spatium,
+               initialDictator, initialPointer, target, slant, dictator, pointer);
+    }
     start.setY(quarter * (isStartDictator ? dictator : pointer) + origin.y());
     end.setY(quarter * (isStartDictator ? pointer : dictator) + origin.y());
     add8thSpaceSlant(&data, isStartDictator ? start : end, dictator, pointer,
