@@ -18,6 +18,7 @@
 #include "libmscore/notedot.h"
 #include "libmscore/tie.h"
 #include "libmscore/slur.h"
+#include "libmscore/stem.h"
 #include "libmscore/laissezvib.h"
 #include "libmscore/segment.h"
 #include "libmscore/excerpt.h"
@@ -54,6 +55,7 @@ class TestSpanners : public QObject, public MTest
       void partialSlurHangingAngles();
       void nativeOrdinarySlurFit();
       void nativeSlantedSlurFit();
+      void nativeAfterGraceSlurFit();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1321,6 +1323,35 @@ void TestSpanners::nativeSlantedSlurFit()
             ++checked;
             }
       QCOMPARE(checked, 3);
+      }
+
+void TestSpanners::nativeAfterGraceSlurFit()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "../layout/native-after-grace-rest-clearance.mscx"));
+      QVERIFY(score);
+      int lowEnds = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->endCR() && slur->endCR()->isChord() && slur->endCR()->isGraceAfter());
+            const Chord* grace = toChord(slur->endCR());
+            if (grace->upNote()->pitch() != 53)
+                  continue;
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && grace->stem());
+            const qreal sp = segment->spatium();
+            QVERIFY(grace->stem()->height() > 3.5 * sp);
+            SlurPos base;
+            slur->slurPos(&base);
+            const QPointF end = segment->ups(Grip::END).pos();
+            QVERIFY(qAbs(end.x() - base.p2.x()) < 1e-6 * sp);
+            QVERIFY((end.y() + segment->y()) < 3.25 * sp);
+            ++lowEnds;
+            }
+      QCOMPARE(lowEnds, 2);
       }
 
 QTEST_MAIN(TestSpanners)

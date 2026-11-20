@@ -16,6 +16,7 @@
 #include "accidental.h"
 #include "articulation.h"
 #include "chord.h"
+#include "hook.h"
 #include "note.h"
 #include "symbol.h"
 #include "mscore.h"
@@ -590,16 +591,104 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
       return false;
       }
 
+static QPointF nativeSlurChordOrigin(const Chord* chord)
+      {
+      QPointF origin = chord->measure()->pos() + chord->segment()->pos() + chord->pos();
+      if (chord->isGrace())
+            origin += chord->parent()->pos();
+      return origin;
+      }
+
+static void appendNativeSlurChordObstacles(const SlurSegment* segment, const Chord* chord, bool endpoint,
+                                          std::vector<QRectF>& obstacles)
+      {
+      const auto add = [&](const Element* item, qreal padding) {
+            if (!item || !item->addToSkyline() || !item->visible() || item->bbox().isEmpty())
+                  return;
+            const qreal gap = endpoint ? 0.0 : padding * segment->spatium();
+            QRectF rect = item->bbox().translated(nativeSlurChordOrigin(chord) + item->pos());
+            rect.adjust(0.0, segment->slur()->up() ? -gap : 0.0, 0.0, segment->slur()->up() ? 0.0 : gap);
+            obstacles.push_back(rect);
+            };
+      for (const Note* note : chord->notes())
+            add(note, 0.4);
+      add(chord->stem(), 0.1);
+      add(chord->hook(), 0.1);
+      }
+
+static bool nativeGraceSlurObstacles(const SlurSegment* segment, std::vector<QRectF>& obstacles)
+      {
+      Slur* slur = segment->slur();
+      const ChordRest* start = slur->startCR();
+      const ChordRest* end = slur->endCR();
+      const Staff* staff = segment->staff();
+      if (!staff || !segment->system() || !start || !end || !start->isChord() || !end->isChord()
+          || (!start->isGrace() && !end->isGrace()) || start->track() != end->track()
+          || start->track() != slur->track() || end->track() != slur->effectiveTrack2()
+          || start->vStaffIdx() != segment->vStaffIdx() || end->vStaffIdx() != segment->vStaffIdx()
+          || !staff->isPitchedStaff(start->tick()) || staff->lines(start->tick()) < 2
+          || slur->partialDirection() >= 0 || slur->isHammerOnPullOff() || slur->lineType() != 0
+          || !start->measure() || !end->measure()
+          || start->measure()->system() != segment->system() || end->measure()->system() != segment->system()
+          || !start->segment() || !end->segment()
+          || (start->isGrace() && !start->parent()) || (end->isGrace() && !end->parent()))
+            return false;
+
+      const qreal startX = nativeSlurChordOrigin(toChord(start)).x();
+      const qreal endX = nativeSlurChordOrigin(toChord(end)).x();
+      if (endX <= startX)
+            return false;
+      const auto examine = [&](const Chord* chord) {
+            if (chord == start)
+                  return true;
+            const qreal x = nativeSlurChordOrigin(chord).x();
+            if (chord != end && (x <= startX || x > endX))
+                  return true;
+            if (chord->staffMove() || chord->vStaffIdx() != segment->vStaffIdx()
+                || chord->isNudged() || chord->notes().empty() || chord->tremolo())
+                  return false;
+            appendNativeSlurChordObstacles(segment, chord, chord == end, obstacles);
+            return true;
+            };
+      for (const Segment* s = start->segment(); s && s->measure()->system() == segment->system(); s = s->next1()) {
+            if (s->enabled() && s->isChordRestType()) {
+                  const Element* e = s->element(start->track());
+                  for (const Element* other : s->elist()) {
+                        if (other && other != e && other->vStaffIdx() == segment->vStaffIdx() && other->addToSkyline())
+                              return false;
+                        }
+                  if (e && e->isChord()) {
+                        const Chord* owner = toChord(e);
+                        if (!examine(owner))
+                              return false;
+                        for (const Chord* grace : owner->graceNotes()) {
+                              if (!examine(grace))
+                                    return false;
+                              }
+                        }
+                  else if (e && e->isRest() && e->addToSkyline())
+                        obstacles.push_back(e->bbox().translated(s->measure()->pos() + s->pos() + e->pos()));
+                  }
+            if (s == end->segment())
+                  return true;
+            }
+      return false;
+      }
+
 static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
                            std::array<QPointF, 4>& fit, std::array<QPointF, 4>& initial)
       {
       const qreal sp = segment->spatium();
       const qreal width = last.x() - first.x();
-      if (!(sp > 0.0 && width >= 2.0 * sp && width < 10.0 * sp)
+      const ChordRest* start = segment->slur()->startCR();
+      const ChordRest* end = segment->slur()->endCR();
+      const bool grace = start && end && (start->isGrace() || end->isGrace());
+      const qreal maxSpan = grace ? 40.0 : 10.0;
+      if (!(sp > 0.0 && width >= (grace ? 0.4 : 2.0) * sp && width < maxSpan * sp)
           || !std::isfinite(first.y()) || !std::isfinite(last.y()))
             return false;
       std::vector<QRectF> obstacles;
-      if (!ordinarySlurObstacles(segment, obstacles))
+      if (!(grace ? nativeGraceSlurObstacles(segment, obstacles) : ordinarySlurObstacles(segment, obstacles)))
             return false;
       const bool up = segment->slur()->up();
       const qreal direction = up ? -1.0 : 1.0;
@@ -618,9 +707,9 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
 
       const qreal rise = last.y() - first.y();
       const qreal length = std::hypot(width, rise);
-      // Keep the existing preview's short span. Very steep slurs require
-      // the separate endpoint policy and retain the existing layout.
-      if (!(length < 10.0 * sp && qAbs(rise) <= width))
+      // Keep the current limits for ordinary slurs. Grace tips may be close
+      // horizontally while their anchor notes are several staff spaces apart.
+      if (!(length < maxSpan * sp) || (!grace && qAbs(rise) > width))
             return false;
       const qreal cosine = width / length;
       const qreal sine = rise / length;
@@ -634,11 +723,22 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
 
       QPointF p2(length, 0.0);
       const qreal height = direction * std::sqrt(length / (4.0 * sp)) * sp;
-      QPointF c1(0.25 * length, height);
-      QPointF c2(0.75 * length, height);
+      const qreal inset = grace && length < 2.0 * sp ? 0.20 : 0.25;
+      QPointF c1(inset * length, height);
+      QPointF c2((1.0 - inset) * length, height);
+      const auto clampShoulderX = [&](QPointF& control, qreal lastX) {
+            QPointF point = toStaff(control);
+            point.setX(qBound(first.x(), point.x(), lastX));
+            control = toSlur(point);
+            };
+      if (grace) {
+            clampShoulderX(c1, last.x());
+            clampShoulderX(c2, last.x());
+            }
       initial = {{ first, toStaff(c1), toStaff(c2), last }};
       const qreal step = direction * 0.30 * sp;
-      const qreal balance = 0.4; // ordinary endpoints; no floated ends or articulations
+      const qreal leftBalance = grace && start->up() == up && start->up() != end->up() ? 0.9 : 0.4;
+      const qreal rightBalance = grace && end->up() == up && start->up() != end->up() ? 0.9 : 0.4;
       const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
       const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
             qreal(0.04 * length / sp * cosine * cosine), qreal(0.5)) * sp);
@@ -670,16 +770,17 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             if (pass == 30)
                   return false;
             if (pass % 2 == 0) {
-                  const qreal shoulder = (1.0 - balance) * step;
-                  const QPointF left(-qAbs(shoulder) * 0.5, shoulder * 0.5);
-                  const QPointF right(qAbs(shoulder) * 0.5, shoulder * 0.5);
+                  const qreal leftStep = (1.0 - leftBalance) * step;
+                  const qreal rightStep = (1.0 - rightBalance) * step;
+                  const QPointF left(-qAbs(leftStep) * 0.5, leftStep * 0.5);
+                  const QPointF right(qAbs(rightStep) * 0.5, rightStep * 0.5);
                   if (collision[0]) {
                         c1 += left;
                         c2 += right * 0.5;
                         }
                   if (collision[1]) {
-                        c1.ry() += shoulder;
-                        c2.ry() += shoulder;
+                        c1.ry() += (leftStep + rightStep) * 0.5;
+                        c2.ry() += (leftStep + rightStep) * 0.5;
                         }
                   if (collision[2]) {
                         c1 += left * 0.5;
@@ -690,10 +791,11 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
                   const qreal slope = (toStaff(p2).y() - first.y()) / width;
                   const auto endpointStep = [&](bool left) {
                         const bool side = collision[left ? 0 : 2];
-                        if (!side && !collision[1])
+                        const bool steep = grace && (left ? rise < -width : rise > width);
+                        if (!side && !collision[1] && !steep)
                               return qreal(0.0);
-                        qreal move = balance * step;
-                        if (!side && qAbs(slope) > shallowSlope && length > 8.0 * sp) {
+                        qreal move = (left ? leftBalance : rightBalance) * step;
+                        if (!side && collision[1] && qAbs(slope) > shallowSlope && length > 8.0 * sp) {
                               const qreal ratio = qAbs(slope) / shallowSlope;
                               const bool leftIsOuter = up == (slope > 0.0);
                               const bool outer = left ? leftIsOuter : !leftIsOuter;
@@ -726,9 +828,7 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
                   return false;
             for (QPointF* control : { &c1, &c2 }) {
                   control->setY(up ? qMax(control->y(), -p2.x()) : qMin(control->y(), p2.x()));
-                  QPointF point = toStaff(*control);
-                  point.setX(qBound(first.x(), point.x(), lastX));
-                  *control = toSlur(point);
+                  clampShoulderX(*control, lastX);
                   }
             }
       return false;
@@ -994,11 +1094,11 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
             const QString first = anchor(toChord(traceStart), p1, Grip::START);
             const QString last = anchor(toChord(traceEnd), p2, Grip::END);
             qDebug("[native-grace-slur] measures=%d-%d ticks=%d-%d track=%d up=%d span/sp=%.3f"
-                   " start={%s} end={%s} crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f heightAdded/sp=%.3f",
+                   " start={%s} end={%s} crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f heightAdded/sp=%.3f studioFit=%d",
                    traceStart->measure()->no() + 1, traceEnd->measure()->no() + 1,
                    traceStart->tick().ticks(), traceEnd->tick().ticks(), slur()->track(), slur()->up(),
                    (p2.x() - p1.x()) / sp, qPrintable(first), qPrintable(last),
-                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, _extraHeight / sp);
+                   beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, _extraHeight / sp, _hasOrdinaryFit);
             }
       else if (trace && !traceGrace) {
             const qreal sp = spatium();
