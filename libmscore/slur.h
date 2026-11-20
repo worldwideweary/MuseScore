@@ -33,7 +33,7 @@ class SlurSegment final : public SlurTieSegment {
       static void appendNestedSlurObstacles(const SlurSegment*, const QPointF& first, const QPointF& last,
                                             std::vector<QRectF>&);
       static bool fitOrdinarySlur(const SlurSegment*, QPointF first, QPointF last,
-                                  std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr);
+                                  std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr, bool crossStaff = false);
 
    protected:
       qreal _extraHeight = 0.0;
@@ -54,7 +54,7 @@ class SlurSegment final : public SlurTieSegment {
       int subtype() const override         { return static_cast<int>(spanner()->type()); }
       void draw(QPainter*) const override;
 
-      void layoutSegment(const QPointF& p1, const QPointF& p2);
+      void layoutSegment(const QPointF& p1, const QPointF& p2, bool crossStaff = false);
       void relayoutCrossStaff();
       static void separateSharedTips(const std::vector<SpannerSegment*>& segments);
       const QRectF& hopoTextRect() const { return _hopoTextRect; }
