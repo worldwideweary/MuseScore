@@ -672,6 +672,29 @@ static bool nativeGraceSlurObstacles(const SlurSegment* segment, std::vector<QRe
       const qreal endX = nativeSlurChordOrigin(toChord(end)).x();
       if (endX <= startX)
             return false;
+      std::vector<const Beam*> beams;
+      const auto addBeam = [&](const Chord* chord) {
+            if (!chord->beam() || chord->up() != slur->up())
+                  return;
+            const QLineF* line = nativeGraceSlurBeam(chord);
+            const Beam* beam = chord->beam();
+            if (!line || std::find(beams.begin(), beams.end(), beam) != beams.end())
+                  return;
+            beams.push_back(beam);
+            const QPointF origin = beam->pagePos() - chord->pagePos() + nativeSlurChordOrigin(chord);
+            const qreal margin = nativeGraceBeamHalfWidth(beam, *line);
+            // A small step follows a slanted grace beam closely enough for
+            // short arcs; one rectangle around the entire beam does not.
+            const int count = qBound(1, int(std::ceil(line->dx() / (0.25 * segment->spatium()))), 128);
+            for (int i = 0; i < count; ++i) {
+                  const QPointF a = line->pointAt(qreal(i) / count) + origin;
+                  const QPointF b = line->pointAt(qreal(i + 1) / count) + origin;
+                  obstacles.push_back(QRectF(a, b).normalized().adjusted(0.0, -margin, 0.0, margin));
+                  }
+            };
+      // The start chord's own glyphs are excluded, but the beam can extend
+      // from that chord into the span of the slur.
+      addBeam(toChord(start));
       const auto examine = [&](const Chord* chord) {
             if (chord == start)
                   return true;
@@ -682,6 +705,7 @@ static bool nativeGraceSlurObstacles(const SlurSegment* segment, std::vector<QRe
                 || chord->isNudged() || chord->notes().empty() || chord->tremolo())
                   return false;
             appendNativeSlurChordObstacles(segment, chord, chord == end, obstacles);
+            addBeam(chord);
             return true;
             };
       for (const Segment* s = start->segment(); s && s->measure()->system() == segment->system(); s = s->next1()) {
