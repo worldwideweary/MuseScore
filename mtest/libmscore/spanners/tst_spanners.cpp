@@ -56,6 +56,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurFit();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
+      void nativeNestedBeamedSlurFit();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1352,6 +1353,57 @@ void TestSpanners::nativeAfterGraceSlurFit()
             ++lowEnds;
             }
       QCOMPARE(lowEnds, 2);
+      }
+
+void TestSpanners::nativeNestedBeamedSlurFit()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-nested-beamed-slurs.mscx"));
+      QVERIFY(score && score->styleB(Sid::beamLayout4));
+      Slur* outer = nullptr;
+      std::vector<Slur*> inner;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->up() && slur->frontSegment());
+            if (slur->ticks() == Fraction(7, 8))
+                  outer = slur;
+            else
+                  inner.push_back(slur);
+            }
+      QVERIFY(outer);
+      QCOMPARE(inner.size(), size_t(2));
+      const auto curve = [](const Slur* slur) {
+            const SlurSegment* s = slur->frontSegment();
+            const auto pt = [s](Grip grip) { return s->ups(grip).pos() + s->pos(); };
+            return CubicBezier(pt(Grip::START), pt(Grip::BEZIER1), pt(Grip::BEZIER2), pt(Grip::END));
+            };
+      const auto outside = curve(outer);
+      const qreal sp = score->spatium();
+      const SlurSegment* outSeg = outer->frontSegment();
+      SlurPos anchors;
+      outer->slurPos(&anchors);
+      QVERIFY(qAbs(outSeg->ups(Grip::START).pos().x() - anchors.p1.x()) < 1e-6 * sp);
+      QVERIFY(qAbs(outSeg->ups(Grip::END).pos().x() - anchors.p2.x()) < 1e-6 * sp);
+      for (const Slur* inside : inner) {
+            const auto innerCurve = curve(inside);
+            for (const qreal t : { 0.3, 0.5, 0.7 }) {
+                  const QPointF p = innerCurve.pointAtPercent(t);
+                  qreal a = 0.0;
+                  qreal b = 1.0;
+                  for (int i = 0; i < 20; ++i) {
+                        const qreal mid = (a + b) * 0.5;
+                        if (outside.pointAtPercent(mid).x() < p.x())
+                              a = mid;
+                        else
+                              b = mid;
+                        }
+                  QVERIFY2(p.y() - outside.pointAtPercent((a + b) * 0.5).y() > 0.1 * sp,
+                           "The outer slur touches or crosses a nested slur");
+                  }
+            }
       }
 
 QTEST_MAIN(TestSpanners)

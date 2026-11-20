@@ -5288,6 +5288,13 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                         }
                   }
             }
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1) {
+            // The beamed slur fitter clears shorter, contained slurs using
+            // their freshly laid out geometry.
+            std::stable_sort(spanner.begin(), spanner.end(), [](const Spanner* a, const Spanner* b) {
+                  return a->ticks() < b->ticks();
+                  });
+            }
       processLines(system, spanner);
       for (auto s : spanner) {
             Slur* slur = toSlur(s);

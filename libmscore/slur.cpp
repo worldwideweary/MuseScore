@@ -15,6 +15,7 @@
 
 #include "accidental.h"
 #include "articulation.h"
+#include "beam.h"
 #include "chord.h"
 #include "hook.h"
 #include "note.h"
@@ -25,6 +26,7 @@
 #include "part.h"
 #include "score.h"
 #include "slur.h"
+#include "spannermap.h"
 #include "stem.h"
 #include "system.h"
 #include "undo.h"
@@ -675,6 +677,108 @@ static bool nativeGraceSlurObstacles(const SlurSegment* segment, std::vector<QRe
       return false;
       }
 
+static bool nativeBeamedSlurObstacles(const SlurSegment* segment, std::vector<QRectF>& obstacles)
+      {
+      Slur* slur = segment->slur();
+      const ChordRest* start = slur->startCR();
+      const ChordRest* end = slur->endCR();
+      if (!segment->system() || !segment->staff() || !start || !end || !start->beam() || !end->beam()
+          || start->tick() >= end->tick() || start->track() != end->track() || start->track() != slur->track()
+          || end->track() != slur->effectiveTrack2() || !start->measure() || !end->measure()
+          || !start->segment() || !end->segment() || start->measure()->system() != segment->system() || end->measure()->system() != segment->system()
+          || !segment->staff()->isPitchedStaff(start->tick()) || slur->partialDirection() >= 0
+          || slur->lineType() != 0 || slur->isHammerOnPullOff())
+            return false;
+
+      const qreal sp = segment->spatium();
+      const QPointF origin(segment->system()->pagePos().x(), segment->system()->staffYpage(segment->vStaffIdx()));
+      std::vector<const Beam*> beams;
+      bool complete = false;
+      for (const Segment* s = start->segment(); s && s->measure()->system() == segment->system(); s = s->next1()) {
+            if (s->enabled() && s->isChordRestType()) {
+                  const Element* e = s->element(start->track());
+                  if (!e || !e->isChord())
+                        return false;
+                  for (const Element* other : s->elist()) {
+                        if (other && other != e && other->vStaffIdx() == segment->vStaffIdx() && other->addToSkyline())
+                              return false;
+                        }
+                  const Chord* chord = toChord(e);
+                  const Beam* beam = chord->beam();
+                  if (!beam || beam->cross() || chord->staffMove() || chord->vStaffIdx() != segment->vStaffIdx()
+                      || chord->isNudged() || chord->tremolo() || chord->up() != start->up()
+                      || !chord->graceNotes().empty())
+                        return false;
+                  if (chord != start)
+                        appendNativeSlurChordObstacles(segment, chord, chord == end, obstacles);
+                  if (slur->up() == chord->up() && std::find(beams.begin(), beams.end(), beam) == beams.end())
+                        beams.push_back(beam);
+                  }
+            if (s == end->segment()) {
+                  complete = true;
+                  break;
+                  }
+            }
+      if (!complete)
+            return false;
+
+      for (const Beam* beam : beams) {
+            const QLineF* line = beam->primarySegment4();
+            if (!line)
+                  return false;
+            const QPointF offset = beam->pagePos() - origin;
+            const qreal margin = 0.5 * segment->score()->styleP(Sid::beamWidth) * beam->mag() + 0.1 * sp;
+            const int count = qBound(1, int(std::ceil(qAbs(line->dx()) / sp)), 128);
+            for (int i = 0; i < count; ++i) {
+                  const QPointF a = line->pointAt(qreal(i) / count) + offset;
+                  const QPointF b = line->pointAt(qreal(i + 1) / count) + offset;
+                  obstacles.push_back(QRectF(a, b).normalized().adjusted(0.0, -margin, 0.0, margin));
+                  }
+            }
+      return true;
+      }
+
+static void appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& first, const QPointF& last,
+                                      std::vector<QRectF>& obstacles)
+      {
+      Slur* slur = outer->slur();
+      const qreal sp = outer->spatium();
+      const qreal margin = 0.16 * sp + outer->score()->styleP(Sid::slurMidWidth);
+      const auto intervals = outer->score()->spannerMap().findOverlapping(slur->tick().ticks(), slur->tick2().ticks());
+      for (const auto& interval : intervals) {
+            Spanner* candidate = interval.value;
+            if (candidate == slur || !candidate->isSlur() || candidate->track() != slur->track()
+                || candidate->tick() < slur->tick() || candidate->tick2() > slur->tick2()
+                || candidate->ticks() >= slur->ticks())
+                  continue;
+            Slur* inner = toSlur(candidate);
+            if (!inner->visible() || inner->up() != slur->up() || inner->partialDirection() >= 0
+                || !inner->startCR() || !inner->endCR() || inner->startCR()->isGrace() || inner->endCR()->isGrace())
+                  continue;
+            const SlurSegment* part = inner->frontSegment();
+            if (!part || part->system() != outer->system() || part->vStaffIdx() != outer->vStaffIdx()
+                || part->spannerSegmentType() != SpannerSegmentType::SINGLE)
+                  continue;
+            const CubicBezier curve(part->ups(Grip::START).pos(), part->ups(Grip::BEZIER1).pos(),
+                                    part->ups(Grip::BEZIER2).pos(), part->ups(Grip::END).pos());
+            // At a shared note, leave space for the two slurs to converge.
+            const qreal left = first.x() + (inner->tick() == slur->tick() ? 0.9 * sp : 0.0);
+            const qreal right = last.x() - (inner->tick2() == slur->tick2() ? 0.9 * sp : 0.0);
+            for (int i = 0; i < 24; ++i) {
+                  const QPointF a = curve.pointAtPercent(qreal(i) / 24) + part->pos();
+                  const QPointF b = curve.pointAtPercent(qreal(i + 1) / 24) + part->pos();
+                  QRectF band = QRectF(a, b).normalized();
+                  const qreal l = qMax(left, band.left());
+                  const qreal r = qMin(right, band.right());
+                  if (r <= l)
+                        continue;
+                  band.setLeft(l);
+                  band.setRight(r);
+                  obstacles.push_back(band.adjusted(0.0, -margin, 0.0, margin));
+                  }
+            }
+      }
+
 static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
                            std::array<QPointF, 4>& fit, std::array<QPointF, 4>& initial)
       {
@@ -683,13 +787,18 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
       const ChordRest* start = segment->slur()->startCR();
       const ChordRest* end = segment->slur()->endCR();
       const bool grace = start && end && (start->isGrace() || end->isGrace());
-      const qreal maxSpan = grace ? 40.0 : 10.0;
+      const bool beamed = !grace && start && end && start->beam() && end->beam();
+      const qreal maxSpan = beamed ? 48.0 : grace ? 40.0 : 10.0;
       if (!(sp > 0.0 && width >= (grace ? 0.4 : 2.0) * sp && width < maxSpan * sp)
           || !std::isfinite(first.y()) || !std::isfinite(last.y()))
             return false;
       std::vector<QRectF> obstacles;
-      if (!(grace ? nativeGraceSlurObstacles(segment, obstacles) : ordinarySlurObstacles(segment, obstacles)))
+      const bool eligible = grace ? nativeGraceSlurObstacles(segment, obstacles)
+            : beamed ? nativeBeamedSlurObstacles(segment, obstacles) : ordinarySlurObstacles(segment, obstacles);
+      if (!eligible)
             return false;
+      if (beamed)
+            appendNestedSlurObstacles(segment, first, last, obstacles);
       const bool up = segment->slur()->up();
       const qreal direction = up ? -1.0 : 1.0;
       const Fraction tick = segment->slur()->tick();
@@ -722,8 +831,9 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             };
 
       QPointF p2(length, 0.0);
-      const qreal height = direction * std::sqrt(length / (4.0 * sp)) * sp;
-      const qreal inset = grace && length < 2.0 * sp ? 0.20 : 0.25;
+      const qreal height = direction * std::sqrt(length / (4.0 * sp)) * sp
+            * (beamed && start->up() == up ? 0.75 : 1.0);
+      const qreal inset = grace && length < 2.0 * sp ? 0.20 : length > 18.0 * sp ? 0.15 : length > 10.0 * sp ? 0.20 : 0.25;
       QPointF c1(inset * length, height);
       QPointF c2((1.0 - inset) * length, height);
       const auto clampShoulderX = [&](QPointF& control, qreal lastX) {
@@ -736,9 +846,9 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             clampShoulderX(c2, last.x());
             }
       initial = {{ first, toStaff(c1), toStaff(c2), last }};
-      const qreal step = direction * 0.30 * sp;
-      const qreal leftBalance = grace && start->up() == up && start->up() != end->up() ? 0.9 : 0.4;
-      const qreal rightBalance = grace && end->up() == up && start->up() != end->up() ? 0.9 : 0.4;
+      const qreal step = direction * qMin(qreal(1.5), 0.30 * qMax(qreal(1.0), length / (16.0 * sp))) * sp;
+      const qreal leftBalance = beamed ? 0.2 : grace && start->up() == up && start->up() != end->up() ? 0.9 : 0.4;
+      const qreal rightBalance = beamed ? 0.2 : grace && end->up() == up && start->up() != end->up() ? 0.9 : 0.4;
       const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
       const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
             qreal(0.04 * length / sp * cosine * cosine), qreal(0.5)) * sp);
@@ -1537,6 +1647,9 @@ void Slur::slurPos(SlurPos* sp)
                         // in these cases, layout start of slur to stem
 
                         qreal sh = stem1->height() + _spatium;
+                        if (beam1 && qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1)
+                              sh = stem1->height() + score()->styleP(Sid::beamWidth) * beam1->mag() * 0.5
+                                    + qMax(0.20, 0.35 * (sc->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0)) * _spatium;
                         if (_up)
                               yo = sc->downNote()->pos().y() - sh;
                         else
@@ -1655,6 +1768,9 @@ void Slur::slurPos(SlurPos* sp)
                               // in these cases, layout end of slur to stem
 
                               qreal sh = stem2->height() + _spatium;
+                              if (beam2 && qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1)
+                                    sh = stem2->height() + score()->styleP(Sid::beamWidth) * beam2->mag() * 0.5
+                                          + qMax(0.20, 0.35 * (ec->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0)) * _spatium;
                               if (_up)
                                     yo = ec->downNote()->pos().y() - sh;
                               else
