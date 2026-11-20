@@ -904,7 +904,16 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             }
       initial = {{ first, toStaff(c1), toStaff(c2), last }};
       const qreal step = direction * qMin(qreal(1.5), 0.30 * qMax(qreal(1.0), length / (16.0 * sp))) * sp;
-      const qreal leftBalance = beamed ? 0.2 : grace && start->up() == up && start->up() != end->up() ? 0.9 : 0.4;
+      // A slur from a beamed pre-grace to its parent starts at the beam.
+      // Opposite stem directions alone don't make that tip float along
+      // the stem. Put more of the collision correction into the curve.
+      const Chord* graceStart = grace && start->isChord() && start->isGraceBefore() && start->parent() == end
+            ? toChord(start) : nullptr;
+      const bool startsOnGraceBeam = graceStart && graceStart->stem() && start->up() == up
+            && nativeGraceSlurBeam(graceStart) && !start->beam()->elements().empty()
+            && start->beam()->elements().back() != start;
+      const bool leftFloats = grace && !startsOnGraceBeam && start->up() == up && start->up() != end->up();
+      const qreal leftBalance = beamed ? 0.2 : leftFloats ? 0.9 : 0.4;
       const qreal rightBalance = beamed ? 0.2 : grace && end->up() == up && start->up() != end->up() ? 0.9 : 0.4;
       const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
       const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
