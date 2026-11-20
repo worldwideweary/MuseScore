@@ -1544,6 +1544,17 @@ void TestSpanners::nativePreGraceSlurFit()
             segment->computeBezier();
             QCOMPARE(midpoint(), before);
             }
+
+      // The shoulder nudge must keep the separated tips after a full layout.
+      EditData shoulderEdit;
+      shoulderEdit.curGrip = Grip::SHOULDER;
+      shoulderEdit.delta = QPointF(0.0, -0.1 * sp);
+      acrossBarline->frontSegment()->editDrag(shoulderEdit);
+      const QPointF editedShoulder = tip(acrossBarline, Grip::SHOULDER);
+      score->doLayout();
+      QVERIFY(QLineF(tip(acrossBarline, Grip::START), outsideStart).length() < 1e-6 * sp);
+      QVERIFY(QLineF(tip(acrossBarline, Grip::SHOULDER), editedShoulder).length() < 1e-6 * sp);
+      QVERIFY(qAbs(tip(next, Grip::START).x() - tip(acrossBarline, Grip::END).x() - tipGap) < 1e-6 * sp);
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()
@@ -1595,6 +1606,45 @@ void TestSpanners::nativeNestedBeamedSlurFit()
                            "The outer slur touches or crosses a nested slur");
                   }
             }
+
+      const auto grips = [](const Slur* slur) {
+            const SlurSegment* segment = slur->frontSegment();
+            std::array<QPointF, int(Grip::GRIPS)> result;
+            for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+                  result[int(grip)] = segment->ups(grip).pos() + segment->pos();
+            return result;
+            };
+      // Compare the curve immediately after the drag with the one after
+      // its layout is rebuilt. Both must use the same separated baseline.
+      const auto automatic = grips(outer);
+      EditData edit;
+      edit.delta = QPointF(0.0, -0.1 * sp);
+      for (Grip grip : { Grip::SHOULDER, Grip::BEZIER1 }) {
+            edit.curGrip = grip;
+            outer->frontSegment()->editDrag(edit);
+            const auto dragged = grips(outer);
+            score->doLayout();
+            const auto laidOut = grips(outer);
+            for (Grip point : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+                  QVERIFY(QLineF(dragged[int(point)], laidOut[int(point)]).length() < 1e-6 * sp);
+            for (Grip tip : { Grip::START, Grip::END })
+                  QVERIFY(QLineF(automatic[int(tip)], laidOut[int(tip)]).length() < 1e-6 * sp);
+            }
+      for (Grip grip : { Grip::BEZIER1, Grip::BEZIER2 })
+            outer->frontSegment()->setSlurOffset(grip, QPointF());
+      score->doLayout();
+      const auto restored = grips(outer);
+      for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+            QVERIFY(QLineF(automatic[int(grip)], restored[int(grip)]).length() < 1e-6 * sp);
+
+      // Manual changes to an inner curve don't refit the outer slur.
+      edit.curGrip = Grip::SHOULDER;
+      edit.delta = QPointF(0.0, -0.4 * sp);
+      inner.front()->frontSegment()->editDrag(edit);
+      score->doLayout();
+      const auto afterInnerEdit = grips(outer);
+      for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
+            QVERIFY(QLineF(automatic[int(grip)], afterInnerEdit[int(grip)]).length() < 1e-6 * sp);
       }
 
 QTEST_MAIN(TestSpanners)

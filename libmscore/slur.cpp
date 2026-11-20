@@ -795,8 +795,8 @@ static bool nativeBeamedSlurObstacles(const SlurSegment* segment, std::vector<QR
       return true;
       }
 
-static void appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& first, const QPointF& last,
-                                      std::vector<QRectF>& obstacles)
+void SlurSegment::appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& first, const QPointF& last,
+                                           std::vector<QRectF>& obstacles)
       {
       Slur* slur = outer->slur();
       const qreal sp = outer->spatium();
@@ -816,14 +816,20 @@ static void appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& f
             if (!part || part->system() != outer->system() || part->vStaffIdx() != outer->vStaffIdx()
                 || part->spannerSegmentType() != SpannerSegmentType::SINGLE)
                   continue;
-            const CubicBezier curve(part->ups(Grip::START).pos(), part->ups(Grip::BEZIER1).pos(),
-                                    part->ups(Grip::BEZIER2).pos(), part->ups(Grip::END).pos());
+            // A grip edit changes the drawn curve, not the baseline used
+            // to lay out its neighbors.
+            const auto points = part->_hasOrdinaryFit ? part->_ordinaryFit : std::array<QPointF, 4>{{
+                  part->ups(Grip::START).pos(), part->ups(Grip::BEZIER1).pos(),
+                  part->ups(Grip::BEZIER2).pos(), part->ups(Grip::END).pos()
+                  }};
+            const CubicBezier curve(points[0], points[1], points[2], points[3]);
+            const QPointF origin = part->_hasOrdinaryFit ? part->ipos() : part->pos();
             // At a shared note, leave space for the two slurs to converge.
             const qreal left = first.x() + (inner->tick() == slur->tick() ? 0.9 * sp : 0.0);
             const qreal right = last.x() - (inner->tick2() == slur->tick2() ? 0.9 * sp : 0.0);
             for (int i = 0; i < 24; ++i) {
-                  const QPointF a = curve.pointAtPercent(qreal(i) / 24) + part->pos();
-                  const QPointF b = curve.pointAtPercent(qreal(i + 1) / 24) + part->pos();
+                  const QPointF a = curve.pointAtPercent(qreal(i) / 24) + origin;
+                  const QPointF b = curve.pointAtPercent(qreal(i + 1) / 24) + origin;
                   QRectF band = QRectF(a, b).normalized();
                   const qreal l = qMax(left, band.left());
                   const qreal r = qMin(right, band.right());
@@ -836,8 +842,8 @@ static void appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& f
             }
       }
 
-static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
-                           std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr)
+bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
+                                 std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial)
       {
       const qreal sp = segment->spatium();
       const qreal width = last.x() - first.x();
@@ -1129,7 +1135,7 @@ void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segment
             if (!segment->isSlurSegment())
                   continue;
             SlurSegment* s = toSlurSegment(segment);
-            if (!s->_hasOrdinaryFit || !s->addToSkyline() || s->isEdited() || s->isNudged()
+            if (!s->_hasOrdinaryFit || !s->addToSkyline()
                 || s->spannerSegmentType() != SpannerSegmentType::SINGLE
                 || s->_ordinaryFit[3].x() - s->_ordinaryFit[0].x() < 0.8 * s->spatium())
                   continue;
@@ -1138,9 +1144,12 @@ void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segment
             chords[s->slur()->startCR()].starts.push_back(index);
             chords[s->slur()->endCR()].ends.push_back(index);
             }
+      // Rebuild the automatic baseline even for edited slurs. The user
+      // offsets are applied later by drawOrdinaryFit(), so nudging a grip
+      // doesn't change which tips are separated or undo the outer refit.
       const auto tip = [&](size_t index, Grip grip) {
             const SlurSegment* s = adjustments[index].segment;
-            return s->ups(grip).pos() + s->pos();
+            return s->_ordinaryFit[grip == Grip::START ? 0 : 3] + s->ipos();
             };
       const auto sameSide = [&](size_t a, size_t b) {
             const SlurSegment* first = adjustments[a].segment;
