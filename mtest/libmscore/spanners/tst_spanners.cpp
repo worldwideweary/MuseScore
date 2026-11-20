@@ -53,6 +53,7 @@ class TestSpanners : public QObject, public MTest
       void tieLayoutStylesRoundTrip();
       void partialSlurHangingAngles();
       void nativeOrdinarySlurFit();
+      void nativeSlantedSlurFit();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1263,6 +1264,63 @@ void TestSpanners::nativeOrdinarySlurFit()
       const SlurSegment* edited = editedSlur->frontSegment();
       QVERIFY(edited);
       QVERIFY(QLineF(edited->ups(Grip::START).pos(), editedTip).length() < 1e-6 * edited->spatium());
+      }
+
+void TestSpanners::nativeSlantedSlurFit()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "Native-Spacing-09-Slanted-Slurs.mscx"));
+      QVERIFY(score);
+
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && slur->startCR() && slur->endCR());
+            const int measure = slur->startCR()->measure()->no() + 1;
+            QVERIFY(measure == 2 || measure == 4 || measure == 6);
+            QCOMPARE(slur->up(), measure != 6);
+            const qreal sp = segment->spatium();
+            const QPointF first = segment->ups(Grip::START).pos();
+            const QPointF last = segment->ups(Grip::END).pos();
+            QVERIFY(last.x() > first.x());
+            QVERIFY((measure == 2 ? first.y() - last.y() : last.y() - first.y()) > 0.5 * sp);
+            // Clear the staff lines without shifting both tips off their anchors.
+            QVERIFY(qAbs(segment->y()) < 1e-6 * sp);
+            for (const QPointF& tip : { first, last }) {
+                  const qreal y = tip.y() / sp;
+                  const int line = qRound(y);
+                  QVERIFY2(line < 0 || line > 4 || qAbs(y - line) >= 0.22,
+                           qPrintable(QString("M%1 tip=%2").arg(measure).arg(y)));
+                  }
+
+            const Segment* middle = slur->startCR()->segment()->next(SegmentType::ChordRest);
+            QVERIFY(middle && middle->element(slur->track()) && middle->element(slur->track())->isChord());
+            const Chord* chord = toChord(middle->element(slur->track()));
+            const Note* note = chord->notes().front();
+            const QRectF bounds = note->bbox().translated(middle->measure()->pos() + middle->pos()
+                  + chord->pos() + note->pos());
+            const CubicBezier curve(first, segment->ups(Grip::BEZIER1).pos(),
+                                    segment->ups(Grip::BEZIER2).pos(), last);
+            const qreal x = bounds.center().x();
+            QVERIFY(first.x() < x && x < last.x());
+            qreal begin = 0.0;
+            qreal end = 1.0;
+            for (int i = 0; i < 16; ++i) {
+                  const qreal t = 0.5 * (begin + end);
+                  if (curve.pointAtPercent(t).x() < x)
+                        begin = t;
+                  else
+                        end = t;
+                  }
+            const qreal y = curve.pointAtPercent(0.5 * (begin + end)).y();
+            QVERIFY(slur->up() ? y < bounds.top() - 0.2 * sp : y > bounds.bottom() + 0.2 * sp);
+            ++checked;
+            }
+      QCOMPARE(checked, 3);
       }
 
 QTEST_MAIN(TestSpanners)

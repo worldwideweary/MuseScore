@@ -514,9 +514,8 @@ void SlurSegment::computeBezier(QPointF p6o)
             }
       }
 
-// The ordinary-slur preview uses the level, same-staff subset of Studio
-// v4.7.5 SlurTieLayout's endpoint and collision rules. A level initial
-// baseline lets the fit work directly in staff coordinates.
+// The ordinary-slur preview uses the same-staff subset of Studio v4.7.5
+// SlurTieLayout's endpoint and collision rules.
 static qreal clearSlurTip(qreal y, qreal lineDistance, int lines, qreal margin, bool up)
       {
       const qreal row = y / lineDistance;
@@ -591,13 +590,13 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
       return false;
       }
 
-static bool fitLevelSlur(const SlurSegment* segment, QPointF first, QPointF last,
-                         std::array<QPointF, 4>& fit, qreal& snappedY)
+static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
+                           std::array<QPointF, 4>& fit, std::array<QPointF, 4>& initial)
       {
       const qreal sp = segment->spatium();
-      const qreal span = last.x() - first.x();
-      if (!(sp > 0.0 && span >= 2.0 * sp && span < 10.0 * sp)
-          || !std::isfinite(first.y()) || qAbs(first.y() - last.y()) > 1e-6 * sp)
+      const qreal width = last.x() - first.x();
+      if (!(sp > 0.0 && width >= 2.0 * sp && width < 10.0 * sp)
+          || !std::isfinite(first.y()) || !std::isfinite(last.y()))
             return false;
       std::vector<QRectF> obstacles;
       if (!ordinarySlurObstacles(segment, obstacles))
@@ -610,26 +609,51 @@ static bool fitLevelSlur(const SlurSegment* segment, QPointF first, QPointF last
             return false;
       const int lines = segment->staff()->lines(tick);
       const qreal margin = 0.175 + 0.5 * segment->score()->styleS(Sid::staffLineWidth).val() * sp / lineDistance;
-      snappedY = clearSlurTip(first.y(), lineDistance, lines, margin, up);
-      first.setY(snappedY);
-      last.setY(snappedY);
-      const qreal height = direction * std::sqrt(span / (4.0 * sp)) * sp;
-      QPointF c1(first.x() + 0.25 * span, snappedY + height);
-      QPointF c2(first.x() + 0.75 * span, snappedY + height);
+      const auto snap = [&](QPointF point) {
+            point.setY(clearSlurTip(point.y(), lineDistance, lines, margin, up));
+            return point;
+            };
+      first = snap(first);
+      last = snap(last);
+
+      const qreal rise = last.y() - first.y();
+      const qreal length = std::hypot(width, rise);
+      // Keep the existing preview's short span. Very steep slurs require
+      // the separate endpoint policy and retain the existing layout.
+      if (!(length < 10.0 * sp && qAbs(rise) <= width))
+            return false;
+      const qreal cosine = width / length;
+      const qreal sine = rise / length;
+      const auto toStaff = [&](const QPointF& point) {
+            return first + QPointF(cosine * point.x() - sine * point.y(), sine * point.x() + cosine * point.y());
+            };
+      const auto toSlur = [&](const QPointF& point) {
+            const QPointF d = point - first;
+            return QPointF(cosine * d.x() + sine * d.y(), -sine * d.x() + cosine * d.y());
+            };
+
+      QPointF p2(length, 0.0);
+      const qreal height = direction * std::sqrt(length / (4.0 * sp)) * sp;
+      QPointF c1(0.25 * length, height);
+      QPointF c2(0.75 * length, height);
+      initial = {{ first, toStaff(c1), toStaff(c2), last }};
       const qreal step = direction * 0.30 * sp;
       const qreal balance = 0.4; // ordinary endpoints; no floated ends or articulations
-      const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1), qreal(0.04 * span / sp), qreal(0.5)) * sp);
+      const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
+      const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
+            qreal(0.04 * length / sp * cosine * cosine), qreal(0.5)) * sp);
 
       for (int pass = 0; pass <= 30; ++pass) {
             bool collision[3] = { false, false, false };
-            const CubicBezier clearance(first, c1 + arcClearance, c2 + arcClearance, last);
-            // Studio checks 19 intervals of a 20-subdivision curve.
+            const CubicBezier clearance(QPointF(), c1 + arcClearance, c2 + arcClearance, p2);
+            // Intersect in staff coordinates, where the obstacles lie. Studio
+            // checks 19 intervals of a 20-subdivision curve.
             for (int i = 0; i < 19; ++i) {
                   const int section = i < 6 ? 0 : i < 12 ? 1 : 2;
                   if (collision[section])
                         continue;
-                  const QRectF band = QRectF(clearance.pointAtPercent(i / qreal(20)),
-                                             clearance.pointAtPercent((i + 1) / qreal(20))).normalized();
+                  const QRectF band = QRectF(toStaff(clearance.pointAtPercent(i / qreal(20))),
+                                             toStaff(clearance.pointAtPercent((i + 1) / qreal(20)))).normalized();
                   for (const QRectF& item : obstacles) {
                         if (band.right() > item.left() && band.left() < item.right()
                             && (up ? band.bottom() >= item.top() : band.top() <= item.bottom())) {
@@ -639,10 +663,8 @@ static bool fitLevelSlur(const SlurSegment* segment, QPointF first, QPointF last
                         }
                   }
             if (!collision[0] && !collision[1] && !collision[2]) {
-                  // Recheck the tips against staff lines without translating the controls.
-                  first.setY(clearSlurTip(first.y(), lineDistance, lines, margin, up));
-                  last.setY(clearSlurTip(last.y(), lineDistance, lines, margin, up));
-                  fit = {{ first, c1, c2, last }};
+                  // Snap only the tips so the cleared shoulders stay put.
+                  fit = {{ snap(first), toStaff(c1), toStaff(c2), snap(toStaff(p2)) }};
                   return true;
                   }
             if (pass == 30)
@@ -665,21 +687,57 @@ static bool fitLevelSlur(const SlurSegment* segment, QPointF first, QPointF last
                         }
                   }
             else {
-                  const qreal moveFirst = (collision[0] || collision[1]) ? balance * step : 0.0;
-                  const qreal moveLast = (collision[2] || collision[1]) ? balance * step : 0.0;
+                  const qreal slope = (toStaff(p2).y() - first.y()) / width;
+                  const auto endpointStep = [&](bool left) {
+                        const bool side = collision[left ? 0 : 2];
+                        if (!side && !collision[1])
+                              return qreal(0.0);
+                        qreal move = balance * step;
+                        if (!side && qAbs(slope) > shallowSlope && length > 8.0 * sp) {
+                              const qreal ratio = qAbs(slope) / shallowSlope;
+                              const bool leftIsOuter = up == (slope > 0.0);
+                              const bool outer = left ? leftIsOuter : !leftIsOuter;
+                              move *= outer ? 1.0 / ratio : ratio;
+                              }
+                        return move;
+                        };
+
+                  // A staff-vertical move has both components in the rotated
+                  // frame. Move one end at a time to preserve the other tip.
+                  const qreal moveFirst = endpointStep(true);
+                  const QPointF leftDelta(sine * moveFirst, cosine * moveFirst);
+                  c1 -= leftDelta * (c1.x() / p2.x());
+                  c2 -= leftDelta * (c2.x() / p2.x());
+                  p2 -= leftDelta;
                   first.ry() += moveFirst;
-                  last.ry() += moveLast;
-                  for (QPointF* control : { &c1, &c2 }) {
-                        const qreal t = (control->x() - first.x()) / span;
-                        control->ry() += (1.0 - t) * moveFirst + t * moveLast;
-                        }
+                  if (!(p2.x() > 1e-6 * sp))
+                        return false;
+
+                  const qreal moveLast = endpointStep(false);
+                  const QPointF rightDelta(sine * moveLast, cosine * moveLast);
+                  p2 += rightDelta;
+                  if (!(p2.x() > 1e-6 * sp))
+                        return false;
+                  c1 += rightDelta * (c1.x() / p2.x());
+                  c2 += rightDelta * (c2.x() / p2.x());
                   }
+            const qreal lastX = toStaff(p2).x();
+            if (!(lastX > first.x()))
+                  return false;
             for (QPointF* control : { &c1, &c2 }) {
-                  control->setX(qBound(first.x(), control->x(), last.x()));
-                  control->setY(up ? qMax(control->y(), first.y() - span) : qMin(control->y(), first.y() + span));
+                  control->setY(up ? qMax(control->y(), -p2.x()) : qMin(control->y(), p2.x()));
+                  QPointF point = toStaff(*control);
+                  point.setX(qBound(first.x(), point.x(), lastX));
+                  *control = toSlur(point);
                   }
             }
       return false;
+      }
+
+static QPointF ordinarySlurThickness(qreal width, const QPointF& first, const QPointF& last)
+      {
+      const qreal angle = std::atan2(last.y() - first.y(), last.x() - first.x());
+      return QPointF(-width * std::sin(angle), width * std::cos(angle));
       }
 
 void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
@@ -698,8 +756,7 @@ void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       ups(Grip::SHOULDER).p = (c1 + c2) * 0.5;
 
       const qreal w = (score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth)) * staff()->mag(slur()->tick());
-      const qreal angle = std::atan2(last.y() - first.y(), last.x() - first.x());
-      const QPointF thickness(-w * std::sin(angle), w * std::cos(angle));
+      const QPointF thickness = ordinarySlurThickness(w, first, last);
       const auto outline = [&](const QPointF& t) {
             QPainterPath result;
             result.moveTo(first);
@@ -837,19 +894,22 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
             };
 
       static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      qreal snappedY = beforeStartY;
+      std::array<QPointF, 4> initialFit;
       if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE)
-            _hasOrdinaryFit = fitLevelSlur(this, p1, p2, _ordinaryFit, snappedY);
+            _hasOrdinaryFit = fitOrdinarySlur(this, p1, p2, _ordinaryFit, initialFit);
 
       computeBezier();
 
       qreal beforeCrownY = trace ? crownY() : 0.0;
       if (trace && _hasOrdinaryFit) {
-            const qreal sp = spatium();
+            const bool up = slur()->up();
             const qreal w = (score()->styleP(Sid::slurMidWidth) - score()->styleP(Sid::slurEndWidth))
                   * staff()->mag(slur()->tick());
-            const qreal initialHeight = 0.75 * (std::sqrt((p2.x() - p1.x()) / (4.0 * sp)) * sp + qAbs(w));
-            beforeCrownY = snappedY + (slur()->up() ? -initialHeight : initialHeight);
+            const QPointF t = ordinarySlurThickness(up ? -qAbs(w) : qAbs(w), initialFit[0], initialFit[3]);
+            QPainterPath initial(initialFit[0]);
+            initial.cubicTo(initialFit[1] + t, initialFit[2] + t, initialFit[3]);
+            const QRectF bounds = initial.boundingRect();
+            beforeCrownY = up ? bounds.top() : bounds.bottom();
             }
       qreal overlap = 0.0;
       if (!_hasOrdinaryFit && autoplace() && system()) {
@@ -921,7 +981,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                    " lineStep/sp=%.3f lineWidth/sp=%.3f span/sp=%.3f rawTipsY/sp=%.3f,%.3f"
                    " preFitTipsY/sp=%.3f,%.3f finalTipsY/sp=%.3f,%.3f"
                    " crownY/sp=%.3f->%.3f wholeCurveShift/sp=%.3f overlap/sp=%.3f heightAdded/sp=%.3f"
-                   " studioFit=%d snappedStartY/sp=%.3f",
+                   " studioFit=%d snappedStartY/sp=%.3f snappedEndY/sp=%.3f",
                    traceStart->measure()->no() + 1, traceEnd->measure()->no() + 1,
                    traceStart->tick().ticks(), traceEnd->tick().ticks(), staffIdx() + 1,
                    slur()->up(), autoplace(), isEdited() || isNudged(), lineStep,
@@ -929,7 +989,8 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                    p1.y() / sp, p2.y() / sp, beforeStartY / sp, beforeEndY / sp,
                    (ups(Grip::START).pos().y() + shift) / sp, (ups(Grip::END).pos().y() + shift) / sp,
                    beforeCrownY / sp, (crownY() + shift) / sp, shift / sp, overlap / sp, _extraHeight / sp,
-                   _hasOrdinaryFit, snappedY / sp);
+                   _hasOrdinaryFit, (_hasOrdinaryFit ? initialFit[0].y() : beforeStartY) / sp,
+                   (_hasOrdinaryFit ? initialFit[3].y() : beforeEndY) / sp);
             }
       layoutHopoText();
       QRectF bounds = path.boundingRect();
