@@ -61,6 +61,7 @@ class TestSpanners : public QObject, public MTest
       void nativePreGraceSlurFit();
       void nativeNestedBeamedSlurFit();
       void nativeCrossStaffSlurs();
+      void nativeSlursOverTies();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1677,6 +1678,40 @@ void TestSpanners::nativeCrossStaffSlurs()
             ++checked;
             }
       QCOMPARE(checked, 3);
+      }
+
+void TestSpanners::nativeSlursOverTies()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-slurs-over-ties.mscx"));
+      QVERIFY(score);
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            const Slur* slur = toSlur(entry.second);
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && slur->startCR() && slur->endCR());
+            const qreal sign = slur->up() ? -1.0 : 1.0;
+            for (Grip grip : { Grip::START, Grip::END }) {
+                  const bool start = grip == Grip::START;
+                  const ChordRest* cr = start ? slur->startCR() : slur->endCR();
+                  QVERIFY(cr->isChord());
+                  const Chord* chord = toChord(cr);
+                  const Note* note = slur->up() ? chord->upNote() : chord->downNote();
+                  const Tie* tie = start ? note->tieFor() : note->tieBack();
+                  QVERIFY(tie && tie->up() == slur->up() && !tie->isInside() && tie->frontSegment());
+                  const TieSegment* part = start ? tie->frontSegment() : tie->backSegment();
+                  QVERIFY(part);
+                  const qreal slurY = segment->pagePos().y() + segment->ups(grip).pos().y();
+                  const qreal tieY = part->pagePos().y() + part->ups(grip).pos().y();
+                  QVERIFY2(sign * (slurY - tieY) >= 0.64 * segment->spatium(),
+                           "The slur tip is too close to the outside tie");
+                  }
+            ++checked;
+            }
+      QCOMPARE(checked, 2);
       }
 
 QTEST_MAIN(TestSpanners)

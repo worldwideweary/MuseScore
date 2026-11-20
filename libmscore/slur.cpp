@@ -30,6 +30,7 @@
 #include "spannermap.h"
 #include "stem.h"
 #include "system.h"
+#include "tie.h"
 #include "undo.h"
 #include "utils.h"
 
@@ -1337,6 +1338,42 @@ Element* SlurSegment::propertyDelegate(Pid id)
       return id == Pid::PARTIAL_SPANNER_DIRECTION ? static_cast<Element*>(slur()) : SlurTieSegment::propertyDelegate(id);
       }
 
+// Studio keeps a slur on the outside of a same-side tie at its anchor.
+static void clearSlurTipFromTie(const SlurSegment* segment, const ChordRest* anchor,
+                                bool atStart, QPointF& tip)
+      {
+      if (!anchor || !anchor->isChord() || anchor->isGrace()
+          || anchor->vStaffIdx() != segment->vStaffIdx())
+            return;
+      const Chord* chord = toChord(anchor);
+      const bool up = segment->slur()->up();
+      const Note* note = up ? chord->upNote() : chord->downNote();
+      const qreal clearance = 0.65 * segment->spatium();
+      const qreal sign = up ? -1.0 : 1.0;
+      const QPointF origin(segment->system()->pagePos().x(), segment->system()->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
+      const auto tieTip = [&](const Tie* tie, bool isStart, QPointF& position) {
+            if (!tie || tie->isPartial() || tie->isInside() || tie->up() != up || !tie->visible())
+                  return false;
+            const TieSegment* part = isStart ? tie->frontSegment() : tie->backSegment();
+            if (!part || !part->visible() || part->system() != segment->system())
+                  return false;
+            position = part->pagePos() + part->ups(isStart ? Grip::START : Grip::END).pos() - origin;
+            return true;
+            };
+      QPointF tiePosition;
+      if (tieTip(atStart ? note->tieFor() : note->tieBack(), atStart, tiePosition)
+          && sign * (tip.y() - tiePosition.y()) < clearance) {
+            tip.setY(tiePosition.y() + sign * clearance);
+            return;
+            }
+      // Retain the full stem-to-stem span requested for beam-side slurs.
+      if (chord->beam() && chord->up() == up)
+            return;
+      if (tieTip(atStart ? note->tieBack() : note->tieFor(), !atStart, tiePosition)
+          && qAbs(tip.y() - tiePosition.y()) < clearance)
+            tip.rx() += (atStart ? 0.35 : -0.35) * segment->spatium();
+      }
+
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool crossStaff)
       {
       _hasOrdinaryFit = false;
@@ -1443,8 +1480,26 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
 
       static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       std::array<QPointF, 4> initialFit;
-      if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE)
-            _hasOrdinaryFit = fitOrdinarySlur(this, p1, p2, _ordinaryFit, trace ? &initialFit : nullptr, crossStaff);
+      if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE) {
+            QPointF first = p1;
+            QPointF last = p2;
+            const Slur* s = slur();
+            if (!crossStaff && system() && staff() && s->partialDirection() < 0
+                && !s->isHammerOnPullOff() && s->lineType() == 0
+                && s->startCR() && s->endCR() && !s->startCR()->isGrace() && !s->endCR()->isGrace()
+                && s->startCR()->vStaffIdx() == vStaffIdx() && s->endCR()->vStaffIdx() == vStaffIdx()
+                && staff()->isPitchedStaff(s->tick())) {
+                  clearSlurTipFromTie(this, s->startCR(), true, first);
+                  clearSlurTipFromTie(this, s->endCR(), false, last);
+                  if (last.x() - first.x() < 0.4 * spatium()) {
+                        first.setX(p1.x());
+                        last.setX(p2.x());
+                        }
+                  ups(Grip::START).p = first;
+                  ups(Grip::END).p = last;
+                  }
+            _hasOrdinaryFit = fitOrdinarySlur(this, first, last, _ordinaryFit, trace ? &initialFit : nullptr, crossStaff);
+            }
 
       computeBezier();
 
