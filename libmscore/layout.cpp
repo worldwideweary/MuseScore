@@ -79,6 +79,57 @@ namespace Ms {
 #define PAGEDBG(...)  ;
 #endif
 
+// Studio spaces opposing cross-beam stems more evenly by shifting the
+// rhythmic advance by a notehead width minus the stem width. Limit this
+// to simple beams between adjacent pitched staves, where we can tell
+// which way both stems will point before the final beam layout.
+static qreal nativeCrossBeamSpacingOffset(const Segment& segment)
+      {
+      const Segment* next = segment.nextEnabled();
+      if (!segment.isChordRestType() || !next || !next->isChordRestType()
+          || segment.measure() != next->measure() || !segment.score()->styleB(Sid::beamLayout4)
+          || !qFuzzyIsNull(segment.extraLeadingSpace().val()) || !qFuzzyIsNull(next->extraLeadingSpace().val()))
+            return 0.0;
+      const auto onlyChord = [](const Segment& s) -> const Chord* {
+            const Chord* found = nullptr;
+            for (const Element* element : s.elist()) {
+                  if (!element || !element->isChordRest() || !element->visible() || !element->staff()->show())
+                        continue;
+                  if (element->isRest() && toChordRest(element)->durationType().isMeasure())
+                        continue;
+                  if (!element->isChord() || found)
+                        return nullptr;
+                  found = toChord(element);
+                  }
+            return found;
+            };
+      const Chord* left = onlyChord(segment);
+      const Chord* right = onlyChord(*next);
+      if (!left || !right || left->track() != right->track() || qAbs(left->vStaffIdx() - right->vStaffIdx()) != 1)
+            return 0.0;
+      const Beam* beam = left->beam();
+      if (!beam || beam != right->beam() || !beam->cross() || beam->beamDirection() != Direction::AUTO
+          || beam->userModified() || beam->elements().size() < 3)
+            return 0.0;
+      const int upper = qMin(left->vStaffIdx(), right->vStaffIdx());
+      for (const ChordRest* cr : beam->elements()) {
+            if (!cr->isChord() || cr->track() != left->track() || cr->measure() != segment.measure()
+                || cr->vStaffIdx() < upper || cr->vStaffIdx() > upper + 1)
+                  return 0.0;
+            const Chord* member = toChord(cr);
+            // Leave flag levels, chords with displaced heads and manually
+            // directed beams to their existing spacing.
+            if (member->durationType().type() != TDuration::DurationType::V_EIGHTH || member->notes().size() != 1
+                || !member->stem() || member->isSmall() || member->isGrace() || member->tremolo()
+                || member->stemDirection() != Direction::AUTO
+                || !segment.score()->staff(member->vStaffIdx())->isPitchedStaff(member->tick()))
+                  return 0.0;
+            }
+      const qreal displacement = qMax(qreal(0.0), segment.score()->noteHeadWidth() - segment.score()->styleP(Sid::stemWidth));
+      // Upper-staff stems point down and lower-staff stems point up.
+      return left->vStaffIdx() < right->vStaffIdx() ? -displacement : displacement;
+      }
+
 struct NativeNaturalMeasureSpacing {
       Measure* measure;
       qreal width;
@@ -111,7 +162,7 @@ static bool planNativeNaturalSpacing(System* system, qreal systemWidth,
                         const qreal weight = s.nativeRhythmicWeight(s.ticks());
                         if (!std::isfinite(weight) || weight <= 0.0)
                               return false;
-                        width = qMax(width, scale * weight);
+                        width = qMax(width, scale * weight + nativeCrossBeamSpacingOffset(s));
                         }
                   if (!std::isfinite(width) || width < 0.0)
                         return false;
@@ -153,6 +204,7 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
       struct Spring {
             Segment* segment;
             qreal stretch;
+            qreal offset;
             };
       std::multimap<qreal, Spring> springs;
       std::map<Segment*, qreal> proposed;
@@ -187,7 +239,8 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
                         const qreal str = s.nativeRhythmicWeight(s.ticks());
                         if (!std::isfinite(str) || str <= 0.0)
                               return false;
-                        springs.emplace(s.width() / str, Spring { &s, str });
+                        const qreal offset = nativeCrossBeamSpacingOffset(s);
+                        springs.emplace((s.width() - offset) / str, Spring { &s, str, offset });
                         }
                   }
             measures.push_back(m);
@@ -202,7 +255,9 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
       qreal force = 0.0;
       for (auto it = springs.begin(); it != springs.end();) {
             variableStretch += it->second.stretch;
-            minimum -= it->second.segment->width();
+            // Activated springs contribute a fixed stem displacement as
+            // well as their force-dependent width.
+            minimum += it->second.offset - it->second.segment->width();
             const qreal candidate = (target - minimum) / variableStretch;
             ++it;
             if (it == springs.end() || candidate <= it->first) {
@@ -214,7 +269,7 @@ static bool applyNativePooledSprings(System* system, qreal addedWidth)
             return false;
       for (const auto& entry : springs) {
             Segment* segment = entry.second.segment;
-            proposed[segment] = qMax(segment->width(), force * entry.second.stretch);
+            proposed[segment] = qMax(segment->width(), force * entry.second.stretch + entry.second.offset);
             }
 
       // Check the complete plan before changing the score.  An unsuccessful
@@ -4794,9 +4849,9 @@ System* Score::collectSystem(LayoutContext& lc)
                         const Fraction ticks = s.ticks();
                         const qreal weight = s.isChordRestType() ? s.nativeRhythmicWeight(s.ticks()) : 0.0;
                         const int tick = (s.tick() - m->tick()).ticks();
-                        qDebug("[native-spacing] %s tick=%d span=%d/%d rhythmic=%d x/sp=%.4f width/sp=%.4f weight=%.6f",
+                        qDebug("[native-spacing] %s tick=%d span=%d/%d rhythmic=%d x/sp=%.4f width/sp=%.4f weight=%.6f crossBeam/sp=%.4f",
                                stage, tick, ticks.numerator(), ticks.denominator(), int(s.isChordRestType()),
-                               s.x() / sp, s.width() / sp, weight);
+                               s.x() / sp, s.width() / sp, weight, nativeCrossBeamSpacingOffset(s) / sp);
                         }
                   }
             };

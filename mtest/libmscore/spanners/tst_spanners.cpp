@@ -1679,6 +1679,13 @@ void TestSpanners::nativeCrossStaffSlurs()
             QVERIFY(nearAnchor(start, Grip::START) && nearAnchor(end, Grip::END));
             if (end->beam() && end->beam()->cross()) {
                   const Beam* beam = end->beam();
+                  const auto& notes = beam->elements();
+                  QCOMPARE(notes.size(), 4);
+                  const qreal narrow1 = notes[1]->pagePos().x() - notes[0]->pagePos().x();
+                  const qreal wide = notes[2]->pagePos().x() - notes[1]->pagePos().x();
+                  const qreal narrow2 = notes[3]->pagePos().x() - notes[2]->pagePos().x();
+                  QVERIFY2(wide > qMax(narrow1, narrow2) + 0.5 * sp,
+                           "Opposing stems in the cross-staff beam should have distinct note spacing");
                   const QLineF* primary = beam->primarySegment4();
                   const Stem* stem = toChord(end)->stem();
                   QVERIFY(primary && primary->dx() > 0.0 && stem && end->up() == slur->up());
