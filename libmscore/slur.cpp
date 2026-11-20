@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 #include "accidental.h"
 #include "articulation.h"
@@ -1109,7 +1110,35 @@ void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segment
             const SlurSegment* last = adjustments[b].segment;
             return first != last && first->vStaffIdx() == last->vStaffIdx() && first->slur()->up() == last->slur()->up();
             };
+      const auto separateNested = [&](const std::vector<size_t>& ids, Grip grip) {
+            const bool atStart = grip == Grip::START;
+            const Grip other = atStart ? Grip::END : Grip::START;
+            for (size_t outer : ids) {
+                  const SlurSegment* s = adjustments[outer].segment;
+                  const qreal sp = s->spatium();
+                  const qreal sign = s->slur()->up() ? -1.0 : 1.0;
+                  const QPointF p = tip(outer, grip);
+                  const qreal farX = tip(outer, other).x();
+                  qreal move = 0.0;
+                  for (size_t inner : ids) {
+                        if (!sameSide(outer, inner))
+                              continue;
+                        const QPointF q = tip(inner, grip);
+                        const qreal innerX = tip(inner, other).x();
+                        const qreal extendsBeyond = atStart ? farX - innerX : innerX - farX;
+                        if (extendsBeyond <= 0.25 * sp || qAbs(p.x() - q.x()) >= 0.25 * sp)
+                              continue;
+                        const qreal gap = sign * (p.y() - q.y());
+                        move = qMax(move, qMin(0.65 * sp, 0.65 * sp - gap));
+                        }
+                  // Keep the beam attachment X; only move the outer tip and
+                  // its nearby shoulder away from the inner slur.
+                  (atStart ? adjustments[outer].start : adjustments[outer].end).setY(sign * move);
+                  }
+            };
       for (const auto& entry : chords) {
+            separateNested(entry.second.starts, Grip::START);
+            separateNested(entry.second.ends, Grip::END);
             for (size_t in : entry.second.ends) {
                   const QPointF end = tip(in, Grip::END);
                   const qreal sp = adjustments[in].segment->spatium();

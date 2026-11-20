@@ -14,6 +14,7 @@
 #define __SLUR_H__
 
 #include <array>
+#include <vector>
 
 #include "slurtie.h"
 
