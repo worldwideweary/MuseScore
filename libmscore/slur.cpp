@@ -1166,6 +1166,9 @@ void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segment
                   for (size_t out : entry.second.starts) {
                         if (!sameSide(in, out))
                               continue;
+                        const ChordRest* chord = entry.first;
+                        if (chord->isGraceBefore() && chord->beam() && chord->up() == adjustments[in].segment->slur()->up())
+                              continue; // Keep the full span of stem-side grace slurs.
                         const QPointF start = tip(out, Grip::START);
                         const qreal gap = start.x() - end.x();
                         if (qAbs(start.y() - end.y()) >= 0.25 * sp || qAbs(gap) >= 0.4 * sp)
@@ -1896,17 +1899,13 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
-                        // Keep the 37E anchor for ordinary beams. On a
-                        // pre-grace beam, inset from the actual stem center,
-                        // toward the curve, as in Studio. Use the rendered
-                        // stem X directly so a notehead offset isn't counted
-                        // again.
+                        // Keep the full horizontal span over pre-grace
+                        // beams, using the drawn stem center as for an
+                        // ordinary beamed note. Sample beam Y at that X.
                         xo       = stem1->pos().x();
                         if (scaleGraceTips && sc->isGraceBefore() && nativeGraceSlurBeam(sc)) {
-                              const qreal beamX = xo + 0.15 * _spatium * score()->styleD(Sid::graceNoteMag);
-                              const qreal x = sc->pageX() - sp->system1->pagePos().x() + beamX;
-                              xo = x - sp->p1.x();
-                              yo = nativeGraceBeamTipY(sc, _up, beamX, yo);
+                              yo = nativeGraceBeamTipY(sc, _up, xo, yo);
+                              xo += sc->pageX() - sp->system1->pagePos().x() - sp->p1.x();
                               }
                         else if (previewGraceTips)
                               yo = nativeGraceBeamTipY(sc, _up, xo + (note1 && !note1->mirror() ? note1->x() : 0.0), yo);
@@ -2031,7 +2030,11 @@ void Slur::slurPos(SlurPos* sp)
                               // Studio 4.7.5 uses the same signed half stem width as
                               // at the start but subtracts 0.15sp * chordMag.
                               xo = stem2->pos().x();
-                              if (previewGraceTips)
+                              if (scaleGraceTips && ec->isGraceBefore() && nativeGraceSlurBeam(ec)) {
+                                    yo = nativeGraceBeamTipY(ec, _up, xo, yo);
+                                    xo += ec->pageX() - sp->system2->pagePos().x() - sp->p2.x();
+                                    }
+                              else if (previewGraceTips)
                                     yo = nativeGraceBeamTipY(ec, _up, xo + (note2 && !note2->mirror() ? note2->x() : 0.0), yo);
 
                               // account for articulations
