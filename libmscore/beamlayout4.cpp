@@ -125,7 +125,7 @@ static QPointF chordBeamAnchor(const LayoutData*, const ChordRest*, ChordBeamAnc
 static double chordBeamAnchorX(const LayoutData*, const ChordRest*, ChordBeamAnchorType);
 static double defaultStemLength4(const Chord*);
 static int minStemLength(const ChordRest* cr, const LayoutData* ldata);
-static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* ldata,
+static void offsetBeamToRemoveCollisions(const LayoutData* ldata,
                                                      const std::vector<ChordRest*>& chordRests,
                                                      int& dictator,
                                                      int& pointer,
@@ -196,7 +196,7 @@ static int minStemLength(const ChordRest* cr, const LayoutData* ldata)
         ? std::max(ordinary, singleTremoloMinStem4(toChord(cr), beams, ldata->beamSpacing)) : ordinary;
 }
 
-static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* ldata,
+static void offsetBeamToRemoveCollisions(const LayoutData* ldata,
                                                      const std::vector<ChordRest*>& chordRests,
                                                      int& dictator,
                                                      int& pointer,
@@ -221,6 +221,7 @@ static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* 
 
     const ChordRest* firstChordRest = chordRests.front();
     const ChordRest* lastChordRest = chordRests.back();
+    const qreal originY = ldata->origin().y();
 
     size_t curChordRest = 0;
     for (ChordRest* chordRest : chordRests) {
@@ -254,7 +255,11 @@ static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* 
             }
         }
 
-        QPointF anchor = chordBeamAnchor(ldata, chordRest, ChordBeamAnchorType::Middle) - item->pagePos();
+        // Anchor X is already relative to the beam. Only Y is in page
+        // coordinates, so subtracting the full origin would move X again
+        // when a system has been positioned on the page.
+        QPointF anchor = chordBeamAnchor(ldata, chordRest, ChordBeamAnchorType::Middle);
+        anchor.ry() -= originY;
 
         const int minLen = minStemLength(chordRest, ldata) - sameLineException;
 
@@ -281,7 +286,7 @@ static void offsetBeamToRemoveCollisions(const Element* item, const LayoutData* 
 
                 const Note* note = ldata->up ? toChord(chordRest)->downNote() : toChord(chordRest)->upNote();
                 const double noteAnchor = (ldata->up ? note->stemUpSE().y() : note->stemDownNW().y()) + note->pagePos().y()
-                                          - item->pagePos().y();
+                                          - originY;
                 // Resultant length in quarter spaces
                 const int desiredLen = std::abs(round((desiredY - noteAnchor) / ldata->spatium * 4)) + 1;
 
@@ -1268,7 +1273,7 @@ static bool calculateAnchors4(Element* item, Beam* beam, Tremolo* tremolo,
             const int stemLength = std::lround(defaultStemLength4(d) / data.spatium * 4);
             offsetBeamWithAnchorShortening(ldata, elements, dictator, pointer, lines, isStartDictator, stemLength, target);
         }
-        offsetBeamToRemoveCollisions(item, ldata, elements, dictator, pointer, start.x(), end.x(), flat, isStartDictator);
+        offsetBeamToRemoveCollisions(ldata, elements, dictator, pointer, start.x(), end.x(), flat, isStartDictator);
     }
     const int beamsD = strokeCount(ldata, isStartDictator ? first : last);
     const int beamsP = strokeCount(ldata, isStartDictator ? last : first);

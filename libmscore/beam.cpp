@@ -2120,10 +2120,10 @@ void Beam::layout2(std::vector<ChordRest*>crl, SpannerSegmentType, int frag)
       if (traceMeasure > 0 && c1->measure()->no() + 1 == traceMeasure) {
             const qreal dx = c2->stemPosX() + c2->pageX() - c1->stemPosX() - c1->pageX();
             qDebug("[native-beam] measure=%d ticks=%d-%d track=%d fragment=%d modern=%d manual=%d up=%d grace=%d"
-                   " lines=%d,%d levels=%d dx/sp=%.4f y/sp=%.4f,%.4f dy/sp=%.4f originY/sp=%.4f",
+                   " lines=%d,%d levels=%d dx/sp=%.4f y/sp=%.4f,%.4f dy/sp=%.4f originY/sp=%.4f originX/sp=%.4f",
                    traceMeasure, c1->tick().ticks(), c2->tick().ticks(), track(), frag, modernPlaced,
                    _userModified[dIdx], _up, _isGrace, c1->line(), c2->line(), beamLevels, dx / _spatium,
-                   py1 / _spatium, py2 / _spatium, (py2 - py1) / _spatium, _pagePos.y() / _spatium);
+                   py1 / _spatium, py2 / _spatium, (py2 - py1) / _spatium, _pagePos.y() / _spatium, _pagePos.x() / _spatium);
             }
 
       //

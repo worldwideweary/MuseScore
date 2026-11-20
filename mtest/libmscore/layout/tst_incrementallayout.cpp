@@ -273,6 +273,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void afterGraceOctaveKeepsPreviousGracePosition();
+      void followingBeamSlopesSurviveEdit();
       };
 
 void TestIncrementalLayout::untouchedBoundary()
@@ -479,6 +480,70 @@ void TestIncrementalLayout::afterGraceOctaveKeepsPreviousGracePosition()
             if (pass == 0)
                   score->doLayout();
             }
+      }
+
+void TestIncrementalLayout::followingBeamSlopesSurviveEdit()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-following-system-beams.mscx"));
+      QVERIFY(score);
+      QVERIFY(score->styleB(Sid::beamLayout4));
+      Measure* first = score->firstMeasure();
+      QVERIFY(first && first->nextMeasure());
+      Measure* following = first->nextMeasure()->nextMeasure();
+      QVERIFY(following && following->system() && following->system() != first->system());
+      Segment* start = first->first(SegmentType::ChordRest);
+      QVERIFY(start && start->element(0) && start->element(0)->isChord());
+      Note* edited = toChord(start->element(0))->upNote();
+
+      const auto beamLines = [following](bool relayout) {
+            QVector<QLineF> lines;
+            for (Segment* s = following->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+                  const auto* e = s->element(0);
+                  Beam* beam = e && e->isChord() ? toChord(e)->beam() : nullptr;
+                  if (!beam || beam->elements().empty() || beam->elements().front() != e)
+                        continue;
+                  if (relayout)
+                        beam->layout();
+                  if (const QLineF* line = beam->primarySegment4())
+                        lines.append(*line);
+                  }
+            return lines;
+            };
+      const auto baseline = beamLines(false);
+      QCOMPARE(baseline.size(), 2);
+      const qreal sp = score->spatium();
+      const qreal tolerance = sp * 1e-4;
+      for (const QLineF& line : baseline)
+            QVERIFY(line.dx() > 4 * sp && line.dy() < -0.2 * sp);
+      const auto compare = [&](const QVector<QLineF>& lines) {
+            if (lines.size() != baseline.size())
+                  return QStringLiteral("Number of beam strokes changed");
+            for (int i = 0; i < lines.size(); ++i) {
+                  if (qAbs(lines[i].y1() - baseline[i].y1()) >= tolerance
+                      || qAbs(lines[i].y2() - baseline[i].y2()) >= tolerance)
+                        return QString("Beam %1: rise %2sp became %3sp")
+                              .arg(i + 1).arg(baseline[i].dy() / sp).arg(lines[i].dy() / sp);
+                  }
+            return QString();
+            };
+
+      score->startCmd();
+      score->undoChangePitch(edited, edited->pitch() + 12, edited->tpc1(), edited->tpc2());
+      score->endCmd();
+      const QString afterEdit = compare(beamLines(false));
+      QVERIFY2(afterEdit.isEmpty(), qPrintable(afterEdit));
+      score->doLayout();
+      const QString afterFull = compare(beamLines(false));
+      QVERIFY2(afterFull.isEmpty(), qPrintable(afterFull));
+
+      // The same beam must also solve identically when only its page origin changes.
+      System* system = following->system();
+      const QPointF position = system->ipos();
+      system->setPos(position + QPointF(12 * sp, 20 * sp));
+      const QString afterTranslation = compare(beamLines(true));
+      system->setPos(position);
+      beamLines(true);
+      QVERIFY2(afterTranslation.isEmpty(), qPrintable(afterTranslation));
       }
 
 QTEST_MAIN(TestIncrementalLayout)
