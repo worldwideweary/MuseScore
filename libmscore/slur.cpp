@@ -614,7 +614,7 @@ static const QLineF* nativeGraceSlurBeam(const Chord* chord)
       return line && line->dx() > 0.0 ? line : nullptr;
       }
 
-static qreal nativeGraceBeamHalfWidth(const Beam* beam, const QLineF& line)
+static qreal nativeSlurBeamHalfWidth(const Beam* beam, const QLineF& line)
       {
       return 0.5 * beam->score()->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
             * std::hypot(qreal(1.0), line.dy() / line.dx());
@@ -632,7 +632,7 @@ static qreal nativeGraceBeamTipY(const Chord* chord, bool up, qreal x, qreal fal
       // or outside the beam edge. Sample the nearest point on this beam.
       const qreal beamY = origin.y() + line->pointAt(qBound(qreal(0.0), t, qreal(1.0))).y();
       const qreal gap = qMax(0.20, 0.35 * chord->score()->styleD(Sid::graceNoteMag)) * chord->spatium();
-      return beamY + (up ? -1.0 : 1.0) * (nativeGraceBeamHalfWidth(beam, *line) + gap);
+      return beamY + (up ? -1.0 : 1.0) * (nativeSlurBeamHalfWidth(beam, *line) + gap);
       }
 
 static void appendNativeSlurChordObstacles(const SlurSegment* segment, const Chord* chord, bool endpoint,
@@ -684,7 +684,7 @@ static bool nativeGraceSlurObstacles(const SlurSegment* segment, std::vector<QRe
                   return;
             beams.push_back(beam);
             const QPointF origin = beam->pagePos() - chord->pagePos() + nativeSlurChordOrigin(chord);
-            const qreal margin = nativeGraceBeamHalfWidth(beam, *line);
+            const qreal margin = nativeSlurBeamHalfWidth(beam, *line);
             // A small step follows a slanted grace beam closely enough for
             // short arcs; one rectangle around the entire beam does not.
             const int count = qBound(1, int(std::ceil(line->dx() / (0.25 * segment->spatium()))), 128);
@@ -1708,6 +1708,36 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
       setbbox(bounds);
       }
 
+// Use the rendered beam in the late pass, when crossing stems have their
+// final directions and lengths. An opposite-side tip stays on its notehead.
+static bool crossBeamSlurTip(const SlurSegment* segment, const Chord* chord, bool atStart, QPointF& tip)
+      {
+      const Beam* beam = chord->beam();
+      const Stem* stem = chord->stem();
+      const System* system = segment->system();
+      const bool up = segment->slur()->up();
+      if (!stem || chord->up() != up || !beam || !beam->cross() || beam->empty()
+          || !beam->parent() || beam->system() != system
+          || chord == (atStart ? beam->elements().back() : beam->elements().front()))
+            return false;
+      const QLineF* line = beam->primarySegment4();
+      if (!line || line->dx() <= 0.0)
+            return false;
+      const qreal pageX = chord->pagePos().x() + stem->x();
+      const QPointF beamOrigin = beam->pagePos();
+      const qreal x = pageX - beamOrigin.x();
+      const qreal sp = segment->spatium();
+      // A stem center may be slightly inset from the end of the beam.
+      if (x < line->x1() - 0.25 * sp || x > line->x2() + 0.25 * sp)
+            return false;
+      const qreal t = qBound(qreal(0.0), (x - line->x1()) / line->dx(), qreal(1.0));
+      const qreal beamY = beamOrigin.y() + line->pointAt(t).y();
+      const qreal clearance = nativeSlurBeamHalfWidth(beam, *line) + 0.35 * chord->spatium();
+      const qreal staffY = system->staffYpage(segment->vStaffIdx());
+      tip = QPointF(pageX - system->pagePos().x(), beamY - staffY + (up ? -clearance : clearance));
+      return true;
+      }
+
 // System::layout2() creates cross-staff slur segments once staff Y is
 // known. Page layout can still change those distances and the beam stems.
 void SlurSegment::relayoutCrossStaff()
@@ -1731,14 +1761,19 @@ void SlurSegment::relayoutCrossStaff()
             }
       SlurPos positions;
       s->slurPos(&positions);
+      const qreal rawStartY = positions.p1.y();
+      const qreal rawEndY = positions.p2.y();
+      const bool beamStart = crossBeamSlurTip(this, toChord(start), true, positions.p1);
+      const bool beamEnd = crossBeamSlurTip(this, toChord(end), false, positions.p2);
       layoutSegment(positions.p1, positions.p2, true);
       if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_TRACE") == 1) {
             const qreal sp = spatium();
-            qDebug("[native-cross-slur] measure=%d staff=%d->%d fit=%d span/sp=%.3f rawY/sp=%.3f,%.3f fittedY/sp=%.3f,%.3f",
+            qDebug("[native-cross-slur] measure=%d staff=%d->%d fit=%d span/sp=%.3f rawY/sp=%.3f,%.3f fittedY/sp=%.3f,%.3f beamTips=%d,%d",
                    start->measure()->no() + 1, start->vStaffIdx() + 1, end->vStaffIdx() + 1,
                    _hasOrdinaryFit, (positions.p2.x() - positions.p1.x()) / sp,
-                   positions.p1.y() / sp, positions.p2.y() / sp,
-                   (ipos().y() + ups(Grip::START).p.y()) / sp, (ipos().y() + ups(Grip::END).p.y()) / sp);
+                   rawStartY / sp, rawEndY / sp,
+                   (ipos().y() + ups(Grip::START).p.y()) / sp, (ipos().y() + ups(Grip::END).p.y()) / sp,
+                   beamStart, beamEnd);
             }
       }
 

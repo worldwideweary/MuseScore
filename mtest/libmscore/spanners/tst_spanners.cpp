@@ -1658,6 +1658,7 @@ void TestSpanners::nativeCrossStaffSlurs()
       QVERIFY(score);
       score->doLayout();
       int checked = 0;
+      int beamed = 0;
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
@@ -1676,9 +1677,34 @@ void TestSpanners::nativeCrossStaffSlurs()
                   return qAbs(distance.x()) < 2.0 * sp && qAbs(distance.y()) < 5.0 * sp;
                   };
             QVERIFY(nearAnchor(start, Grip::START) && nearAnchor(end, Grip::END));
+            if (end->beam() && end->beam()->cross()) {
+                  const Beam* beam = end->beam();
+                  const QLineF* primary = beam->primarySegment4();
+                  const Stem* stem = toChord(end)->stem();
+                  QVERIFY(primary && primary->dx() > 0.0 && stem && end->up() == slur->up());
+                  const auto grip = [&](Grip g) { return segment->pagePos() + segment->ups(g).pos(); };
+                  const QPointF tip = grip(Grip::END);
+                  QVERIFY(qAbs(tip.x() - (end->pagePos().x() + stem->x())) < 0.02 * sp);
+                  const QPointF beamOrigin = beam->pagePos();
+                  const auto outsideBeam = [&](const QPointF& point) {
+                        const qreal x = point.x() - beamOrigin.x();
+                        if (x < primary->x1() || x > primary->x2())
+                              return true;
+                        const qreal t = (x - primary->x1()) / primary->dx();
+                        const qreal center = beamOrigin.y() + primary->pointAt(t).y();
+                        const qreal halfWidth = 0.5 * score->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
+                              * std::hypot(qreal(1.0), primary->dy() / primary->dx());
+                        return (slur->up() ? center - point.y() : point.y() - center) > halfWidth;
+                        };
+                  const CubicBezier curve(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), tip);
+                  for (int k = 0; k <= 64; ++k)
+                        QVERIFY2(outsideBeam(curve.pointAtPercent(qreal(k) / 64)), "The cross-staff slur cuts through the beam");
+                  ++beamed;
+                  }
             ++checked;
             }
       QCOMPARE(checked, 3);
+      QCOMPARE(beamed, 1);
       }
 
 void TestSpanners::nativeSlursOverTies()
