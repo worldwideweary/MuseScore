@@ -34,6 +34,7 @@
 #include "noteevent.h"
 #include "part.h"
 #include "pitchspelling.h"
+#include "rest.h"
 #include "score.h"
 #include "segment.h"
 #include "slur.h"
@@ -1786,24 +1787,32 @@ bool Chord::underBeam() const
       return false;
       }
 
-qreal Chord::afterGraceMinRestAdvance(const Segment* next) const
+bool Chord::usesNativeAfterGraceSpacing(const Segment* next) const
       {
-      if (_graceNotes.empty() || !addToSkyline() || staffMove() || isNudged()
-          || next->tick() != tick() + actualTicks() || !staff()->isPitchedStaff(tick()))
-            return 0.0;
+      if (_graceNotes.empty() || !next || !next->isChordRestType() || next->measure() != measure()
+          || !addToSkyline() || staffMove() || isNudged() || !staff()->isPitchedStaff(tick())
+          || next->tick() != tick() + actualTicks()
+          || measure()->tick2segment(next->tick(), SegmentType::All) != next)
+            return false;
+      const Element* following = next->element(track());
+      if (!following || !following->isChordRest() || !following->visible()
+          || !following->addToSkyline() || following->vStaffIdx() != vStaffIdx()
+          || (following->isRest() && toRest(following)->isGap()))
+            return false;
       const auto graces = graceNotesAfter();
-      if (graces.empty() || std::any_of(graces.begin(), graces.end(), [this](const Chord* grace) {
-            return grace->vStaffIdx() != vStaffIdx() || !grace->addToSkyline() || grace->isNudged();
-            }))
-            return 0.0;
-      if (measure()->tick2segment(next->tick(), SegmentType::All) != next)
-            return 0.0;
+      return !graces.empty() && std::all_of(graces.begin(), graces.end(), [this](const Chord* grace) {
+            return grace->vStaffIdx() == vStaffIdx() && grace->addToSkyline() && !grace->isNudged();
+            });
+      }
 
-      // layout2() packs the graces leftward from this same rest's left
-      // boundary. Keep the full reserved cluster intact even when the
-      // grace ink and the rest don't collide at their current staff heights.
-      const qreal gap = score()->styleP(Sid::minNoteDistance) * staff()->mag(this)
-            * score()->styleD(Sid::graceNoteMag);
+qreal Chord::afterGraceMinAdvance(const Segment* next) const
+      {
+      if (!usesNativeAfterGraceSpacing(next))
+            return 0.0;
+      // Studio preserves a grace-to-main/rest gap even between notes at
+      // different heights. layout2() must be able to keep that same gap.
+      const qreal gap = qMax(0.45 * spatium(), score()->styleP(Sid::minNoteDistance) * staff()->mag(this)
+            * score()->styleD(Sid::graceNoteMag));
       return x() + _spaceRw + gap + next->staffShape(vStaffIdx()).left();
       }
 
@@ -1845,7 +1854,7 @@ void Chord::layout2()
             // else leave note-to-barline distance;
             const qreal rightGap = (s != nullptr && s->segmentType() != SegmentType::ChordRest)
                   ? score()->styleP(Sid::noteBarDistance) * mag
-                  : minNoteDist;
+                  : usesNativeAfterGraceSpacing(s) ? qMax(minNoteDist, 0.45 * spatium()) : minNoteDist;
             xOff -= rightGap;
             static const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_SPACING_TRACE");
             const bool trace = traceMeasure > 0 && measure()->no() + 1 == traceMeasure;
@@ -2480,12 +2489,15 @@ void Chord::layoutPitched()
        if (!gna.empty()) {
             qreal xr = _spaceRw;
             const qreal gap = minNoteDistance * graceMag;
+            const Segment* next = measure()->tick2segment(tick() + actualTicks(), SegmentType::All);
+            qreal packingGap = usesNativeAfterGraceSpacing(next) ? qMax(gap, 0.45 * _spatium) : gap;
             for (Chord* g : gna) {
                   // Segment shapes are built before layout2() packs the group
                   // against the following segment. Put each grace in its
                   // reserved space now so its ink cannot appear at the main
                   // chord's origin and obstruct a preceding after-grace.
-                  xr += gap + g->_spaceLw;
+                  xr += packingGap + g->_spaceLw;
+                  packingGap = gap; // Preserve the existing spacing inside a group.
                   g->setPos(xr, 0.0);
                   xr += g->_spaceRw;
                   }

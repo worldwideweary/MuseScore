@@ -505,8 +505,8 @@ void TestIncrementalLayout::afterGraceFitsBeforeEighthRest()
       const qreal graceHeadLeft = owner->x() + grace->x() + grace->upNote()->x() + grace->upNote()->bbox().left();
       const qreal graceRight = on->x() + owner->x() + grace->x() + grace->shape().right();
       const qreal restLeft = next->x() + next->element(0)->x() + next->element(0)->bbox().left();
-      QVERIFY2(graceHeadLeft - headRight >= 0.2 * sp, "The rest squeezed the after-grace into its main note");
-      QVERIFY2(restLeft - graceRight >= 0.1 * sp, "The after-grace flag is too close to the rest");
+      QVERIFY2(graceHeadLeft - headRight >= 0.4 * sp, "The rest squeezed the after-grace into its main note");
+      QVERIFY2(restLeft - graceRight >= 0.4 * sp, "The after-grace flag is too close to the rest");
       }
 
 void TestIncrementalLayout::followingBeamSlopesSurviveEdit()

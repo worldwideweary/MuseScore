@@ -2788,15 +2788,12 @@ qreal Segment::minHorizontalDistance(Segment* ns, bool systemHeaderGap) const
                   else
                         w = qMax(w, score()->noteHeadWidth()) + padding;
                   if (rhythmicPair) {
-                        // Rests have no matching chord spacing band. An
-                        // after-grace cluster must still fit before its rest.
+                        // Fit the complete after-grace group and its gap
+                        // before the next note or rest on the same voice.
                         for (int track = 0; track < score()->ntracks(); ++track) {
                               const Element* chord = element(track);
-                              const Element* rest = ns->element(track);
-                              if (chord && chord->isChord() && rest && rest->isRest()
-                                  && rest->visible() && !toRest(rest)->isGap()
-                                  && score()->staff(track / VOICES)->show())
-                                    w = qMax(w, toChord(chord)->afterGraceMinRestAdvance(ns));
+                              if (chord && chord->isChord() && score()->staff(track / VOICES)->show())
+                                    w = qMax(w, toChord(chord)->afterGraceMinAdvance(ns));
                               }
                         }
                   }

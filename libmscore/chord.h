@@ -73,6 +73,7 @@ class Chord final : public ChordRest {
 
       qreal _spaceLw;
       qreal _spaceRw;
+      bool usesNativeAfterGraceSpacing(const Segment* next) const;
       // Native pitched-staff dot column, computed for each chord at layout time.
       // Tablature continues to use the shared segment/staff dot position.
       qreal _dotPosX { 0.0 };
@@ -182,7 +183,7 @@ class Chord final : public ChordRest {
       void layout() override;
       QPointF pagePos() const override;      ///< position in page coordinates
       void layout2();
-      qreal afterGraceMinRestAdvance(const Segment* next) const;
+      qreal afterGraceMinAdvance(const Segment* next) const;
       void cmdUpdateNotes(AccidentalState*, int);
 
       NoteType noteType() const       { return _noteType; }
