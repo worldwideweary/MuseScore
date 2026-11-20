@@ -1393,6 +1393,7 @@ void TestSpanners::nativePreGraceSlurFit()
       QVERIFY(score && score->styleB(Sid::beamLayout4));
       int beamedPairs = 0;
       int betweenBeats = 0;
+      int flaggedStarts = 0;
       Slur* inner = nullptr;
       Slur* acrossBarline = nullptr;
       Slur* next = nullptr;
@@ -1408,6 +1409,18 @@ void TestSpanners::nativePreGraceSlurFit()
             const qreal sp = segment->spatium();
             SlurPos anchors;
             slur->slurPos(&anchors);
+            if (slur->up() && start->isGraceBefore() && start->up() && !start->beam()
+                && start->segment() == end->segment()) {
+                  const Chord* grace = toChord(start);
+                  QVERIFY(grace->stem() && grace->hook());
+                  const qreal stemEndY = start->measure()->y() + start->segment()->y() + start->parent()->y()
+                        + start->y() + (grace->stemPos() - grace->pagePos() + grace->stem()->p2()).y();
+                  const qreal graceMag = score->styleD(Sid::graceNoteMag);
+                  const qreal inset = (anchors.p1.y() - stemEndY) / sp;
+                  QVERIFY2(qAbs(inset - 0.5 * graceMag) < 0.04,
+                           qPrintable(QString("Flagged grace tip inset: %1sp").arg(inset)));
+                  ++flaggedStarts;
+                  }
             if (slur->up() && start->isGrace() && start->tick().ticks() == 1440) {
                   if (start->segment() == end->segment())
                         inner = slur;
@@ -1432,6 +1445,12 @@ void TestSpanners::nativePreGraceSlurFit()
                         };
                   QVERIFY(qAbs(point(Grip::START).x() - anchors.p1.x()) < 1e-6 * sp);
                   QVERIFY(qAbs(point(Grip::END).x() - anchors.p2.x()) < 1e-6 * sp);
+                  const Chord* firstGrace = toChord(start);
+                  QVERIFY(firstGrace->stem());
+                  const qreal stemX = firstGrace->pageX() + firstGrace->stem()->x() - segment->system()->pagePos().x();
+                  const qreal stemInset = (point(Grip::START).x() - stemX) / sp;
+                  QVERIFY2(stemInset > 0.07 && stemInset < 0.16,
+                           qPrintable(QString("Beamed grace tip inset: %1sp").arg(stemInset)));
                   const CubicBezier curve(point(Grip::START), point(Grip::BEZIER1), point(Grip::BEZIER2), point(Grip::END));
                   for (qreal t : { 0.25, 0.5, 0.75 })
                         QVERIFY(gap(curve.pointAtPercent(t)) > 0.12);
@@ -1462,6 +1481,7 @@ void TestSpanners::nativePreGraceSlurFit()
             }
       QCOMPARE(beamedPairs, 2);
       QCOMPARE(betweenBeats, 2);
+      QCOMPARE(flaggedStarts, 2);
       QVERIFY(inner && acrossBarline && next);
       QCOMPARE(inner->startCR(), acrossBarline->startCR());
       QCOMPARE(acrossBarline->endCR(), next->startCR());
