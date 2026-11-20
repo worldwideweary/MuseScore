@@ -1035,18 +1035,39 @@ static QPointF ordinarySlurThickness(qreal width, const QPointF& first, const QP
       return QPointF(-width * std::sin(angle), width * std::cos(angle));
       }
 
+static QPointF rebaseSlurControl(const QPointF& control, const QPointF& fittedStart, const QPointF& fittedEnd,
+                                const QPointF& start, const QPointF& end)
+      {
+      if (start == fittedStart && end == fittedEnd)
+            return control;
+      const QPointF fittedSpan = fittedEnd - fittedStart;
+      const QPointF span = end - start;
+      const qreal fittedLength = std::hypot(fittedSpan.x(), fittedSpan.y());
+      if (qFuzzyIsNull(fittedLength))
+            return control + start - fittedStart;
+      const QPointF axis = fittedSpan / fittedLength;
+      const QPointF relative = control - fittedStart;
+      const qreal fraction = (relative.x() * axis.x() + relative.y() * axis.y()) / fittedLength;
+      const qreal height = -relative.x() * axis.y() + relative.y() * axis.x();
+      const qreal length = std::hypot(span.x(), span.y());
+      const QPointF direction = qFuzzyIsNull(length) ? axis : span / length;
+      return start + span * fraction + QPointF(-direction.y(), direction.x()) * height;
+      }
+
 void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       {
       ups(Grip::START).p = _ordinaryFit[0];
-      ups(Grip::BEZIER1).p = _ordinaryFit[1];
-      ups(Grip::BEZIER2).p = _ordinaryFit[2];
       ups(Grip::END).p = _ordinaryFit[3];
+      const auto first = ups(Grip::START).pos();
+      const auto last = ups(Grip::END).pos();
+      // The fitted controls belong to the original tip-to-tip frame.
+      // Rotate them with the edited tips before adding the user's offsets.
+      ups(Grip::BEZIER1).p = rebaseSlurControl(_ordinaryFit[1], _ordinaryFit[0], _ordinaryFit[3], first, last);
+      ups(Grip::BEZIER2).p = rebaseSlurControl(_ordinaryFit[2], _ordinaryFit[0], _ordinaryFit[3], first, last);
       ups(Grip::BEZIER1).off += shoulderDelta;
       ups(Grip::BEZIER2).off += shoulderDelta;
-      const auto first = ups(Grip::START).pos();
       const auto c1 = ups(Grip::BEZIER1).pos();
       const auto c2 = ups(Grip::BEZIER2).pos();
-      const auto last = ups(Grip::END).pos();
       ups(Grip::DRAG).p = (first + last) * 0.5;
       ups(Grip::SHOULDER).p = (c1 + c2) * 0.5;
 
