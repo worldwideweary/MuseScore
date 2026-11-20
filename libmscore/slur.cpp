@@ -1855,11 +1855,19 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
-                        // Backport note: retain the 37E stem X for beamed slurs.
-                        // Studio 4.7.5 instead uses stemPosX + 0.15sp * chordMag
-                        // + half the scaled stem width * direction (-1 up, +1 down).
+                        // Keep the 37E anchor for ordinary beams. On a
+                        // pre-grace beam, inset from the actual stem center,
+                        // toward the curve, as in Studio. Use the rendered
+                        // stem X directly so a notehead offset isn't counted
+                        // again.
                         xo       = stem1->pos().x();
-                        if (previewGraceTips)
+                        if (scaleGraceTips && sc->isGraceBefore() && nativeGraceSlurBeam(sc)) {
+                              const qreal beamX = xo + 0.15 * _spatium * score()->styleD(Sid::graceNoteMag);
+                              const qreal x = sc->pageX() - sp->system1->pagePos().x() + beamX;
+                              xo = x - sp->p1.x();
+                              yo = nativeGraceBeamTipY(sc, _up, beamX, yo);
+                              }
+                        else if (previewGraceTips)
                               yo = nativeGraceBeamTipY(sc, _up, xo + (note1 && !note1->mirror() ? note1->x() : 0.0), yo);
 
                         // account for articulations
