@@ -11,6 +11,7 @@
 //=============================================================================
 
 #include <QtTest/QtTest>
+#include <memory>
 #include "mtest/testutils.h"
 #include "libmscore/score.h"
 #include "libmscore/measure.h"
@@ -18,6 +19,7 @@
 #include "libmscore/undo.h"
 #include "libmscore/fraction.h"
 #include "libmscore/part.h"
+#include "libmscore/xml.h"
 
 #define DIR QString("libmscore/keysig/")
 
@@ -38,6 +40,7 @@ class TestKeySig : public QObject, public MTest
       void keysig_78216();
       void preferSharpFlat();
       void keysigMode();
+      void nativeSignatureSpacing();
       };
 
 //---------------------------------------------------------
@@ -190,6 +193,88 @@ void TestKeySig::keysigMode()
       score->doLayout();
       QVERIFY(saveCompareScore(score, "keysig03.mscx", DIR + "keysig03-ref.mscx"));
       delete score;
+      }
+
+//---------------------------------------------------------
+//   nativeSignatureSpacing
+//---------------------------------------------------------
+
+void TestKeySig::nativeSignatureSpacing()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-key-signature-spacing.mscx"));
+      QVERIFY(score);
+
+      QList<KeySig*> signatures;
+      Measure* m = score->firstMeasure();
+      for (int i = 0; i < 6; ++i, m = m->nextMeasure()) {
+            QVERIFY(m);
+            Segment* seg = m->findSegment(SegmentType::KeySig, m->tick());
+            QVERIFY(seg && seg->enabled() && seg->element(0));
+            signatures.append(toKeySig(seg->element(0)));
+            if (i == 2) {
+                  Segment* courtesy = m->findSegment(SegmentType::KeySigAnnounce, m->endTick());
+                  QVERIFY(courtesy && courtesy->enabled() && courtesy->element(0));
+                  signatures.append(toKeySig(courtesy->element(0)));
+                  }
+            }
+
+      const auto sharp = SymId::accidentalSharp;
+      const auto flat = SymId::accidentalFlat;
+      const auto natural = SymId::accidentalNatural;
+      const QList<QList<SymId>> expected {
+            {sharp, sharp, sharp, sharp, sharp, sharp, sharp},
+            {sharp, sharp, natural, natural, natural, natural, natural},
+            {natural, natural},
+            {flat, flat, flat, flat, flat, flat, flat}, // courtesy
+            {flat, flat, flat, flat, flat, flat, flat},
+            {flat, flat, natural, natural, natural, natural, natural},
+            {natural, natural, sharp, sharp}
+            };
+      const auto step = [](const QList<KeySym>& syms, int i) {
+            return syms[i + 1].spos.x() - syms[i].spos.x();
+            };
+
+      QList<QList<KeySym>> base;
+      for (int i = 0; i < signatures.size(); ++i) {
+            base.append(signatures[i]->keySigEvent().keySymbols());
+            const auto& syms = base.back();
+            QCOMPARE(syms.size(), expected[i].size());
+            QCOMPARE(syms.front().spos.x(), qreal(0.0));
+            for (int j = 0; j < syms.size(); ++j) {
+                  QVERIFY(syms[j].sym == expected[i][j]);
+                  QVERIFY(j == 0 || step(syms, j - 1) > 0.0);
+                  }
+            }
+      // Approximate anchor distances from the Leland Studio comparison.
+      QVERIFY(qAbs(step(base[0], 0) - 1.10) < 0.05);
+      QVERIFY(qAbs(step(base[4], 0) - 1.11) < 0.05);
+      QVERIFY(qAbs(step(base[3], 0) - step(base[4], 0)) < 1e-6);
+
+      XmlReader reader(QByteArray("<Style><keysigAccidentalDistance>0.5</keysigAccidentalDistance>"
+                                  "<keysigNaturalDistance>0.7</keysigNaturalDistance></Style>"));
+      QVERIFY(reader.readNextStartElement());
+      MStyle imported;
+      imported.load(reader, 477);
+      for (Sid sid : {Sid::keysigAccidentalDistance, Sid::keysigNaturalDistance})
+            score->setStyleValue(sid, imported.value(sid));
+
+      for (int i = 0; i < signatures.size(); ++i) {
+            signatures[i]->layout();
+            const auto edited = signatures[i]->keySigEvent().keySymbols();
+            QCOMPARE(edited.size(), base[i].size());
+            for (int j = 0; j + 1 < edited.size(); ++j) {
+                  const SymId left = expected[i][j], right = expected[i][j + 1];
+                  const qreal added = left != right ? 0.4 : left == natural ? 0.3 : 0.2;
+                  QVERIFY(qAbs(step(edited, j) - step(base[i], j) - added) < 1e-6);
+                  }
+            }
+
+      const QString file("native-key-signature-spacing-test.mscx");
+      QVERIFY(saveScore(score.get(), file));
+      std::unique_ptr<MasterScore> saved(readCreatedScore(file));
+      QVERIFY(saved);
+      QCOMPARE(saved->styleS(Sid::keysigAccidentalDistance).val(), qreal(0.5));
+      QCOMPARE(saved->styleS(Sid::keysigNaturalDistance).val(), qreal(0.7));
       }
 
 QTEST_MAIN(TestKeySig)
