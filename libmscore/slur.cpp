@@ -1441,6 +1441,9 @@ void Slur::slurPos(SlurPos* sp)
                               yo = sc->downNote()->pos().y() - sh;
                         else
                               yo = sc->upNote()->pos().y() + sh;
+                        // Backport note: retain the 37E stem X for beamed slurs.
+                        // Studio 4.7.5 instead uses stemPosX + 0.15sp * chordMag
+                        // + half the scaled stem width * direction (-1 up, +1 down).
                         xo       = stem1->pos().x();
 
                         // account for articulations
@@ -1556,6 +1559,9 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = ec->downNote()->pos().y() - sh;
                               else
                                     yo = ec->upNote()->pos().y() + sh;
+                              // Backport note: retain the 37E stem X for beamed slurs.
+                              // Studio 4.7.5 uses the same signed half stem width as
+                              // at the start but subtracts 0.15sp * chordMag.
                               xo = stem2->pos().x();
 
                               // account for articulations

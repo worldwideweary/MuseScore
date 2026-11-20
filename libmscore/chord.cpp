@@ -1817,18 +1817,36 @@ void Chord::layout2()
             // start from the right (if next segment found, x of it relative to this chord;
             // chord right space otherwise)
             Chord* last = gna.last();
-            qreal xOff =  s ? (s->pos().x() - s->staffShape(last->vStaffIdx()).left()) - (segment()->pos().x() + pos().x()) : _spaceRw;
+            const qreal ownerX = segment()->pos().x() + pos().x();
+            const qreal nextLeft = s ? s->staffShape(last->vStaffIdx()).left() : 0.0;
+            qreal xOff = s ? (s->pos().x() - nextLeft) - ownerX : _spaceRw;
             // final distance: if near to another chord, leave minNoteDist at right of last grace
             // else leave note-to-barline distance;
-            xOff -= (s != nullptr && s->segmentType() != SegmentType::ChordRest)
+            const qreal rightGap = (s != nullptr && s->segmentType() != SegmentType::ChordRest)
                   ? score()->styleP(Sid::noteBarDistance) * mag
                   : minNoteDist;
+            xOff -= rightGap;
+            static const int traceMeasure = qEnvironmentVariableIntValue("MSCORE_NATIVE_SPACING_TRACE");
+            const bool trace = traceMeasure > 0 && measure()->no() + 1 == traceMeasure;
+            const qreal sp = trace ? spatium() : 1.0;
             // scan grace note list from the end
             int n = gna.size();
             for (int i = n-1; i >= 0; i--) {
                   Chord* g = gna.value(i);
+                  const qreal oldX = trace ? g->x() : 0.0;
                   xOff -= g->_spaceRw;                  // move to left by grace note left space (incl. grace own width)
                   g->rxpos() = xOff;
+                  if (trace) {
+                        const qreal left = g->x() - g->_spaceLw;
+                        const qreal right = g->x() + g->_spaceRw;
+                        qDebug("[native-after-grace-spacing] measure=%d tick=%d track=%d index=%d pitch=%d"
+                               " ownerX/sp=%.4f nextTick=%d nextX/sp=%.4f nextLeft/sp=%.4f rightGap/sp=%.4f"
+                               " ownerReservedRight/sp=%.4f graceX/sp=%.4f->%.4f graceEdges/sp=%.4f,%.4f",
+                               traceMeasure, tick().ticks(), track(), g->graceIndex(),
+                               g->notes().empty() ? -1 : g->upNote()->pitch(), ownerX / sp,
+                               s ? s->tick().ticks() : -1, s ? s->pos().x() / sp : 0.0, nextLeft / sp,
+                               rightGap / sp, _spaceRw / sp, oldX / sp, g->x() / sp, left / sp, right / sp);
+                        }
                   xOff -= minNoteDist + g->_spaceLw;    // move to left by grace note right space and inter-grace distance
                   }
             }
