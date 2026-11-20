@@ -837,7 +837,7 @@ static void appendNestedSlurObstacles(const SlurSegment* outer, const QPointF& f
       }
 
 static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
-                           std::array<QPointF, 4>& fit, std::array<QPointF, 4>& initial)
+                           std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr)
       {
       const qreal sp = segment->spatium();
       const qreal width = last.x() - first.x();
@@ -903,7 +903,8 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             clampShoulderX(c1, last.x());
             clampShoulderX(c2, last.x());
             }
-      initial = {{ first, toStaff(c1), toStaff(c2), last }};
+      if (initial)
+            *initial = {{ first, toStaff(c1), toStaff(c2), last }};
       const qreal step = direction * qMin(qreal(1.5), 0.30 * qMax(qreal(1.0), length / (16.0 * sp))) * sp;
       // A slur from a beamed pre-grace to its parent starts at the beam.
       // Opposite stem directions alone don't make that tip float along
@@ -1197,7 +1198,23 @@ void SlurSegment::separateSharedTips(const std::vector<SpannerSegment*>& segment
       for (const auto& a : adjustments) {
             if (a.start.isNull() && a.end.isNull())
                   continue;
+            Slur* slur = a.segment->slur();
+            const ChordRest* start = slur->startCR();
+            const ChordRest* end = slur->endCR();
             auto& fit = a.segment->_ordinaryFit;
+            // A nested slur over beams can clear the inner curves with less
+            // shoulder lift once its tips have already been moved apart.
+            // Rebuild from those tips, using the shorter slurs already laid
+            // out in this pass. A failed refit keeps the first curve.
+            if (a.start.x() == 0.0 && a.end.x() == 0.0
+                && start && end && !start->isGrace() && !end->isGrace()
+                && start->beam() && end->beam()
+                && start->up() == slur->up() && end->up() == slur->up()) {
+                  if (fitOrdinarySlur(a.segment, fit[0] + a.start, fit[3] + a.end, fit)) {
+                        a.segment->computeBezier();
+                        continue;
+                        }
+                  }
             fit[0] += a.start;
             fit[1] += a.start * 0.5;
             fit[2] += a.end * 0.5;
@@ -1324,7 +1341,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       std::array<QPointF, 4> initialFit;
       if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE)
-            _hasOrdinaryFit = fitOrdinarySlur(this, p1, p2, _ordinaryFit, initialFit);
+            _hasOrdinaryFit = fitOrdinarySlur(this, p1, p2, _ordinaryFit, trace ? &initialFit : nullptr);
 
       computeBezier();
 
