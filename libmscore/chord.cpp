@@ -2455,6 +2455,7 @@ void Chord::layoutPitched()
       _spaceLw = lll;
       _spaceRw = rrr;
 
+      static const bool fitGraceSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       if (gnb) {
               qreal xl = -(_spaceLw + minNoteDistance) - chordX;
               for (int i = gnb-1; i >= 0; --i) {
@@ -2464,6 +2465,18 @@ void Chord::layoutPitched()
                           xl = terminalX;
                     else
                           xl -= g->_spaceRw/* * 1.2*/;
+                    // Reserve the terminal notehead gap before packing the
+                    // rest of the beam. This moves the group as a unit.
+                    if (fitGraceSlurs && i == gnb - 1 && gna.empty() && qFuzzyIsNull(chordX)
+                        && g->beam() && !g->beam()->cross() && !g->beam()->userModified()
+                        && nativePlainSpacingChord(this) && nativePlainSpacingChord(g)) {
+                          const Note* owner = notes().front();
+                          const Note* grace = g->notes().front();
+                          const qreal clearance = (owner->line() == grace->line() ? 0.65 : 0.45) * _spatium;
+                          const qreal ownerLeft = owner->x() + owner->bbox().left();
+                          const qreal graceRight = grace->x() + grace->bbox().right();
+                          xl = qMin(xl, ownerLeft - graceRight - clearance);
+                          }
                     // Kern into a following grace's accidental overhang,
                     // measured against its ink and all later group members.
                     // The last grace-to-main position remains fixed.
