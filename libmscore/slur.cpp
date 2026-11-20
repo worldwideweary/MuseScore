@@ -854,8 +854,9 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
             : beamed ? nativeBeamedSlurObstacles(segment, obstacles) : ordinarySlurObstacles(segment, obstacles);
       if (!eligible)
             return false;
+      std::vector<QRectF> nestedSlurs;
       if (beamed)
-            appendNestedSlurObstacles(segment, first, last, obstacles);
+            appendNestedSlurObstacles(segment, first, last, nestedSlurs);
       const bool up = segment->slur()->up();
       const qreal direction = up ? -1.0 : 1.0;
       const Fraction tick = segment->slur()->tick();
@@ -918,25 +919,30 @@ static bool fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF l
       const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
       const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
             qreal(0.04 * length / sp * cosine * cosine), qreal(0.5)) * sp);
+      const auto hits = [&](const CubicBezier& curve, int i, const std::vector<QRectF>& shapes) {
+            const QRectF band = QRectF(toStaff(curve.pointAtPercent(i / qreal(20))),
+                                        toStaff(curve.pointAtPercent((i + 1) / qreal(20)))).normalized();
+            return std::any_of(shapes.begin(), shapes.end(), [&](const QRectF& item) {
+                  return band.right() > item.left() && band.left() < item.right()
+                        && (up ? band.bottom() >= item.top() : band.top() <= item.bottom());
+                  });
+            };
 
       for (int pass = 0; pass <= 30; ++pass) {
             bool collision[3] = { false, false, false };
             const CubicBezier clearance(QPointF(), c1 + arcClearance, c2 + arcClearance, p2);
+            const CubicBezier center(QPointF(), c1, c2, p2);
             // Intersect in staff coordinates, where the obstacles lie. Studio
             // checks 19 intervals of a 20-subdivision curve.
             for (int i = 0; i < 19; ++i) {
                   const int section = i < 6 ? 0 : i < 12 ? 1 : 2;
                   if (collision[section])
                         continue;
-                  const QRectF band = QRectF(toStaff(clearance.pointAtPercent(i / qreal(20))),
-                                             toStaff(clearance.pointAtPercent((i + 1) / qreal(20)))).normalized();
-                  for (const QRectF& item : obstacles) {
-                        if (band.right() > item.left() && band.left() < item.right()
-                            && (up ? band.bottom() >= item.top() : band.top() <= item.bottom())) {
-                              collision[section] = true;
-                              break;
-                              }
-                        }
+                  // Nested slur bands already reserve the combined ribbon
+                  // width and a small gap. Adding beam clearance again
+                  // makes the outer shoulder unnecessarily high.
+                  collision[section] = hits(clearance, i, obstacles)
+                        || (!nestedSlurs.empty() && hits(center, i, nestedSlurs));
                   }
             if (!collision[0] && !collision[1] && !collision[2]) {
                   // Snap only the tips so the cleared shoulders stay put.
