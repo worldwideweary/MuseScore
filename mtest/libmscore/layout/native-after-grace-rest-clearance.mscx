@@ -1,0 +1,287 @@
+<?xml version='1.0' encoding='utf-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <Spatium>1.75</Spatium>
+      <musicalSymbolFont>Leland</musicalSymbolFont>
+      <musicalTextFont>Leland Text</musicalTextFont>
+      <stemWidth>0.10</stemWidth>
+      <minNoteDistance>0.35</minNoteDistance>
+      <barNoteDistance>1.25</barNoteDistance>
+      <noteBarDistance>1.5</noteBarDistance>
+      <measureSpacing>1.5</measureSpacing>
+      <accidentalDistance>0.25</accidentalDistance>
+      <accidentalNoteDistance>0.25</accidentalNoteDistance>
+      <dotNoteDistance>0.5</dotNoteDistance>
+      <lastSystemFillLimit>1</lastSystemFillLimit>
+      <hideEmptyStaves>0</hideEmptyStaves>
+      <pageWidth>12.5</pageWidth>
+      <pagePrintableWidth>11.3</pagePrintableWidth>
+      <pageOddLeftMargin>0.6</pageOddLeftMargin>
+      <pageEvenLeftMargin>0.6</pageEvenLeftMargin>
+      <clefLeftMargin>0.75</clefLeftMargin>
+      <keysigLeftMargin>0.5</keysigLeftMargin>
+      <timesigLeftMargin>0.63</timesigLeftMargin>
+      <clefKeyRightMargin>0.8</clefKeyRightMargin>
+      <clefKeyDistance>0.75</clefKeyDistance>
+      <clefTimesigDistance>1.0</clefTimesigDistance>
+      <keyTimesigDistance>1.0</keyTimesigDistance>
+      <keyBarlineDistance>1.0</keyBarlineDistance>
+      <systemHeaderDistance>2.5</systemHeaderDistance>
+      <systemHeaderTimeSigDistance>2.0</systemHeaderTimeSigDistance>
+      <clefBarlineDistance>0.5</clefBarlineDistance>
+      <timesigBarlineDistance>0.5</timesigBarlineDistance>
+      <genClef>1</genClef>
+      <genKeysig>1</genKeysig>
+      <createMultiMeasureRests>0</createMultiMeasureRests>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <Instrument id="piano">
+        <trackName>Piano</trackName>
+        <Channel>
+          <program value="0" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <StaffText>
+            <placement>below</placement>
+            <text>A: Quarter, low grace</text>
+          </StaffText>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>53</pitch>
+              <tpc>13</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>81</pitch>
+              <tpc>17</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <placement>below</placement>
+            <text>B: Eighth, low grace</text>
+          </StaffText>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>53</pitch>
+              <tpc>13</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>81</pitch>
+              <tpc>17</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Rest>
+            <durationType>eighth</durationType>
+          </Rest>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <StaffText>
+            <placement>below</placement>
+            <text>C: Quarter, higher grace</text>
+          </StaffText>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>eighth</durationType>
+            <grace8after />
+            <StemDirection>up</StemDirection>
+            <Note>
+              <pitch>72</pitch>
+              <tpc>14</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <prev>
+                <location />
+              </prev>
+            </Spanner>
+          </Chord>
+          <Chord>
+            <durationType>quarter</durationType>
+            <StemDirection>down</StemDirection>
+            <Note>
+              <pitch>81</pitch>
+              <tpc>17</tpc>
+            </Note>
+            <Spanner type="Slur">
+              <Slur>
+                <up>up</up>
+              </Slur>
+              <next>
+                <location>
+                  <grace>0</grace>
+                </location>
+              </next>
+            </Spanner>
+          </Chord>
+          <Rest>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

@@ -1786,6 +1786,27 @@ bool Chord::underBeam() const
       return false;
       }
 
+qreal Chord::afterGraceMinRestAdvance(const Segment* next) const
+      {
+      if (_graceNotes.empty() || !addToSkyline() || staffMove() || isNudged()
+          || next->tick() != tick() + actualTicks() || !staff()->isPitchedStaff(tick()))
+            return 0.0;
+      const auto graces = graceNotesAfter();
+      if (graces.empty() || std::any_of(graces.begin(), graces.end(), [this](const Chord* grace) {
+            return grace->vStaffIdx() != vStaffIdx() || !grace->addToSkyline() || grace->isNudged();
+            }))
+            return 0.0;
+      if (measure()->tick2segment(next->tick(), SegmentType::All) != next)
+            return 0.0;
+
+      // layout2() packs the graces leftward from this same rest's left
+      // boundary. Keep the full reserved cluster intact even when the
+      // grace ink and the rest don't collide at their current staff heights.
+      const qreal gap = score()->styleP(Sid::minNoteDistance) * staff()->mag(this)
+            * score()->styleD(Sid::graceNoteMag);
+      return x() + _spaceRw + gap + next->staffShape(vStaffIdx()).left();
+      }
+
 //---------------------------------------------------------
 //   layout2
 //    Called after horizontal positions of all elements

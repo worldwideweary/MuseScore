@@ -273,6 +273,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void afterGraceOctaveKeepsPreviousGracePosition();
+      void afterGraceFitsBeforeEighthRest();
       void followingBeamSlopesSurviveEdit();
       };
 
@@ -480,6 +481,32 @@ void TestIncrementalLayout::afterGraceOctaveKeepsPreviousGracePosition()
             if (pass == 0)
                   score->doLayout();
             }
+      }
+
+void TestIncrementalLayout::afterGraceFitsBeforeEighthRest()
+      {
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-after-grace-rest-clearance.mscx"));
+      QVERIFY(score && score->firstMeasure());
+      Measure* m = score->firstMeasure()->nextMeasure();
+      QVERIFY(m);
+      Segment* on = m->findSegmentR(SegmentType::ChordRest, Fraction(1, 4));
+      Segment* next = m->findSegmentR(SegmentType::ChordRest, Fraction(3, 8));
+      QVERIFY(on && on->element(0) && on->element(0)->isChord());
+      QVERIFY(next && next->element(0) && next->element(0)->isRest());
+      const Chord* owner = toChord(on->element(0));
+      const auto after = owner->graceNotesAfter();
+      QCOMPARE(after.size(), 1);
+      const Chord* grace = after.front();
+      QCOMPARE(owner->upNote()->pitch(), 81);
+      QCOMPARE(grace->upNote()->pitch(), 53);
+
+      const qreal sp = score->spatium();
+      const qreal headRight = owner->x() + owner->upNote()->x() + owner->upNote()->bbox().right();
+      const qreal graceHeadLeft = owner->x() + grace->x() + grace->upNote()->x() + grace->upNote()->bbox().left();
+      const qreal graceRight = on->x() + owner->x() + grace->x() + grace->shape().right();
+      const qreal restLeft = next->x() + next->element(0)->x() + next->element(0)->bbox().left();
+      QVERIFY2(graceHeadLeft - headRight >= 0.2 * sp, "The rest squeezed the after-grace into its main note");
+      QVERIFY2(restLeft - graceRight >= 0.1 * sp, "The after-grace flag is too close to the rest");
       }
 
 void TestIncrementalLayout::followingBeamSlopesSurviveEdit()

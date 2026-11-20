@@ -182,6 +182,7 @@ class Chord final : public ChordRest {
       void layout() override;
       QPointF pagePos() const override;      ///< position in page coordinates
       void layout2();
+      qreal afterGraceMinRestAdvance(const Segment* next) const;
       void cmdUpdateNotes(AccidentalState*, int);
 
       NoteType noteType() const       { return _noteType; }
