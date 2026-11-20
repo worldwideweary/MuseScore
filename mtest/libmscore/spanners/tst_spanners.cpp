@@ -60,6 +60,7 @@ class TestSpanners : public QObject, public MTest
       void nativeAfterGraceSlurFit();
       void nativePreGraceSlurFit();
       void nativeNestedBeamedSlurFit();
+      void nativeCrossStaffSlurs();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -1645,6 +1646,37 @@ void TestSpanners::nativeNestedBeamedSlurFit()
       const auto afterInnerEdit = grips(outer);
       for (Grip grip : { Grip::START, Grip::BEZIER1, Grip::BEZIER2, Grip::END })
             QVERIFY(QLineF(automatic[int(grip)], afterInnerEdit[int(grip)]).length() < 1e-6 * sp);
+      }
+
+void TestSpanners::nativeCrossStaffSlurs()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-slurs.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const ChordRest* start = slur->startCR();
+            const ChordRest* end = slur->endCR();
+            QVERIFY(start && end && start->vStaffIdx() != end->vStaffIdx());
+            QCOMPARE(slur->spannerSegments().size(), size_t(1));
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && segment->system());
+            QCOMPARE(segment->system(), start->measure()->system());
+            QCOMPARE(segment->system(), end->measure()->system());
+            const qreal sp = segment->spatium();
+            const auto nearAnchor = [&](const ChordRest* cr, Grip grip) {
+                  const QPointF distance = segment->pagePos() + segment->ups(grip).pos() - cr->pagePos();
+                  return qAbs(distance.x()) < 2.0 * sp && qAbs(distance.y()) < 5.0 * sp;
+                  };
+            QVERIFY(nearAnchor(start, Grip::START) && nearAnchor(end, Grip::END));
+            ++checked;
+            }
+      QCOMPARE(checked, 3);
       }
 
 QTEST_MAIN(TestSpanners)

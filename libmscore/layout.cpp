@@ -5863,6 +5863,14 @@ void LayoutContext::collectPage()
                         }
                   m->layout2();
                   }
+            if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1) {
+                  // Use the existing segments; laying out a spanner again
+                  // here would consume another system segment.
+                  for (SpannerSegment* segment : qAsConst(s->spannerSegments())) {
+                        if (segment->isSlurSegment())
+                              toSlurSegment(segment)->relayoutCrossStaff();
+                        }
+                  }
             }
 
       // If this is the last page we layout, we must also relayout the first barlines of the

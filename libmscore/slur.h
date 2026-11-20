@@ -55,6 +55,7 @@ class SlurSegment final : public SlurTieSegment {
       void draw(QPainter*) const override;
 
       void layoutSegment(const QPointF& p1, const QPointF& p2);
+      void relayoutCrossStaff();
       static void separateSharedTips(const std::vector<SpannerSegment*>& segments);
       const QRectF& hopoTextRect() const { return _hopoTextRect; }
       const QString& hopoText() const { return _hopoText; }

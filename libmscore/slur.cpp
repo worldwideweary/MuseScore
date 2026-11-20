@@ -1484,6 +1484,32 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
       setbbox(bounds);
       }
 
+// System::layout2() creates cross-staff slur segments once staff Y is
+// known. Page layout can still change those distances and the beam stems.
+void SlurSegment::relayoutCrossStaff()
+      {
+      if (!isSingleType() || !system())
+            return;
+      Slur* s = slur();
+      const ChordRest* start = s->startCR();
+      const ChordRest* end = s->endCR();
+      if (!start || !end || !start->isChord() || !end->isChord()
+          || start->isGrace() || end->isGrace() || s->partialDirection() >= 0
+          || s->isHammerOnPullOff() || start->part() != end->part()
+          || start->vStaffIdx() == end->vStaffIdx()
+          || !start->measure() || !end->measure()
+          || start->measure()->system() != system() || end->measure()->system() != system())
+            return;
+      for (const ChordRest* cr : { start, end }) {
+            const int index = cr->vStaffIdx();
+            if (!system()->staff(index)->show() || !score()->staff(index)->isPitchedStaff(cr->tick()))
+                  return;
+            }
+      SlurPos positions;
+      s->slurPos(&positions);
+      layoutSegment(positions.p1, positions.p2);
+      }
+
 //---------------------------------------------------------
 //   isEdited
 //---------------------------------------------------------
