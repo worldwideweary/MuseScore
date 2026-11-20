@@ -1511,15 +1511,20 @@ qreal Chord::defaultStemLength() const
       if (isGrace()) {
             // grace notes stems are not subject to normal
             // stem rules
-            stemLen =  qAbs(ul - dl) * .5;
-            stemLen += normalStemLen * score()->styleD(Sid::graceNoteMag);
+            const qreal graceMag = score()->styleD(Sid::graceNoteMag);
+            stemLen = qAbs(ul - dl) * .5 + normalStemLen * graceMag;
             static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
             if (preview && st && st->isPitchedStaff(tick()) && st->lines(tick()) == 5
                 && qFuzzyCompare(lineDistance, qreal(1.0)) && hookIdx == 1 && !beam()
                 && !staffMove() && !isSmall() && !_tremolo) {
-                  // On a five-line staff, Studio carries an inward-facing
-                  // small stem at least one line into the staff. Preserve the
-                  // normal length for graces that already reach this line.
+                  // Use the shorter nominal stem for isolated flagged
+                  // after-graces on the staff. Ledger notes retain their
+                  // inward reach.
+                  if (isGraceAfter() && notes().size() == 1 && ul >= 0 && dl <= 8
+                      && (!_stem || qFuzzyIsNull(_stem->userLen())))
+                        stemLen -= 0.25 * graceMag;
+                  // Carry an inward-facing grace stem from the ledger lines
+                  // at least one line into a five-line staff.
                   if (up() && ul > 8)
                         stemLen = qMax(stemLen, dl * 0.5 - 3.0);
                   else if (!up() && dl < 0)

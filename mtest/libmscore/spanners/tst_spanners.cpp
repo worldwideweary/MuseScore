@@ -1334,6 +1334,7 @@ void TestSpanners::nativeAfterGraceSlurFit()
       QVERIFY(score);
       int lowEnds = 0;
       int levelGraceSlurs = 0;
+      int fallingGraceSlurs = 0;
       for (const auto& entry : score->spanner()) {
             if (!entry.second->isSlur())
                   continue;
@@ -1345,7 +1346,23 @@ void TestSpanners::nativeAfterGraceSlurFit()
             const qreal sp = segment->spatium();
             QVERIFY(slur->startCR() && slur->startCR()->isChord());
             const Chord* owner = toChord(slur->startCR());
+            SlurPos base;
+            slur->slurPos(&base);
+            const QPointF end = segment->ups(Grip::END).pos();
+            QVERIFY(qAbs(end.x() - base.p2.x()) < 1e-6 * sp);
+            const qreal endY = (end.y() + segment->y()) / sp;
+            if (grace->upNote()->pitch() == 53) {
+                  QVERIFY(qAbs(grace->stem()->len() / sp - 4.0) < 0.02);
+                  // The low grace tip should stay below the staff's middle
+                  // line. The main-note clearance put it above the line.
+                  QVERIFY(qAbs(endY - 2.37) < 0.12);
+                  ++lowEnds;
+                  continue;
+                  }
+            const qreal graceMag = score->styleD(Sid::graceNoteMag);
+            QVERIFY(qAbs(grace->stem()->len() / sp - 3.25 * graceMag) < 0.02);
             if (grace->upNote()->pitch() == owner->upNote()->pitch()) {
+                  QVERIFY(qAbs(endY - 0.77) < 0.10);
                   const CubicBezier center(segment->ups(Grip::START).pos(), segment->ups(Grip::BEZIER1).pos(),
                                            segment->ups(Grip::BEZIER2).pos(), segment->ups(Grip::END).pos());
                   // A nearly level arc has its crown near the midpoint.
@@ -1355,18 +1372,14 @@ void TestSpanners::nativeAfterGraceSlurFit()
                   QVERIFY2(ribbon > 0.04 && ribbon < 0.085, "Local grace slur ribbon is not tapered");
                   ++levelGraceSlurs;
                   }
-            if (grace->upNote()->pitch() != 53)
-                  continue;
-            QVERIFY(grace->stem()->height() > 3.5 * sp);
-            SlurPos base;
-            slur->slurPos(&base);
-            const QPointF end = segment->ups(Grip::END).pos();
-            QVERIFY(qAbs(end.x() - base.p2.x()) < 1e-6 * sp);
-            QVERIFY((end.y() + segment->y()) < 3.25 * sp);
-            ++lowEnds;
+            else {
+                  QVERIFY(qAbs(endY + 0.38) < 0.12);
+                  ++fallingGraceSlurs;
+                  }
             }
       QCOMPARE(lowEnds, 2);
       QCOMPARE(levelGraceSlurs, 3);
+      QCOMPARE(fallingGraceSlurs, 1);
       }
 
 void TestSpanners::nativeNestedBeamedSlurFit()

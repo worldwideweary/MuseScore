@@ -1223,10 +1223,12 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2)
                         center += chord->parent()->pos();
                   const QPointF before = (raw - center) / sp;
                   const QPointF final = (ups(grip).pos() + QPointF(0.0, shift) - center) / sp;
-                  return QString::asprintf("kind=%s index=%d pitch=%d beam=%d rawXY/sp=%.3f,%.3f finalXY/sp=%.3f,%.3f",
+                  const qreal stemLength = chord->stem() ? (chord->stem()->len() + chord->stem()->userLen()) / sp : 0.0;
+                  return QString::asprintf("kind=%s index=%d pitch=%d beam=%d rawXY/sp=%.3f,%.3f finalXY/sp=%.3f,%.3f"
+                        " stemLength/sp=%.3f",
                         chord->isGraceAfter() ? "after" : chord->isGrace() ? "before" : "main",
                         chord->isGrace() ? chord->graceIndex() : -1, note->pitch(), chord->beam() != nullptr,
-                        before.x(), before.y(), final.x(), final.y());
+                        before.x(), before.y(), final.x(), final.y(), stemLength);
                   };
             const QString first = anchor(toChord(traceStart), p1, Grip::START);
             const QString last = anchor(toChord(traceEnd), p2, Grip::END);
@@ -1599,6 +1601,19 @@ void Slur::slurPos(SlurPos* sp)
             }
 
       qreal __up = _up ? -1.0 : 1.0;
+      static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool scaleLocalGraceTip = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
+            && scr->segment() && scr->segment() == ecr->segment()
+            && scr->track() == track() && ecr->track() == track()
+            && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
+            && staff() && staff()->isPitchedStaff(tick()) && staff()->lines(tick()) >= 2
+            && partialDirection() < 0 && !isHammerOnPullOff() && lineType() == 0;
+      // Scale the notehead clearance before checking staff lines. Stem and
+      // beam anchor rules replace this default where applicable.
+      const auto headClearance = [&](const ChordRest* cr) {
+            const qreal mag = scaleLocalGraceTip && cr->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0;
+            return _spatium * .9 * __up * mag;
+            };
       qreal hw1 = note1 ? note1->tabHeadWidth(stt) : scr->width();      // if stt == 0, tabHeadWidth()
       qreal hw2 = note2 ? note2->tabHeadWidth(stt) : ecr->width();      // defaults to headWidth()
       QPointF pt;
@@ -1645,7 +1660,7 @@ void Slur::slurPos(SlurPos* sp)
       //
       // default position:
       //    horizontal: middle of notehead
-      //    vertical:   _spatium * .4 above/below notehead
+      //    vertical:   clear the notehead
       //
       //------p1
       // Compute x0, y0 and stemPos
@@ -1660,7 +1675,7 @@ void Slur::slurPos(SlurPos* sp)
                   yo = scr->bbox().top();
             else
                   yo = scr->bbox().top() + scr->height();
-            yo += _spatium * .9 * __up;
+            yo += headClearance(scr);
 
             // adjustments for stem and/or beam
 
@@ -1770,7 +1785,7 @@ void Slur::slurPos(SlurPos* sp)
                         yo = endCR()->bbox().top();
                   else
                         yo = endCR()->bbox().top() + endCR()->height();
-                  yo += _spatium * .9 * __up;
+                  yo += headClearance(ecr);
 
                   // adjustments for stem and/or beam
 
