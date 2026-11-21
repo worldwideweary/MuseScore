@@ -13,6 +13,17 @@
 set(TARGET tst_incrementallayout)
 include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
 
+add_test(NAME tst_incrementallayout_rest_preview
+      COMMAND tst_incrementallayout -xunitxml -o result-rest-preview.xml
+            fullMeasureRestUsesLocalClearance
+            fullMeasureRestClearsAtItsOffset
+            fullMeasureRestKeepsClearanceOnLookahead
+      )
+set_tests_properties(tst_incrementallayout_rest_preview PROPERTIES
+      ENVIRONMENT "MSCORE_NATIVE_REST_LAYOUT=1"
+      LABELS "native-layout-preview"
+      )
+
 set(TARGET tst_benchmark)
 
 include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
