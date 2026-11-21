@@ -276,6 +276,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void pairedWholeRestsUseStaffLines();
       void mixedRestRunsUseCommonHeight();
       void restsClearMovedChordsOnDestinationStaff();
+      void halfRestRunsFitSameStaffAndMovedChords();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -693,6 +694,63 @@ void TestIncrementalLayout::restsClearMovedChordsOnDestinationStaff()
                   QVERIFY(qAbs(manual->ipos().y() - 2.0 * sp) < 1e-5 * sp);
                   }
             measure = measure->nextMeasure();
+            }
+
+      const Geometry initial = snapshot(score.get());
+      score->doLayout();
+      const QString diff = firstDifference(initial, snapshot(score.get()), 1e-4 * score->spatium());
+      QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-half-rest-runs.mscx"));
+      QVERIFY(score);
+      const Measure* measure = score->firstMeasure();
+      for (int bar = 1; bar <= 6; ++bar, measure = measure->nextMeasure()) {
+            QVERIFY(measure);
+            if (bar == 1 || bar == 3)
+                  continue;
+            const Segment* first = measure->first(SegmentType::ChordRest);
+            QVERIFY(first);
+            const int voice = bar < 5 ? 1 : 0;
+            const Element* item = first->element(voice);
+            QVERIFY(item && item->isRest());
+            const Rest* half = toRest(item);
+            const qreal sp = half->spatium();
+            const qreal y = half->ipos().y();
+            if (bar == 2) {
+                  // Seek a clear row within the staff, rather than sending
+                  // the voice-2 half rest below the incoming stem.
+                  const Element* upper = first->element(0);
+                  const Element* moved = first->element(VOICES);
+                  QVERIFY(upper && upper->isRest() && moved && moved->isChord());
+                  QVERIFY(y > upper->ipos().y() && y < 4.0 * sp);
+                  const Note* head = toChord(moved)->notes().front();
+                  const QRectF noteInk = head->bbox().translated(head->pagePos());
+                  const QRectF restInk = half->bbox().translated(half->pagePos());
+                  QVERIFY(noteInk.top() - restInk.bottom() >= 0.55 * sp - 1e-5 * sp);
+                  }
+            else if (bar == 4) {
+                  // The lowered note leaves the bottom line of the upper staff clear.
+                  QVERIFY(qAbs(y - 4.0 * sp) < 1e-5 * sp);
+                  QVERIFY(half->sym() == SymId::restHalf);
+                  }
+            else if (bar == 5)
+                  QVERIFY(qAbs(y - sp) < 1e-5 * sp);
+            else {
+                  QVERIFY(y < 0.0 && half->sym() == SymId::restHalfLegerLine);
+                  const Segment* beatThree = first->next(SegmentType::ChordRest);
+                  const Segment* beatFour = beatThree ? beatThree->next(SegmentType::ChordRest) : nullptr;
+                  QVERIFY(beatThree && beatFour);
+                  for (const Segment* segment : { beatThree, beatFour }) {
+                        const Element* quarter = segment->element(0);
+                        QVERIFY(quarter && quarter->isRest());
+                        QCOMPARE(quarter->ipos().y(), y);
+                        }
+                  }
             }
 
       const Geometry initial = snapshot(score.get());

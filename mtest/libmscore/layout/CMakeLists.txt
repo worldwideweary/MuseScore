@@ -18,6 +18,7 @@ add_test(NAME tst_incrementallayout_rest_preview
             pairedWholeRestsUseStaffLines
             mixedRestRunsUseCommonHeight
             restsClearMovedChordsOnDestinationStaff
+            halfRestRunsFitSameStaffAndMovedChords
             fullMeasureRestUsesLocalClearance
             fullMeasureRestClearsAtItsOffset
             fullMeasureRestKeepsClearanceOnLookahead

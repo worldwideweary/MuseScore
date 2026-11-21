@@ -36,6 +36,7 @@ class Rest : public ChordRest {
       std::vector<NoteDot*> _dots;
 
       bool hasNativePairedStaffLineRests() const;
+      void setNativeOrdinaryRestY(qreal y, qreal line);
       int nativeMeasureRestOppositeTrack() const;
       QRectF drag(EditData&) override;
       qreal upPos() const override;

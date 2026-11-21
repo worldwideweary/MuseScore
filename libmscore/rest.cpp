@@ -657,21 +657,64 @@ bool Rest::layoutNativeFullMeasureRest()
       return true;
       }
 
-// Align uninterrupted two-voice runs of quarter rests against simple
-// opposing notes. Matching half rests can join the run at its start.
+static bool nativePlainRest(const Rest* rest)
+      {
+      return rest && rest->addToSkyline() && rest->offset().isNull()
+            && !rest->isGap() && !rest->staffMove() && !rest->beam() && !rest->isSmall()
+            && !rest->durationType().dots() && rest->el().empty() && rest->lyrics().empty();
+      }
+
+static void addNativeRestChordInk(std::vector<QRectF>& obstacles, const Chord* chord, const QRectF& body)
+      {
+      const QPointF chordPos = chord->pos();
+      const auto add = [&](const Element* item, const QPointF& origin) {
+            if (!item || !item->addToSkyline() || item->bbox().isEmpty())
+                  return;
+            const QRectF ink = item->bbox().translated(origin + item->pos());
+            if (ink.left() < body.right() && ink.right() > body.left())
+                  obstacles.push_back(ink);
+            };
+      for (const Note* note : chord->notes()) {
+            if (!note->visible())
+                  continue;
+            add(note, chordPos);
+            add(note->accidental(), chordPos + note->pos());
+            }
+      add(chord->stem(), chordPos);
+      add(chord->hook(), chordPos);
+      for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next())
+            add(ledger, chordPos);
+      }
+
+void Rest::setNativeOrdinaryRestY(qreal y, qreal line)
+      {
+      rypos() = y;
+      const auto type = durationType().type();
+      const bool half = type == TDuration::DurationType::V_HALF;
+      if (half || type == TDuration::DurationType::V_WHOLE) {
+            const int row = int(std::lround(y / line));
+            const bool ledger = row < 0 || row >= 5;
+            _sym = half ? (ledger ? SymId::restHalfLegerLine : SymId::restHalf)
+                        : (ledger ? SymId::restWholeLegerLine : SymId::restWhole);
+            setbbox(symBbox(_sym));
+            }
+      segment()->createShape(staffIdx());
+      }
+
+// Match the rows of contiguous rests in a voice after fitting them
+// locally against the other voice. Incoming cross-staff chords are
+// considered separately so a clash at one beat need not move the whole run.
 void Rest::alignNativeRestRuns(Measure* measure)
       {
       static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       if (!preview || measure->isMMRest())
             return;
-      const Fraction quarter(1, 4);
-      const Fraction half(1, 2);
       for (int staffIdx = 0; staffIdx < measure->score()->nstaves(); ++staffIdx) {
             const Staff* staff = measure->score()->staff(staffIdx);
             const Fraction tick = measure->tick();
             const int track = staffIdx * VOICES;
             if (!staff->show() || !staff->isPitchedStaff(tick) || staff->lines(tick) != 5
-                || measure->hasVoice(track + 2) || measure->hasVoice(track + 3))
+                || staff->mergeMatchingRests() || measure->hasVoice(track + 2) || measure->hasVoice(track + 3))
                   continue;
             const qreal sp = staff->spatium(tick);
             const qreal line = staff->lineDistance(tick) * sp;
@@ -680,28 +723,29 @@ void Rest::alignNativeRestRuns(Measure* measure)
 
             for (int voice : { 0, 1 }) {
                   const bool above = voice == 0;
+                  const qreal direction = above ? -1.0 : 1.0;
                   const qreal baseY = (above ? 1.0 : 3.0) * line;
-                  const qreal padding = 0.35 * sp;
                   std::vector<Rest*> run;
                   Rest* halfRest = nullptr;
+                  bool halfAlreadyClearOfNote = false;
+                  qreal halfY = baseY;
                   qreal outerY = baseY;
                   const auto finish = [&]() {
                         if (run.size() > 1) {
-                              if (halfRest) {
-                                    // A half rest must sit on a staff or ledger line.
-                                    const int row = int(above ? std::floor(outerY / line + 1e-6)
-                                                              : std::ceil(outerY / line - 1e-6));
-                                    outerY = row * line;
-                                    halfRest->_sym = row < 0 || row >= 5 ? SymId::restHalfLegerLine : SymId::restHalf;
-                                    halfRest->setbbox(halfRest->symBbox(halfRest->_sym));
-                                    }
+                              if (halfRest && !halfAlreadyClearOfNote)
+                                    outerY = direction * std::ceil(direction * outerY / line - 1e-6) * line;
                               for (Rest* rest : run) {
-                                    rest->rypos() = outerY;
-                                    rest->segment()->createShape(staffIdx);
+                                    // Keep a half rest against a clear note on its own staff line.
+                                    // A displaced half rest, by contrast, sets the row for its run.
+                                    const qreal y = rest == halfRest && halfAlreadyClearOfNote ? halfY : outerY;
+                                    rest->setNativeOrdinaryRestY(y, line);
                                     }
                               }
+                        else if (halfRest)
+                              halfRest->setNativeOrdinaryRestY(halfY, line);
                         run.clear();
                         halfRest = nullptr;
+                        halfAlreadyClearOfNote = false;
                         outerY = baseY;
                         };
 
@@ -711,67 +755,67 @@ void Rest::alignNativeRestRuns(Measure* measure)
                         Element* element = s->element(track + voice);
                         if (!element)
                               continue;
+                        Rest* rest = element->isRest() ? toRest(element) : nullptr;
+                        if (!nativePlainRest(rest) || rest->bbox().isEmpty()) {
+                              finish();
+                              continue;
+                              }
+                        const auto type = rest->durationType().type();
+                        const bool half = type == TDuration::DurationType::V_HALF;
+                        const Fraction duration(1, half ? 2 : 4);
+                        if ((!half && type != TDuration::DurationType::V_QUARTER) || rest->actualTicks() != duration) {
+                              finish();
+                              continue;
+                              }
+
                         const Element* other = s->element(track + 1 - voice);
-                        if (!element->isRest()) {
-                              finish();
-                              continue;
-                              }
-                        Rest* rest = toRest(element);
-                        bool extraVoice = false;
-                        for (const Element* e : s->elist()) {
-                              if (e && e != element && e != other && e->vStaffIdx() == staffIdx
-                                  && e->isChordRest() && e->addToSkyline() && (!e->isRest() || !toRest(e)->isGap())) {
-                                    extraVoice = true;
-                                    break;
-                                    }
-                              }
-                        if (extraVoice) {
-                              finish();
-                              continue;
-                              }
-                        if (rest->durationType().type() == TDuration::DurationType::V_HALF
-                            && rest->actualTicks() == half && rest->hasNativePairedStaffLineRests()) {
-                              finish();
-                              run.push_back(rest);
-                              halfRest = rest;
-                              continue;
-                              }
+                        const Rest* paired = other && other->isRest() ? toRest(other) : nullptr;
                         const Chord* chord = other && other->isChord() ? toChord(other) : nullptr;
-                        if (rest->isGap() || !rest->addToSkyline() || !rest->offset().isNull()
-                            || rest->staffMove() || rest->beam() || rest->isSmall()
-                            || !rest->el().empty() || !rest->lyrics().empty()
-                            || rest->durationType().type() != TDuration::DurationType::V_QUARTER
-                            || rest->durationType().dots() || rest->actualTicks() != quarter
-                            || !chord || !chord->addToSkyline() || chord->staffMove() || chord->beam()
-                            || chord->durationType().type() != TDuration::DurationType::V_QUARTER
-                            || chord->durationType().dots() || chord->actualTicks() != quarter
-                            || chord->notes().size() != 1 || chord->slash() || chord->up() == above
-                            || !chord->graceNotes().empty() || chord->tremolo() || chord->arpeggio()
-                            || !chord->lyrics().empty() || !chord->articulations().empty()) {
+                        const bool matchingPair = nativePlainRest(paired) && paired->durationType() == rest->durationType()
+                              && paired->actualTicks() == duration;
+                        const bool simpleChord = chord && chord->addToSkyline() && !chord->staffMove() && !chord->beam()
+                              && chord->durationType().type() == type && !chord->durationType().dots()
+                              && chord->actualTicks() == duration && chord->notes().size() == 1
+                              && !chord->slash() && chord->up() != above && chord->graceNotes().empty()
+                              && !chord->tremolo() && !chord->arpeggio() && chord->lyrics().empty() && chord->articulations().empty();
+                        const Note* note = simpleChord ? chord->notes().front() : nullptr;
+                        if (!matchingPair && (!note || !note->visible() || note->bbox().isEmpty() || note->accidental()
+                            || !note->el().empty())) {
                               finish();
                               continue;
                               }
-                        const Note* note = chord->notes().front();
-                        if (!note->visible() || note->bbox().isEmpty() || note->accidental()
-                            || !note->el().empty() || rest->bbox().isEmpty()) {
-                              finish();
-                              continue;
-                              }
-                        if (!run.empty() && run.back()->tick() + run.back()->actualTicks() != rest->tick())
+                        if (!run.empty() && (run.back()->tick() + run.back()->actualTicks() != rest->tick() || (half && halfRest)))
                               finish();
 
-                        const QRectF restInk = rest->bbox().translated(rest->x(), baseY);
-                        const QRectF noteInk = note->bbox().translated(chord->pos() + note->pos());
-                        qreal localY = baseY;
-                        if (restInk.left() < noteInk.right() && restInk.right() > noteInk.left()) {
-                              const qreal gap = above ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
-                              const qreal needed = padding - gap;
+                        qreal localY = matchingPair && !half ? rest->ipos().y() : baseY;
+                        if (note) {
+                              const QRectF restInk = rest->symBbox(half ? SymId::restHalf : SymId::restQuarter)
+                                    .translated(rest->x(), baseY);
+                              std::vector<QRectF> obstacles;
+                              if (half)
+                                    addNativeRestChordInk(obstacles, chord, restInk);
+                              else {
+                                    const QRectF noteInk = note->bbox().translated(chord->pos() + note->pos());
+                                    if (restInk.left() < noteInk.right() && restInk.right() > noteInk.left())
+                                          obstacles.push_back(noteInk);
+                                    }
+                              const qreal padding = (half ? 0.55 : 0.35) * sp;
+                              qreal needed = 0.0;
+                              for (const QRectF& ink : obstacles) {
+                                    const qreal gap = above ? ink.top() - restInk.bottom() : restInk.top() - ink.bottom();
+                                    needed = qMax(needed, padding - gap);
+                                    }
                               if (needed > 0.0) {
                                     const bool outside = above ? restInk.bottom() - needed < padding
                                                                : restInk.top() + needed > 4.0 * line - padding;
-                                    const qreal step = outside ? 0.5 * line : line;
-                                    localY += (above ? -1.0 : 1.0) * std::ceil(needed / step) * step;
+                                    const qreal step = outside && !half ? 0.5 * line : line;
+                                    localY += direction * std::ceil(needed / step) * step;
                                     }
+                              }
+                        if (half) {
+                              halfRest = rest;
+                              halfY = localY;
+                              halfAlreadyClearOfNote = note && localY == baseY;
                               }
                         outerY = above ? qMin(outerY, localY) : qMax(outerY, localY);
                         run.push_back(rest);
@@ -833,59 +877,46 @@ void Rest::clearNativeCrossStaffRestCollisions(Measure* measure)
                   const bool above = rest->voice() % 2 == 0;
                   std::vector<QRectF> obstacles;
                   for (const Chord* chord : incoming) {
-                        if (chord->vStaffIdx() != idx)
-                              continue;
-                        const QPointF chordPos = chord->pos();
-                        const auto add = [&](const Element* item, const QPointF& origin) {
-                              if (!item || !item->addToSkyline() || item->bbox().isEmpty())
-                                    return;
-                              const QRectF ink = item->bbox().translated(origin + item->pos());
-                              if (ink.left() < body.right() && ink.right() > body.left())
-                                    obstacles.push_back(ink);
-                              };
-                        for (const Note* note : chord->notes()) {
-                              if (!note->visible())
-                                    continue;
-                              add(note, chordPos);
-                              add(note->accidental(), chordPos + note->pos());
-                              }
-                        add(chord->stem(), chordPos);
-                        add(chord->hook(), chordPos);
-                        for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next())
-                              add(ledger, chordPos);
+                        if (chord->vStaffIdx() == idx)
+                              addNativeRestChordInk(obstacles, chord, body);
                         }
 
                   // Stay put when the chord is already clear on either side.
-                  // If it overlaps, move the rest out on its usual voice side.
-                  const qreal direction = above ? -1.0 : 1.0;
-                  qreal dy = 0.0;
-                  for (;;) {
-                        const QRectF placed = body.translated(0.0, dy);
-                        qreal needed = 0.0;
-                        for (const QRectF& ink : obstacles) {
-                              const qreal upperGap = ink.top() - placed.bottom();
-                              const qreal lowerGap = placed.top() - ink.bottom();
-                              if (qMax(upperGap, lowerGap) < padding - 1e-6 * sp)
-                                    needed = qMax(needed, padding - (above ? upperGap : lowerGap));
+                  const auto displacement = [&](bool up) {
+                        qreal dy = 0.0;
+                        for (;;) {
+                              const QRectF placed = body.translated(0.0, dy);
+                              qreal needed = 0.0;
+                              for (const QRectF& ink : obstacles) {
+                                    const qreal upperGap = ink.top() - placed.bottom();
+                                    const qreal lowerGap = placed.top() - ink.bottom();
+                                    if (qMax(upperGap, lowerGap) < padding - 1e-6 * sp)
+                                          needed = qMax(needed, padding - (up ? upperGap : lowerGap));
+                                    }
+                              if (needed <= 0.0)
+                                    return dy;
+                              const bool outside = up ? placed.bottom() - needed < padding
+                                                      : placed.top() + needed > 4.0 * line - padding;
+                              const qreal step = outside && !half && !whole ? 0.5 * line : line;
+                              dy += (up ? -1.0 : 1.0) * std::ceil(needed / step) * step;
                               }
-                        if (needed <= 0.0)
-                              break;
-                        const bool outside = above ? placed.bottom() - needed < padding
-                                                   : placed.top() + needed > 4.0 * line - padding;
-                        const qreal step = outside && !half && !whole ? 0.5 * line : line;
-                        dy += direction * std::ceil(needed / step) * step;
-                        }
+                        };
+                  qreal dy = displacement(above);
                   if (dy == 0.0)
                         continue;
 
-                  rest->rypos() += dy;
-                  if (half || whole) {
-                        const int row = int(std::lround(rest->ipos().y() / line));
-                        const bool ledger = row < 0 || row >= 5;
-                        rest->_sym = !ledger ? bodySymbol : half ? SymId::restHalfLegerLine : SymId::restWholeLegerLine;
-                        rest->setbbox(rest->symBbox(rest->_sym));
+                  // If a stem would push a paired half rest much farther out,
+                  // try the nearer row as long as the pair keeps its voice order.
+                  if (half && rest->hasNativePairedStaffLineRests()) {
+                        const Rest* peer = toRest(s->element(idx * VOICES + 1 - rest->voice()));
+                        const QRectF peerInk = peer->symBbox(SymId::restHalf).translated(peer->pos());
+                        const qreal inward = displacement(!above);
+                        const QRectF placed = body.translated(0.0, inward);
+                        const qreal gap = above ? peerInk.top() - placed.bottom() : placed.top() - peerInk.bottom();
+                        if (std::abs(inward) < std::abs(dy) && gap >= padding - 1e-6 * sp)
+                              dy = inward;
                         }
-                  s->createShape(idx);
+                  rest->setNativeOrdinaryRestY(rest->ipos().y() + dy, line);
                   }
             }
       }
