@@ -5049,6 +5049,15 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   }
             }
 
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1) {
+            for (Segment* s : sl) {
+                  for (Element* e : s->elist()) {
+                        if (e && e->isRest() && toRest(e)->layoutNativeFullMeasureRest())
+                              s->createShape(e->staffIdx());
+                        }
+                  }
+            }
+
       //-------------------------------------------------------------
       //    create skylines
       //-------------------------------------------------------------

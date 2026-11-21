@@ -12,8 +12,10 @@
 
 #include "articulation.h"
 #include "chord.h"
+#include "hook.h"
 #include "icon.h"
 #include "image.h"
+#include "ledgerline.h"
 #include "measure.h"
 #include "note.h"
 #include "rest.h"
@@ -21,11 +23,14 @@
 #include "segment.h"
 #include "staff.h"
 #include "stafftype.h"
+#include "stem.h"
 #include "style.h"
 #include "sym.h"
 #include "undo.h"
 #include "utils.h"
 #include "xml.h"
+
+#include <cmath>
 
 namespace Ms {
 
@@ -510,12 +515,108 @@ int Rest::getDotline(TDuration::DurationType durationType)
       return dl;
       }
 
+// Start with the simple two-voice case on a five-line pitched staff.
+// Other rest groups and moved notes still use the legacy placement.
+int Rest::nativeMeasureRestOppositeTrack() const
+      {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
+      if (!preview || !isFullMeasureRest() || isGap() || !addToSkyline() || !offset().isNull()
+          || staffMove() || voice() > 1 || !staff() || !staff()->isPitchedStaff(tick())
+          || staff()->lines(tick()) != 5 || !segment() || !measure() || measure()->isMMRest()
+          || ticks() >= Fraction(2, 1) || !el().empty() || !lyrics().empty())
+            return -1;
+
+      const int firstTrack = staffIdx() * VOICES;
+      const int opposite = firstTrack + (1 - voice());
+      bool hasChord = false;
+      for (const Segment* s = measure()->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+            if (!s->enabled())
+                  continue;
+            for (int t = firstTrack; t < firstTrack + VOICES; ++t) {
+                  const Element* e = s->element(t);
+                  if (!e || e == this || (e->isRest() && toRest(e)->isGap()))
+                        continue;
+                  if (t != opposite || e->vStaffIdx() != staffIdx())
+                        return -1;
+                  if (e->isChord()) {
+                        const Chord* chord = toChord(e);
+                        if (chord->slash() || !chord->graceNotes().empty() || chord->tremolo())
+                              return -1;
+                        hasChord |= chord->visible();
+                        }
+                  else if (!e->isRest() || toRest(e)->isFullMeasureRest())
+                        return -1;
+                  }
+            }
+      return hasChord ? opposite : -1;
+      }
+
+bool Rest::layoutNativeFullMeasureRest()
+      {
+      const int opposite = nativeMeasureRestOppositeTrack();
+      if (opposite < 0)
+            return false;
+
+      // X is now final. Use the standard whole-rest ink to measure clearance
+      // and keep its center if the final symbol needs a ledger line.
+      const qreal sp = spatium();
+      const qreal lineDistance = staff()->lineDistance(tick()) * sp;
+      if (lineDistance <= 0.0)
+            return false;
+      const bool above = voice() == 0;
+      const int baseLine = above ? 0 : 3;
+      const qreal center = ipos().x() + bbox().center().x();
+      const QRectF body = symBbox(SymId::restWhole);
+      const QRectF rest = body.translated(segment()->x() + center - body.center().x(), baseLine * lineDistance);
+      const qreal horizontal = 4.0 * sp;
+      qreal move = 0.0;
+      const auto reserve = [&](const Element* e, const QPointF& parentPos) {
+            if (!e || !e->addToSkyline() || e->bbox().isEmpty())
+                  return;
+            const QRectF ink = e->bbox().translated(parentPos + e->pos());
+            if (ink.left() > rest.right() + horizontal || ink.right() < rest.left() - horizontal)
+                  return;
+            const qreal gap = above ? ink.top() - rest.bottom() : rest.top() - ink.bottom();
+            move = qMax(move, 0.75 * sp - gap);
+            };
+
+      for (const Segment* s = measure()->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+            if (!s->enabled())
+                  continue;
+            const Element* e = s->element(opposite);
+            if (!e || !e->visible() || (e->isRest() && toRest(e)->isGap()))
+                  continue;
+            const QPointF origin(s->x(), 0.0);
+            if (e->isRest()) {
+                  reserve(e, origin);
+                  continue;
+                  }
+            const Chord* chord = toChord(e);
+            const QPointF chordPos = origin + chord->pos();
+            for (const Note* note : chord->notes())
+                  reserve(note, chordPos);
+            reserve(chord->stem(), chordPos);
+            reserve(chord->hook(), chordPos);
+            for (const LedgerLine* line = chord->ledgerLines(); line; line = line->next())
+                  reserve(line, chordPos);
+            }
+
+      const int steps = int(std::ceil(move / lineDistance));
+      const int row = baseLine + (above ? -steps : steps);
+      _sym = row < 0 || row >= 5 ? SymId::restWholeLegerLine : SymId::restWhole;
+      setbbox(symBbox(_sym));
+      setPos(center - bbox().center().x(), row * lineDistance);
+      return true;
+      }
+
 //---------------------------------------------------------
 //   computeLineOffset
 //---------------------------------------------------------
 
 int Rest::computeLineOffset(int lines)
       {
+      if (nativeMeasureRestOppositeTrack() >= 0)
+            return voice() == 0 ? -2 : 4; // getSymbol adds one line for the whole-rest glyph
       Segment* s = segment();
       bool offsetVoices = s && measure() && (voice() > 0 || measure()->hasVoices(staffIdx(), tick(), actualTicks()));
       if (offsetVoices && voice() == 0) {

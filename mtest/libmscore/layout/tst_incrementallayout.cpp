@@ -272,6 +272,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void annotatedFollowingSystems();
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
+      void fullMeasureRestUsesLocalClearance();
       void afterGraceOctaveKeepsPreviousGracePosition();
       void afterGraceFitsBeforeEighthRest();
       void followingBeamSlopesSurviveEdit();
@@ -571,6 +572,48 @@ void TestIncrementalLayout::followingBeamSlopesSurviveEdit()
       system->setPos(position);
       beamLines(true);
       QVERIFY2(afterTranslation.isEmpty(), qPrintable(afterTranslation));
+      }
+
+void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_REST_LAYOUT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
+      QVERIFY(score);
+      const qreal sp = score->spatium();
+      Measure* measure = score->firstMeasure();
+      qreal edgeRestY = 0.0;
+      for (int bar = 0; bar < 4; ++bar) {
+            QVERIFY(measure);
+            const bool above = bar < 2;
+            const int voice = above ? 0 : 1;
+            Segment* seg = measure->first(SegmentType::ChordRest);
+            QVERIFY(seg && seg->element(voice) && seg->element(voice)->isRest());
+            const Rest* rest = toRest(seg->element(voice));
+            QVERIFY(rest->isFullMeasureRest());
+            if (bar % 2 == 0)
+                  edgeRestY = rest->ipos().y();
+            else {
+                  QVERIFY2(above ? rest->ipos().y() <= edgeRestY - sp : rest->ipos().y() >= edgeRestY + sp,
+                           "The centered high or low note should push the rest farther out than the note at the edge");
+                  Segment* second = seg->next(SegmentType::ChordRest);
+                  QVERIFY(second);
+                  Segment* center = second->next(SegmentType::ChordRest);
+                  QVERIFY(center);
+                  const Element* other = center->element(1 - voice);
+                  QVERIFY(other && other->isChord());
+                  const Note* note = toChord(other)->notes().front();
+                  const QRectF noteInk = note->bbox().translated(note->pagePos());
+                  const QRectF restInk = rest->bbox().translated(rest->pagePos());
+                  const qreal gap = above ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
+                  QVERIFY(gap >= 0.75 * sp - 1e-6 * sp);
+                  }
+            measure = measure->nextMeasure();
+            }
+      const Geometry first = snapshot(score.get());
+      score->doLayout();
+      const QString diff = firstDifference(first, snapshot(score.get()), 1e-4 * sp);
+      QVERIFY2(diff.isEmpty(), qPrintable(diff));
       }
 
 QTEST_MAIN(TestIncrementalLayout)

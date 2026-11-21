@@ -35,6 +35,7 @@ class Rest : public ChordRest {
       bool _gap      { false };     // invisible and not selectable for user
       std::vector<NoteDot*> _dots;
 
+      int nativeMeasureRestOppositeTrack() const;
       QRectF drag(EditData&) override;
       qreal upPos() const override;
       qreal downPos() const override;
@@ -62,6 +63,7 @@ class Rest : public ChordRest {
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;
       void layout() override;
+      bool layoutNativeFullMeasureRest();
 
       bool isGap() const               { return _gap;     }
       virtual void setGap(bool v)      { _gap = v;        }
