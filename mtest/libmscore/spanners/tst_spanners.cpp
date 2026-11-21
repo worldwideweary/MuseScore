@@ -1267,6 +1267,26 @@ void TestSpanners::nativeMultiVoiceSlurDirection()
             QCOMPARE(slur->up(), expected.up);
             slur->layout();
             QCOMPARE(slur->up(), expected.up);
+
+            if (expected.start < Fraction(3, 1)) {
+                  // A1 and A2: compare the plain stem-side anchors, before
+                  // fitting the curve, against the actual ends of the stems.
+                  SlurPos pos;
+                  slur->slurPos(&pos);
+                  QVERIFY(pos.system1 && pos.system1 == pos.system2);
+                  const qreal staffY = pos.system1->staffYpage(slur->vStaffIdx());
+                  const qreal sp = slur->spatium();
+                  for (bool atStart : { true, false }) {
+                        const ChordRest* cr = atStart ? slur->startCR() : slur->endCR();
+                        QVERIFY(cr->isChord());
+                        const Chord* chord = toChord(cr);
+                        QVERIFY(chord->stem() && chord->up() == slur->up());
+                        const QPointF tip = atStart ? pos.p1 : pos.p2;
+                        const qreal stemY = chord->stemPos().y() + chord->stem()->p2().y() - staffY;
+                        const qreal inset = (tip.y() - stemY) * (slur->up() ? 1.0 : -1.0);
+                        QVERIFY(qAbs(inset - 0.5 * sp) < 1e-5 * sp);
+                        }
+                  }
             }
       }
 

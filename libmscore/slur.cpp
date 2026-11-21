@@ -2175,6 +2175,16 @@ void Slur::slurPos(SlurPos* sp)
 
       qreal __up = _up ? -1.0 : 1.0;
       static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      // Match Studio's plain stem-side inset. Flags, beams, grace notes,
+      // and open ends have separate attachment rules.
+      const bool plainStemSide = previewGraceTips && sc && ec
+            && sp->system1 == sp->system2 && partialDirection() < 0 && !isHammerOnPullOff()
+            && lineType() == 0 && staff() && staff()->isPitchedStaff(tick())
+            && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
+            && !sc->isGrace() && !ec->isGrace() && !sc->isSmall() && !ec->isSmall()
+            && !sc->beam() && !ec->beam() && !sc->hook() && !ec->hook()
+            && !sc->tremolo() && !ec->tremolo();
+      const qreal stemSideInset = plainStemSide ? 0.5 : 0.25;
       const bool localGrace = scr->segment() == ecr->segment();
       const bool scaleGraceTips = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
             && sp->system1 == sp->system2
@@ -2208,7 +2218,7 @@ void Slur::slurPos(SlurPos* sp)
                   const bool flagGrace = scaleGraceTips && sc->isGraceBefore() && !sc->beam() && sc->hook()
                         && sc->hook()->visible() && !sc->hook()->bbox().isEmpty();
                   const qreal graceMag = flagGrace ? score()->styleD(Sid::graceNoteMag) : 1.0;
-                  qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -0.25;
+                  qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -stemSideInset;
                   if (flagGrace)
                         yadj = -0.5 * graceMag;
                   yadj *= _spatium * __up;
@@ -2243,7 +2253,7 @@ void Slur::slurPos(SlurPos* sp)
                   if (useTablature)
                         pt.rx() = hw2 * 0.5;
                   // don't allow overlap with beam
-                  qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -0.25);
+                  qreal yadj = ec->beam() ? 0.75 : (isIncoming() || isOutgoing() ? -0.5 : -stemSideInset);
                   yadj *= _spatium * __up;
                   pt += QPointF(-0.35 * _spatium, yadj);
                   // account for articulations
