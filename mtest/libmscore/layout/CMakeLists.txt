@@ -17,7 +17,7 @@ add_test(NAME tst_incrementallayout_rest_preview
       COMMAND tst_incrementallayout -xunitxml -o result-rest-preview.xml
             pairedWholeRestsUseStaffLines
             mixedRestRunsUseCommonHeight
-            restsClearMovedChordsOnDestinationStaff
+            movedChordsDoNotDisplaceOrdinaryRests
             halfRestRunsFitSameStaffAndMovedChords
             fullMeasureRestUsesLocalClearance
             fullMeasureRestClearsAtItsOffset

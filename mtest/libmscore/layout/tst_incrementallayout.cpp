@@ -275,7 +275,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void lastSystemFillUsesNaturalWidth();
       void pairedWholeRestsUseStaffLines();
       void mixedRestRunsUseCommonHeight();
-      void restsClearMovedChordsOnDestinationStaff();
+      void movedChordsDoNotDisplaceOrdinaryRests();
       void halfRestRunsFitSameStaffAndMovedChords();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
@@ -660,11 +660,11 @@ void TestIncrementalLayout::mixedRestRunsUseCommonHeight()
       QVERIFY2(diff.isEmpty(), qPrintable(diff));
       }
 
-void TestIncrementalLayout::restsClearMovedChordsOnDestinationStaff()
+void TestIncrementalLayout::movedChordsDoNotDisplaceOrdinaryRests()
       {
       if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
             QSKIP("The rest layout switch must be enabled.");
-      std::unique_ptr<MasterScore> score(readScore(DIR + "native-moved-chord-rest-clearance.mscx"));
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-rest-placement-with-moved-chords.mscx"));
       QVERIFY(score);
       Measure* measure = score->firstMeasure();
       for (bool above : { true, false }) {
@@ -679,12 +679,15 @@ void TestIncrementalLayout::restsClearMovedChordsOnDestinationStaff()
             QCOMPARE(chord->staffMove(), above ? -1 : 1);
             QCOMPARE(chord->vStaffIdx(), rest->staffIdx());
             const qreal sp = rest->spatium();
-            QVERIFY(above ? rest->ipos().y() < 2.0 * sp : rest->ipos().y() > 3.0 * sp);
-            const Note* head = chord->notes().front();
-            const QRectF noteInk = head->bbox().translated(head->pagePos());
-            const QRectF restInk = rest->bbox().translated(rest->pagePos());
-            const qreal clearance = above ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
-            QVERIFY(clearance >= (above ? 0.35 : 0.55) * sp - 1e-5 * sp);
+            QVERIFY(qAbs(rest->ipos().y() - (above ? 2.0 : 3.0) * sp) < 1e-5 * sp);
+            if (!above) {
+                  // The moved note's line is on the bass staff; it must
+                  // not push down the voice-2 rest on the source staff.
+                  QVERIFY(chord->notes().front()->line() > 5);
+                  const Element* sourceRest = s->element(1);
+                  QVERIFY(sourceRest && sourceRest->isRest());
+                  QVERIFY(qAbs(sourceRest->ipos().y() - 4.0 * sp) < 1e-5 * sp);
+                  }
 
             if (above) {
                   const Segment* second = s->next(SegmentType::ChordRest);
@@ -721,22 +724,18 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
             const Rest* half = toRest(item);
             const qreal sp = half->spatium();
             const qreal y = half->ipos().y();
-            if (bar == 2) {
-                  // Seek a clear row within the staff, rather than sending
-                  // the voice-2 half rest below the incoming stem.
-                  const Element* upper = first->element(0);
-                  const Element* moved = first->element(VOICES);
-                  QVERIFY(upper && upper->isRest() && moved && moved->isChord());
-                  QVERIFY(y > upper->ipos().y() && y < 4.0 * sp);
-                  const Note* head = toChord(moved)->notes().front();
-                  const QRectF noteInk = head->bbox().translated(head->pagePos());
-                  const QRectF restInk = half->bbox().translated(half->pagePos());
-                  QVERIFY(noteInk.top() - restInk.bottom() >= 0.55 * sp - 1e-5 * sp);
-                  }
-            else if (bar == 4) {
-                  // The lowered note leaves the bottom line of the upper staff clear.
+            if (bar == 2 || bar == 4) {
+                  // Moved chords leave the same half and quarter rest rows
+                  // in both bars, regardless of their pitch.
                   QVERIFY(qAbs(y - 4.0 * sp) < 1e-5 * sp);
                   QVERIFY(half->sym() == SymId::restHalf);
+                  for (const Segment* segment = first; segment; segment = segment->next(SegmentType::ChordRest)) {
+                        for (int restVoice : { 0, 1 }) {
+                              const Element* rest = segment->element(restVoice);
+                              QVERIFY(rest && rest->isRest());
+                              QVERIFY(qAbs(rest->ipos().y() - (restVoice == 0 ? 0.0 : 4.0) * sp) < 1e-5 * sp);
+                              }
+                        }
                   }
             else if (bar == 5)
                   QVERIFY(qAbs(y - sp) < 1e-5 * sp);

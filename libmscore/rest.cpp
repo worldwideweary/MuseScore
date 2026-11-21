@@ -689,21 +689,17 @@ static void addNativeRestChordInk(std::vector<QRectF>& obstacles, const Chord* c
 void Rest::setNativeOrdinaryRestY(qreal y, qreal line)
       {
       rypos() = y;
-      const auto type = durationType().type();
-      const bool half = type == TDuration::DurationType::V_HALF;
-      if (half || type == TDuration::DurationType::V_WHOLE) {
+      if (durationType().type() == TDuration::DurationType::V_HALF) {
             const int row = int(std::lround(y / line));
-            const bool ledger = row < 0 || row >= 5;
-            _sym = half ? (ledger ? SymId::restHalfLegerLine : SymId::restHalf)
-                        : (ledger ? SymId::restWholeLegerLine : SymId::restWhole);
+            _sym = row < 0 || row >= 5 ? SymId::restHalfLegerLine : SymId::restHalf;
             setbbox(symBbox(_sym));
             }
       segment()->createShape(staffIdx());
       }
 
 // Match the rows of contiguous rests in a voice after fitting them
-// locally against the other voice. Incoming cross-staff chords are
-// considered separately so a clash at one beat need not move the whole run.
+// against the other voice on the same staff. As in 4.7, chords moved
+// between staves don't affect this ordinary rest placement.
 void Rest::alignNativeRestRuns(Measure* measure)
       {
       static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
@@ -825,108 +821,13 @@ void Rest::alignNativeRestRuns(Measure* measure)
             }
       }
 
-// Ordinary rests stay on their own staff, but a chord moved onto that
-// staff can occupy the same space. Work in the receiving staff's coordinates.
-void Rest::clearNativeCrossStaffRestCollisions(Measure* measure)
-      {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
-      if (!preview || measure->isMMRest())
-            return;
-
-      for (Segment* s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-            if (!s->enabled())
-                  continue;
-            std::vector<const Chord*> incoming;
-            for (const Element* e : s->elist()) {
-                  if (!e || !e->isChord() || !e->addToSkyline())
-                        continue;
-                  const Chord* chord = toChord(e);
-                  if (chord->staffMove() && !chord->beam() && !chord->slash()
-                      && chord->graceNotes().empty() && !chord->tremolo() && !chord->arpeggio())
-                        incoming.push_back(chord);
-                  }
-            if (incoming.empty())
-                  continue;
-
-            for (Element* e : s->elist()) {
-                  if (!e || !e->isRest() || !e->addToSkyline() || !e->offset().isNull())
-                        continue;
-                  Rest* rest = toRest(e);
-                  if (rest->isGap() || rest->staffMove() || rest->beam() || rest->isSmall()
-                      || rest->durationType().dots() || !rest->el().empty() || !rest->lyrics().empty())
-                        continue;
-                  const auto type = rest->durationType().type();
-                  const bool half = type == TDuration::DurationType::V_HALF;
-                  const bool whole = type == TDuration::DurationType::V_WHOLE;
-                  if (!half && !whole && type != TDuration::DurationType::V_QUARTER)
-                        continue;
-                  const Staff* staff = rest->staff();
-                  const Fraction tick = rest->tick();
-                  const int idx = rest->staffIdx();
-                  if (!staff->show() || !staff->isPitchedStaff(tick) || staff->lines(tick) != 5
-                      || staff->mergeMatchingRests())
-                        continue;
-                  const qreal sp = rest->spatium();
-                  const qreal line = staff->lineDistance(tick) * sp;
-                  if (line <= 0.0)
-                        continue;
-
-                  const SymId bodySymbol = half ? SymId::restHalf : whole ? SymId::restWhole : SymId::restQuarter;
-                  const QRectF body = rest->symBbox(bodySymbol).translated(rest->pos());
-                  const qreal padding = (half || whole ? 0.55 : 0.35) * sp;
-                  const bool above = rest->voice() % 2 == 0;
-                  std::vector<QRectF> obstacles;
-                  for (const Chord* chord : incoming) {
-                        if (chord->vStaffIdx() == idx)
-                              addNativeRestChordInk(obstacles, chord, body);
-                        }
-
-                  // Stay put when the chord is already clear on either side.
-                  const auto displacement = [&](bool up) {
-                        qreal dy = 0.0;
-                        for (;;) {
-                              const QRectF placed = body.translated(0.0, dy);
-                              qreal needed = 0.0;
-                              for (const QRectF& ink : obstacles) {
-                                    const qreal upperGap = ink.top() - placed.bottom();
-                                    const qreal lowerGap = placed.top() - ink.bottom();
-                                    if (qMax(upperGap, lowerGap) < padding - 1e-6 * sp)
-                                          needed = qMax(needed, padding - (up ? upperGap : lowerGap));
-                                    }
-                              if (needed <= 0.0)
-                                    return dy;
-                              const bool outside = up ? placed.bottom() - needed < padding
-                                                      : placed.top() + needed > 4.0 * line - padding;
-                              const qreal step = outside && !half && !whole ? 0.5 * line : line;
-                              dy += (up ? -1.0 : 1.0) * std::ceil(needed / step) * step;
-                              }
-                        };
-                  qreal dy = displacement(above);
-                  if (dy == 0.0)
-                        continue;
-
-                  // If a stem would push a paired half rest much farther out,
-                  // try the nearer row as long as the pair keeps its voice order.
-                  if (half && rest->hasNativePairedStaffLineRests()) {
-                        const Rest* peer = toRest(s->element(idx * VOICES + 1 - rest->voice()));
-                        const QRectF peerInk = peer->symBbox(SymId::restHalf).translated(peer->pos());
-                        const qreal inward = displacement(!above);
-                        const QRectF placed = body.translated(0.0, inward);
-                        const qreal gap = above ? peerInk.top() - placed.bottom() : placed.top() - peerInk.bottom();
-                        if (std::abs(inward) < std::abs(dy) && gap >= padding - 1e-6 * sp)
-                              dy = inward;
-                        }
-                  rest->setNativeOrdinaryRestY(rest->ipos().y() + dy, line);
-                  }
-            }
-      }
-
 //---------------------------------------------------------
 //   computeLineOffset
 //---------------------------------------------------------
 
 int Rest::computeLineOffset(int lines)
       {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       if (hasNativePairedStaffLineRests()) {
             if (durationType().type() == TDuration::DurationType::V_HALF)
                   return voice() == 0 ? -2 : 2; // getSymbol adds two lines for a half rest
@@ -1014,6 +915,9 @@ int Rest::computeLineOffset(int lines)
                               Element* e = seg->element(track);
                               if (e && e->isChord()) {
                                     Chord* chord = toChord(e);
+                                    // A moved note's line belongs to the destination staff.
+                                    if (preview && !isMeasureRest && chord->staffMove())
+                                          continue;
                                     StaffGroup staffGroup = staff()->staffType(chord->tick())->group();
                                     for (Note* note : chord->notes()) {
                                           int nline = staffGroup == StaffGroup::TAB

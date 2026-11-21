@@ -3730,7 +3730,6 @@ void Score::getNextMeasure(LayoutContext& lc)
             s.createShapes();
             }
       Rest::alignNativeRestRuns(measure);
-      Rest::clearNativeCrossStaffRestCollisions(measure);
 
       lc.tick += measure->ticks();
       }
