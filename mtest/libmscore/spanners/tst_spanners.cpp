@@ -61,6 +61,7 @@ class TestSpanners : public QObject, public MTest
       void nativePreGraceSlurFit();
       void nativeNestedBeamedSlurFit();
       void nativeCrossStaffSlurs();
+      void nativeReturningCrossStaffSlurs();
       void nativeSlursOverTies();
       void nativeSystemBreakSlur();
       void partialTieAttachments();
@@ -1712,6 +1713,65 @@ void TestSpanners::nativeCrossStaffSlurs()
             }
       QCOMPARE(checked, 3);
       QCOMPARE(beamed, 1);
+      }
+
+void TestSpanners::nativeReturningCrossStaffSlurs()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-return-slurs.mscx"));
+      QVERIFY(score);
+      score->doLayout();
+      int checked = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            const ChordRest* start = slur->startCR();
+            const ChordRest* end = slur->endCR();
+            QVERIFY(start && end && start->vStaffIdx() == end->vStaffIdx());
+            QCOMPARE(slur->spannerSegments().size(), size_t(1));
+            const SlurSegment* segment = slur->frontSegment();
+            QVERIFY(segment && segment->system());
+            const qreal sp = segment->spatium();
+            const auto grip = [&](Grip g) { return segment->pagePos() + segment->ups(g).pos(); };
+            const Beam* beam = start->beam();
+            if (start->measure()->no() == 0) {
+                  QVERIFY(!beam);
+                  const qreal y = grip(Grip::END).y() - segment->system()->staffYpage(start->vStaffIdx());
+                  QVERIFY2(y > 2.1 * sp && y < 2.5 * sp, "The right tip should clear the staff line below the notehead");
+                  }
+            if (beam) {
+                  QVERIFY(beam == end->beam() && beam->cross());
+                  const QLineF* line = beam->primarySegment4();
+                  QVERIFY(line && line->dx() > 0.0);
+                  const QPointF origin = beam->pagePos();
+                  const auto beamY = [&](qreal x) {
+                        const qreal t = qBound(qreal(0.0), (x - origin.x() - line->x1()) / line->dx(), qreal(1.0));
+                        return origin.y() + line->pointAt(t).y();
+                        };
+                  for (Grip g : { Grip::START, Grip::END }) {
+                        const Chord* chord = toChord(g == Grip::START ? start : end);
+                        const QPointF tip = grip(g);
+                        if (slur->up()) {
+                              QVERIFY(chord->up() != slur->up());
+                              QVERIFY(qAbs(tip.y() - chord->upNote()->pagePos().y()) < 1.5 * sp);
+                              }
+                        else {
+                              QVERIFY(chord->stem() && chord->up() == slur->up());
+                              QVERIFY(qAbs(tip.x() - chord->pagePos().x() - chord->stem()->x()) < 0.02 * sp);
+                              QVERIFY(tip.y() > beamY(tip.x()) + 0.3 * sp);
+                              }
+                        }
+                  if (!slur->up()) {
+                        const CubicBezier curve(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), grip(Grip::END));
+                        const QPointF middle = curve.pointAtPercent(0.5);
+                        QVERIFY(middle.y() > beamY(middle.x()) + sp);
+                        }
+                  }
+            ++checked;
+            }
+      QCOMPARE(checked, 4);
       }
 
 void TestSpanners::nativeSlursOverTies()

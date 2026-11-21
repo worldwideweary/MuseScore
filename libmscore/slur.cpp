@@ -809,7 +809,10 @@ static bool crossStaffSlurObstacles(const SlurSegment* segment, std::vector<QRec
             return false;
       const int upper = qMin(start->vStaffIdx(), end->vStaffIdx());
       const int lower = qMax(start->vStaffIdx(), end->vStaffIdx());
-      if (lower - upper != 1)
+      // For a slur that returns to its starting staff, keep the collision
+      // search on that staff. The arc can lie between the beam and the
+      // moved noteheads without having to clear the entire far staff.
+      if (lower - upper > 1)
             return false;
 
       const QPointF origin(system->pagePos().x(), system->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
@@ -1738,6 +1741,37 @@ static bool crossBeamSlurTip(const SlurSegment* segment, const Chord* chord, boo
       return true;
       }
 
+// Endpoints can share a staff while the voice visits the adjacent staff
+// between them. Recognize the uncomplicated single-measure cases here.
+static bool returnsAcrossStaff(const ChordRest* start, const ChordRest* end)
+      {
+      if (start->track() != end->track() || start->measure() != end->measure()
+          || !start->segment() || !end->segment() || start->tick() >= end->tick())
+            return false;
+      const Beam* beam = start->beam();
+      if (beam != end->beam() || (beam && !beam->cross()))
+            return false;
+      bool moved = false;
+      for (const Segment* segment = start->segment()->next1(); segment && segment != end->segment()
+            && segment->tick() < end->tick(); segment = segment->next1()) {
+            if (!segment->enabled() || !segment->isChordRestType())
+                  continue;
+            const Element* element = segment->element(start->track());
+            if (!element)
+                  continue;
+            if (!element->isChord())
+                  return false;
+            const Chord* chord = toChord(element);
+            if (chord->beam() != beam || chord->tremolo() || !chord->graceNotes().empty())
+                  return false;
+            const int distance = qAbs(chord->vStaffIdx() - start->vStaffIdx());
+            if (distance > 1)
+                  return false;
+            moved |= distance == 1;
+            }
+      return moved;
+      }
+
 // System::layout2() creates cross-staff slur segments once staff Y is
 // known. Page layout can still change those distances and the beam stems.
 void SlurSegment::relayoutCrossStaff()
@@ -1750,7 +1784,6 @@ void SlurSegment::relayoutCrossStaff()
       if (!start || !end || !start->isChord() || !end->isChord()
           || start->isGrace() || end->isGrace() || s->partialDirection() >= 0
           || s->isHammerOnPullOff() || start->part() != end->part()
-          || start->vStaffIdx() == end->vStaffIdx()
           || !start->measure() || !end->measure()
           || start->measure()->system() != system() || end->measure()->system() != system())
             return;
@@ -1759,12 +1792,17 @@ void SlurSegment::relayoutCrossStaff()
             if (!system()->staff(index)->show() || !score()->staff(index)->isPitchedStaff(cr->tick()))
                   return;
             }
+      const bool returning = start->vStaffIdx() == end->vStaffIdx();
+      if (returning && (s->lineType() != 0 || !autoplace() || !returnsAcrossStaff(start, end)))
+            return;
       SlurPos positions;
       s->slurPos(&positions);
       const qreal rawStartY = positions.p1.y();
       const qreal rawEndY = positions.p2.y();
       const bool beamStart = crossBeamSlurTip(this, toChord(start), true, positions.p1);
       const bool beamEnd = crossBeamSlurTip(this, toChord(end), false, positions.p2);
+      if (returning && start->beam() && !(beamStart && beamEnd))
+            return;
       layoutSegment(positions.p1, positions.p2, true);
       if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_TRACE") == 1) {
             const qreal sp = spatium();
