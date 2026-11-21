@@ -515,13 +515,13 @@ int Rest::getDotline(TDuration::DurationType durationType)
       return dl;
       }
 
-// Use Studio's one-line voice offset for an unedited pair of whole
-// rests. Their duration types still govern horizontal centering.
-bool Rest::hasNativePairedWholeRests() const
+// Use Studio's one-line voice offset for unedited pairs of half or
+// whole rests. Their duration types still govern horizontal centering.
+bool Rest::hasNativePairedStaffLineRests() const
       {
       static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       const auto type = durationType().type();
-      if (!preview || (type != TDuration::DurationType::V_WHOLE
+      if (!preview || (type != TDuration::DurationType::V_HALF && type != TDuration::DurationType::V_WHOLE
                       && (!isFullMeasureRest() || ticks() >= Fraction(2, 1)))
           || voice() > 1 || staffMove() || !segment() || !measure() || measure()->isMMRest()
           || !staff() || !staff()->isPitchedStaff(tick()) || staff()->lines(tick()) != 5
@@ -533,6 +533,8 @@ bool Rest::hasNativePairedWholeRests() const
       if (!other || !other->isRest() || !other->addToSkyline() || !other->offset().isNull())
             return false;
       const Rest* rest = toRest(other);
+      if (type == TDuration::DurationType::V_HALF && (isSmall() || rest->isSmall() || beam() || rest->beam()))
+            return false;
       return !rest->isGap() && !rest->staffMove() && rest->durationType() == durationType()
             && rest->actualTicks() == actualTicks() && rest->el().empty() && rest->lyrics().empty()
             && !measure()->hasVoice(first + 2) && !measure()->hasVoice(first + 3);
@@ -654,14 +656,15 @@ bool Rest::layoutNativeFullMeasureRest()
       return true;
       }
 
-// This subset of Studio rest alignment covers uninterrupted quarter-rest
-// runs in two voices against simultaneous, unbeamed quarter notes.
-void Rest::alignNativeQuarterRests(Measure* measure)
+// Align uninterrupted two-voice runs of quarter rests against simple
+// opposing notes. Matching half rests can join the run at its start.
+void Rest::alignNativeRestRuns(Measure* measure)
       {
       static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       if (!preview || measure->isMMRest())
             return;
       const Fraction quarter(1, 4);
+      const Fraction half(1, 2);
       for (int staffIdx = 0; staffIdx < measure->score()->nstaves(); ++staffIdx) {
             const Staff* staff = measure->score()->staff(staffIdx);
             const Fraction tick = measure->tick();
@@ -679,15 +682,25 @@ void Rest::alignNativeQuarterRests(Measure* measure)
                   const qreal baseY = (above ? 1.0 : 3.0) * line;
                   const qreal padding = 0.35 * sp;
                   std::vector<Rest*> run;
+                  Rest* halfRest = nullptr;
                   qreal outerY = baseY;
                   const auto finish = [&]() {
                         if (run.size() > 1) {
+                              if (halfRest) {
+                                    // A half rest must sit on a staff or ledger line.
+                                    const int row = int(above ? std::floor(outerY / line + 1e-6)
+                                                              : std::ceil(outerY / line - 1e-6));
+                                    outerY = row * line;
+                                    halfRest->_sym = row < 0 || row >= 5 ? SymId::restHalfLegerLine : SymId::restHalf;
+                                    halfRest->setbbox(halfRest->symBbox(halfRest->_sym));
+                                    }
                               for (Rest* rest : run) {
                                     rest->rypos() = outerY;
                                     rest->segment()->createShape(staffIdx);
                                     }
                               }
                         run.clear();
+                        halfRest = nullptr;
                         outerY = baseY;
                         };
 
@@ -698,9 +711,32 @@ void Rest::alignNativeQuarterRests(Measure* measure)
                         if (!element)
                               continue;
                         const Element* other = s->element(track + 1 - voice);
-                        Rest* rest = element->isRest() ? toRest(element) : nullptr;
+                        if (!element->isRest()) {
+                              finish();
+                              continue;
+                              }
+                        Rest* rest = toRest(element);
+                        bool extraVoice = false;
+                        for (const Element* e : s->elist()) {
+                              if (e && e != element && e != other && e->vStaffIdx() == staffIdx
+                                  && e->isChordRest() && e->addToSkyline() && (!e->isRest() || !toRest(e)->isGap())) {
+                                    extraVoice = true;
+                                    break;
+                                    }
+                              }
+                        if (extraVoice) {
+                              finish();
+                              continue;
+                              }
+                        if (rest->durationType().type() == TDuration::DurationType::V_HALF
+                            && rest->actualTicks() == half && rest->hasNativePairedStaffLineRests()) {
+                              finish();
+                              run.push_back(rest);
+                              halfRest = rest;
+                              continue;
+                              }
                         const Chord* chord = other && other->isChord() ? toChord(other) : nullptr;
-                        if (!rest || rest->isGap() || !rest->addToSkyline() || !rest->offset().isNull()
+                        if (rest->isGap() || !rest->addToSkyline() || !rest->offset().isNull()
                             || rest->staffMove() || rest->beam() || rest->isSmall()
                             || !rest->el().empty() || !rest->lyrics().empty()
                             || rest->durationType().type() != TDuration::DurationType::V_QUARTER
@@ -715,20 +751,12 @@ void Rest::alignNativeQuarterRests(Measure* measure)
                               continue;
                               }
                         const Note* note = chord->notes().front();
-                        bool extraVoice = false;
-                        for (const Element* e : s->elist()) {
-                              if (e && e != element && e != other && e->vStaffIdx() == staffIdx
-                                  && e->isChordRest() && e->addToSkyline() && (!e->isRest() || !toRest(e)->isGap())) {
-                                    extraVoice = true;
-                                    break;
-                                    }
-                              }
-                        if (extraVoice || !note->visible() || note->bbox().isEmpty() || note->accidental()
+                        if (!note->visible() || note->bbox().isEmpty() || note->accidental()
                             || !note->el().empty() || rest->bbox().isEmpty()) {
                               finish();
                               continue;
                               }
-                        if (!run.empty() && run.back()->tick() + quarter != rest->tick())
+                        if (!run.empty() && run.back()->tick() + run.back()->actualTicks() != rest->tick())
                               finish();
 
                         const QRectF restInk = rest->bbox().translated(rest->x(), baseY);
@@ -758,8 +786,13 @@ void Rest::alignNativeQuarterRests(Measure* measure)
 
 int Rest::computeLineOffset(int lines)
       {
-      if (hasNativePairedWholeRests() || nativeMeasureRestOppositeTrack() >= 0)
-            return voice() == 0 ? -2 : 4; // getSymbol adds one line for the whole-rest glyph
+      if (hasNativePairedStaffLineRests()) {
+            if (durationType().type() == TDuration::DurationType::V_HALF)
+                  return voice() == 0 ? -2 : 2; // getSymbol adds two lines for a half rest
+            return voice() == 0 ? -2 : 4;       // getSymbol adds one line for a whole rest
+            }
+      if (nativeMeasureRestOppositeTrack() >= 0)
+            return voice() == 0 ? -2 : 4;
       Segment* s = segment();
       bool offsetVoices = s && measure() && (voice() > 0 || measure()->hasVoices(staffIdx(), tick(), actualTicks()));
       if (offsetVoices && voice() == 0) {

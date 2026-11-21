@@ -3729,7 +3729,7 @@ void Score::getNextMeasure(LayoutContext& lc)
                   continue;
             s.createShapes();
             }
-      Rest::alignNativeQuarterRests(measure);
+      Rest::alignNativeRestRuns(measure);
 
       lc.tick += measure->ticks();
       }

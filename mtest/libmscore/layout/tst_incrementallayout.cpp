@@ -274,7 +274,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void pairedWholeRestsUseStaffLines();
-      void quarterRestRunsUseCommonHeight();
+      void mixedRestRunsUseCommonHeight();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -608,7 +608,7 @@ void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
             }
       }
 
-void TestIncrementalLayout::quarterRestRunsUseCommonHeight()
+void TestIncrementalLayout::mixedRestRunsUseCommonHeight()
       {
       if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
             QSKIP("The rest layout switch must be enabled.");
@@ -621,11 +621,20 @@ void TestIncrementalLayout::quarterRestRunsUseCommonHeight()
             const Segment* beatThree = first ? first->next(SegmentType::ChordRest) : nullptr;
             const Segment* beatFour = beatThree ? beatThree->next(SegmentType::ChordRest) : nullptr;
             QVERIFY(beatThree && beatFour);
+            const Element* half = first->element(voice);
+            const Element* oppositeHalf = first->element(1 - voice);
             const Element* a = beatThree->element(voice);
             const Element* b = beatFour->element(voice);
             const Element* other = beatThree->element(1 - voice);
             QVERIFY(a && b && a->isRest() && b->isRest() && other && other->isChord());
+            QVERIFY(half && oppositeHalf && half->isRest() && oppositeHalf->isRest());
+            const qreal sp = half->spatium();
+            QCOMPARE(half->ipos().y(), a->ipos().y());
             QCOMPARE(a->ipos().y(), b->ipos().y());
+            QVERIFY(voice == 0 ? half->ipos().y() < 0.0 : half->ipos().y() > 4.0 * sp);
+            QVERIFY(toRest(half)->sym() == SymId::restHalfLegerLine);
+            QVERIFY(toRest(oppositeHalf)->sym() == SymId::restHalf);
+            QVERIFY(qAbs(oppositeHalf->ipos().y() - (voice == 0 ? 3.0 : 1.0) * sp) < 1e-5 * sp);
             const Note* note = toChord(other)->notes().front();
             const QRectF noteInk = note->bbox().translated(note->pagePos());
             const QRectF restInk = a->bbox().translated(a->pagePos());
