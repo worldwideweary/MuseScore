@@ -807,6 +807,9 @@ static bool crossStaffSlurObstacles(const SlurSegment* segment, std::vector<QRec
       if (!start->segment() || !end->segment() || start->tick() >= end->tick()
           || slur->lineType() != 0)
             return false;
+      // Collect both visual staves. A slur starting on a moved note and
+      // ending on its owning staff can otherwise miss the notes on the
+      // staff it starts from.
       const int upper = qMin(start->vStaffIdx(), end->vStaffIdx());
       const int lower = qMax(start->vStaffIdx(), end->vStaffIdx());
       // For a slur that returns to its starting staff, keep the collision

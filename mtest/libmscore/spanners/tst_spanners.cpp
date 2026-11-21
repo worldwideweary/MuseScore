@@ -1685,6 +1685,29 @@ void TestSpanners::nativeCrossStaffSlurs()
                                       .arg(start->measure()->no() + 1).arg(int(g)).arg(delta.x()).arg(delta.y())));
                   };
             checkHeadTip(start, Grip::START);
+            if (!slur->up() && start->staffMove() && !end->staffMove() && start->track() == end->track()) {
+                  // The second slur starts on the lower staff and returns to
+                  // its owning staff. Keep its lower tip off the staff line
+                  // and clear the nearby note on the lower staff.
+                  const Note* firstNote = toChord(start)->downNote();
+                  QVERIFY(grip(Grip::START).y() - firstNote->pagePos().y() > sp);
+                  const Segment* next = start->segment()->next(SegmentType::ChordRest);
+                  QVERIFY(next);
+                  const Element* other = next->element(start->track());
+                  QVERIFY(other && other->isChord() && other->vStaffIdx() == start->vStaffIdx());
+                  const Note* note = toChord(other)->downNote();
+                  const QRectF ink = note->bbox().translated(note->pagePos());
+                  const CubicBezier curve(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), grip(Grip::END));
+                  bool sampled = false;
+                  for (int k = 1; k < 80; ++k) {
+                        const QPointF p = curve.pointAtPercent(qreal(k) / 80);
+                        if (ink.left() <= p.x() && p.x() <= ink.right()) {
+                              QVERIFY(p.y() - ink.bottom() > 0.70 * sp);
+                              sampled = true;
+                              }
+                        }
+                  QVERIFY(sampled);
+                  }
             if (!end->beam() || !end->beam()->cross())
                   checkHeadTip(end, Grip::END);
             else {
