@@ -273,6 +273,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void fullMeasureRestUsesLocalClearance();
+      void crossStaffAutoStemsUseVoiceDirection();
       void afterGraceOctaveKeepsPreviousGracePosition();
       void afterGraceFitsBeforeEighthRest();
       void followingBeamSlopesSurviveEdit();
@@ -614,6 +615,34 @@ void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
       score->doLayout();
       const QString diff = firstDifference(first, snapshot(score.get()), 1e-4 * sp);
       QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_STEM_LAYOUT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-auto-stems.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure();
+      for (int bar = 0; bar < 3; ++bar) {
+            QVERIFY(measure);
+            int beat = 0;
+            for (const Segment* seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  const Element* element = seg->element(VOICES);
+                  QVERIFY(element && element->isChord());
+                  const Chord* chord = toChord(element);
+                  QCOMPARE(chord->staffMove(), -1);
+                  QVERIFY(!chord->beam());
+                  const bool manual = bar == 2 && beat == 3;
+                  QCOMPARE(chord->stemDirection() == Direction::DOWN, manual);
+                  // Visible full-measure rest, hidden rest, and four visible
+                  // notes in voice 2, respectively. Manual Down still wins.
+                  QCOMPARE(chord->up(), bar != 1 && !manual);
+                  ++beat;
+                  }
+            QCOMPARE(beat, 4);
+            measure = measure->nextMeasure();
+            }
       }
 
 QTEST_MAIN(TestIncrementalLayout)

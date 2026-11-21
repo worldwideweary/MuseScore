@@ -939,8 +939,16 @@ void Chord::computeUp()
             else
                   _up = true;
             }
-      else if (staffMove())
-            _up = staffMove() > 0;
+      else if (staffMove()) {
+            static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") == 1;
+            // Studio uses the voice rule before the staff move for plain
+            // pitched chords. Beams and tremolos resolve direction separately.
+            if (preview && st && st->isPitchedStaff(tick()) && !beam() && !tremolo()
+                && measure()->hasVoices(staffIdx(), tick(), actualTicks()))
+                  _up = !(track() % 2);
+            else
+                  _up = staffMove() > 0;
+            }
       else if (measure()->hasVoices(staffIdx(), tick(), actualTicks()))
             _up = !(track() % 2);
       else {
