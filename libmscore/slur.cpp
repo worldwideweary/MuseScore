@@ -1377,7 +1377,7 @@ static void clearSlurTipFromTie(const SlurSegment* segment, const ChordRest* anc
       const qreal sign = up ? -1.0 : 1.0;
       const QPointF origin(segment->system()->pagePos().x(), segment->system()->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
       const auto tieTip = [&](const Tie* tie, bool isStart, QPointF& position) {
-            if (!tie || tie->isPartial() || tie->isInside() || tie->up() != up || !tie->visible())
+            if (!tie || tie->segmentsEmpty() || tie->isPartial() || tie->isInside() || tie->up() != up || !tie->visible())
                   return false;
             const TieSegment* part = isStart ? tie->frontSegment() : tie->backSegment();
             if (!part || !part->visible() || part->system() != segment->system())

@@ -5363,8 +5363,21 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                         }
                   }
             }
+      const auto layoutSegmentTies = [&](const Segment* segment) {
+            for (Element* element : segment->elist()) {
+                  if (!element || !element->isChord())
+                        continue;
+                  Chord* chord = toChord(element);
+                  for (Chord* grace : qAsConst(chord->graceNotes()))
+                        layoutTies(grace, system, stick);
+                  layoutTies(chord, system, stick);
+                  }
+            };
       const bool fitSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
       if (fitSlurs) {
+            // Slur tips need the rendered outside ties on the first layout.
+            for (const Segment* segment : sl)
+                  layoutSegmentTies(segment);
             // The beamed slur fitter clears shorter, contained slurs using
             // their freshly laid out geometry.
             std::stable_sort(spanner.begin(), spanner.end(), [](const Spanner* a, const Spanner* b) {
@@ -5398,16 +5411,8 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
 
       std::vector<Dynamic*> dynamics;
       for (Segment* s : sl) {
-            for (Element* e : s->elist()) {
-                  if (!e)
-                        continue;
-                  if (e->isChord()) {
-                        Chord* c = toChord(e);
-                        for (Chord* ch : qAsConst(c->graceNotes()))
-                              layoutTies(ch, system, stick);
-                        layoutTies(c, system, stick);
-                        }
-                  }
+            if (!fitSlurs)
+                  layoutSegmentTies(s);
             for (Element* e : s->annotations()) {
                   if (e->isDynamic()) {
                         Dynamic* d = toDynamic(e);

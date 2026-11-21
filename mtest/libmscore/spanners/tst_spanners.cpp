@@ -1673,12 +1673,21 @@ void TestSpanners::nativeCrossStaffSlurs()
             QCOMPARE(segment->system(), start->measure()->system());
             QCOMPARE(segment->system(), end->measure()->system());
             const qreal sp = segment->spatium();
-            const auto nearAnchor = [&](const ChordRest* cr, Grip grip) {
-                  const QPointF distance = segment->pagePos() + segment->ups(grip).pos() - cr->pagePos();
-                  return qAbs(distance.x()) < 2.0 * sp && qAbs(distance.y()) < 5.0 * sp;
+            const auto grip = [&](Grip g) { return segment->pagePos() + segment->ups(g).pos(); };
+            const auto checkHeadTip = [&](const ChordRest* cr, Grip g) {
+                  QVERIFY(cr->isChord());
+                  const Chord* chord = toChord(cr);
+                  const Note* note = slur->up() ? chord->upNote() : chord->downNote();
+                  const QPointF delta = (grip(g) - note->pagePos()) / sp;
+                  const qreal outward = slur->up() ? -delta.y() : delta.y();
+                  QVERIFY2(qAbs(delta.x()) < 2.0 && outward > 0.0 && outward < 2.0,
+                           qPrintable(QString("M%1 grip %2 is (%3, %4)sp from the notehead")
+                                      .arg(start->measure()->no() + 1).arg(int(g)).arg(delta.x()).arg(delta.y())));
                   };
-            QVERIFY(nearAnchor(start, Grip::START) && nearAnchor(end, Grip::END));
-            if (end->beam() && end->beam()->cross()) {
+            checkHeadTip(start, Grip::START);
+            if (!end->beam() || !end->beam()->cross())
+                  checkHeadTip(end, Grip::END);
+            else {
                   const Beam* beam = end->beam();
                   const auto& notes = beam->elements();
                   QCOMPARE(notes.size(), 4);
@@ -1690,23 +1699,21 @@ void TestSpanners::nativeCrossStaffSlurs()
                   const QLineF* primary = beam->primarySegment4();
                   const Stem* stem = toChord(end)->stem();
                   QVERIFY(primary && primary->dx() > 0.0 && stem && end->up() == slur->up());
-                  const auto grip = [&](Grip g) { return segment->pagePos() + segment->ups(g).pos(); };
                   const QPointF tip = grip(Grip::END);
                   QVERIFY(qAbs(tip.x() - (end->pagePos().x() + stem->x())) < 0.02 * sp);
                   const QPointF beamOrigin = beam->pagePos();
-                  const auto outsideBeam = [&](const QPointF& point) {
-                        const qreal x = point.x() - beamOrigin.x();
-                        if (x < primary->x1() || x > primary->x2())
-                              return true;
-                        const qreal t = (x - primary->x1()) / primary->dx();
+                  const qreal halfWidth = 0.5 * score->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
+                        * std::hypot(qreal(1.0), primary->dy() / primary->dx());
+                  const auto beamClearance = [&](const QPointF& point) {
+                        const qreal t = qBound(qreal(0.0), (point.x() - beamOrigin.x() - primary->x1()) / primary->dx(), qreal(1.0));
                         const qreal center = beamOrigin.y() + primary->pointAt(t).y();
-                        const qreal halfWidth = 0.5 * score->styleS(Sid::beamWidth).val() * beam->spatium() * beam->mag()
-                              * std::hypot(qreal(1.0), primary->dy() / primary->dx());
-                        return (slur->up() ? center - point.y() : point.y() - center) > halfWidth;
+                        return (slur->up() ? center - point.y() : point.y() - center) - halfWidth;
                         };
+                  QVERIFY2(beamClearance(tip) > 0.2 * sp && beamClearance(tip) < 1.5 * sp,
+                           "The beam-side end should be anchored just outside the beam");
                   const CubicBezier curve(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), tip);
                   for (int k = 0; k <= 64; ++k)
-                        QVERIFY2(outsideBeam(curve.pointAtPercent(qreal(k) / 64)), "The cross-staff slur cuts through the beam");
+                        QVERIFY2(beamClearance(curve.pointAtPercent(qreal(k) / 64)) > 0.0, "The cross-staff slur cuts through the beam");
                   // Three one-space endpoint nudges should relax the right
                   // shoulder while retaining both actual endpoint positions.
                   const QPointF first = grip(Grip::START);
@@ -1811,6 +1818,7 @@ void TestSpanners::nativeSlursOverTies()
             if (!entry.second->isSlur())
                   continue;
             Slur* slur = toSlur(entry.second);
+            QCOMPARE(slur->nsegments(), size_t(1));
             const SlurSegment* segment = slur->frontSegment();
             QVERIFY(segment && slur->startCR() && slur->endCR());
             const qreal sign = slur->up() ? -1.0 : 1.0;
@@ -1821,7 +1829,7 @@ void TestSpanners::nativeSlursOverTies()
                   const Chord* chord = toChord(cr);
                   const Note* note = slur->up() ? chord->upNote() : chord->downNote();
                   const Tie* tie = start ? note->tieFor() : note->tieBack();
-                  QVERIFY(tie && tie->up() == slur->up() && !tie->isInside() && tie->frontSegment());
+                  QVERIFY(tie && tie->up() == slur->up() && !tie->isInside() && !tie->segmentsEmpty());
                   const TieSegment* part = start ? tie->frontSegment() : tie->backSegment();
                   QVERIFY(part);
                   const qreal slurY = segment->pagePos().y() + segment->ups(grip).pos().y();
