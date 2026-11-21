@@ -520,7 +520,7 @@ int Rest::getDotline(TDuration::DurationType durationType)
 int Rest::nativeMeasureRestOppositeTrack() const
       {
       static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
-      if (!preview || !isFullMeasureRest() || isGap() || !addToSkyline() || !offset().isNull()
+      if (!preview || !isFullMeasureRest() || isGap() || !addToSkyline() || !qFuzzyIsNull(offset().y())
           || staffMove() || voice() > 1 || !staff() || !staff()->isPitchedStaff(tick())
           || staff()->lines(tick()) != 5 || !segment() || !measure() || measure()->isMMRest()
           || ticks() >= Fraction(2, 1) || !el().empty() || !lyrics().empty())
@@ -586,7 +586,10 @@ bool Rest::layoutNativeFullMeasureRest()
       const int baseLine = above ? 0 : 3;
       const qreal center = ipos().x() + bbox().center().x();
       const QRectF body = symBbox(SymId::restWhole);
-      const QRectF rest = body.translated(segment()->x() + center - body.center().x(), baseLine * lineDistance);
+      // Match the drawn X, but keep the horizontal offset separate from
+      // the centered position so a second pass cannot apply it twice.
+      const qreal drawnX = segment()->x() + center + offset().x();
+      const QRectF rest = body.translated(drawnX - body.center().x(), baseLine * lineDistance);
       const qreal horizontal = 4.0 * sp;
       qreal move = 0.0;
       const auto reserve = [&](const Element* e, const QPointF& parentPos) {

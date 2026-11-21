@@ -274,6 +274,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void fullMeasureRestUsesLocalClearance();
+      void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
       void crossStaffAutoStemsUseVoiceDirection();
       void afterGraceOctaveKeepsPreviousGracePosition();
@@ -617,6 +618,48 @@ void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
       score->doLayout();
       const QString diff = firstDifference(first, snapshot(score.get()), 1e-4 * sp);
       QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::fullMeasureRestClearsAtItsOffset()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The full-measure rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
+      QVERIFY(score && score->firstMeasure());
+      Measure* measure = score->firstMeasure()->nextMeasure();
+      QVERIFY(measure);
+      Rest* rest = measureRest(measure, 0);
+      QVERIFY(rest && rest->isFullMeasureRest() && rest->offset().isNull());
+      const qreal sp = rest->spatium();
+      const qreal initialY = rest->ipos().y();
+      QVERIFY(initialY < -sp);
+
+      const Segment* last = measure->last();
+      if (last && !last->isChordRestType())
+            last = last->prev(SegmentType::ChordRest);
+      const Element* chord = last ? last->element(1) : nullptr;
+      QVERIFY(chord && chord->isChord());
+      const Note* note = toChord(chord)->upNote();
+      const qreal dx = note->pagePos().x() + note->bbox().center().x()
+            - rest->pagePos().x() - rest->bbox().center().x();
+      QVERIFY(dx > 6.0 * sp);
+
+      // Move to the quiet beat on the right. The high note should stop
+      // pushing the rest up even though both remain in the same measure.
+      const QPointF shift(dx, 0.0);
+      QVERIFY(rest->setProperty(Pid::OFFSET, QVariant::fromValue(shift)));
+      score->doLayout();
+      QCOMPARE(rest->offset(), shift);
+      QVERIFY(rest->ipos().y() > initialY + sp);
+
+      // A second layout must not apply the horizontal offset a second time.
+      const QPointF moved = rest->pagePos() + rest->bbox().center();
+      score->doLayout();
+      QVERIFY(QLineF(rest->pagePos() + rest->bbox().center(), moved).length() < 1e-5 * sp);
+
+      QVERIFY(rest->setProperty(Pid::OFFSET, QVariant::fromValue(QPointF())));
+      score->doLayout();
+      QVERIFY(qAbs(rest->ipos().y() - initialY) < 1e-5 * sp);
       }
 
 void TestIncrementalLayout::fullMeasureRestKeepsClearanceOnLookahead()
