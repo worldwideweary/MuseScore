@@ -20,6 +20,7 @@ add_test(NAME tst_spanners_slur_preview
       COMMAND tst_spanners -xunitxml -o result-slur-preview.xml
             nativeMultiVoiceSlurDirection
             nativeOrdinarySlurFit
+            nativeOrdinarySlurAcrossBarline
             nativeSlantedSlurFit
             nativeAfterGraceSlurFit
             nativePreGraceSlurFit

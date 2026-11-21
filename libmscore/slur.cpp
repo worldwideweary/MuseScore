@@ -541,7 +541,8 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
       const ChordRest* first = slur->startCR();
       const ChordRest* last = slur->endCR();
       if (!segment->system() || !staff || !first || !last || !first->isChord() || !last->isChord()
-          || !first->measure() || first->measure() != last->measure()
+          || !first->segment() || !last->segment()
+          || first->segment()->system() != segment->system() || last->segment()->system() != segment->system()
           || first->track() != last->track() || first->track() != slur->track()
           || last->track() != slur->effectiveTrack2()
           || !staff->isPitchedStaff(first->tick()) || staff->lines(first->tick()) < 2
@@ -551,8 +552,9 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
           || first->up() == slur->up() || last->up() == slur->up())
             return false;
 
-      for (const Segment* s = first->segment(); s && s->measure() == first->measure(); s = s->next()) {
-            if (!s->enabled() || s->isBreathType())
+      // Collect the note ink on both sides of a barline in the same system.
+      for (const Segment* s = first->segment(); s && s->system() == segment->system(); s = s->next1()) {
+            if (!s->enabled() || s->isBreathType() || (s->segmentType() & SegmentType::BarLineType))
                   continue;
             if (!s->isChordRestType())
                   return false;
@@ -933,8 +935,11 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
       const ChordRest* end = segment->slur()->endCR();
       const bool grace = start && end && (start->isGrace() || end->isGrace());
       const bool beamed = !crossStaff && !grace && start && end && start->beam() && end->beam();
-      const qreal maxSpan = beamed || crossStaff ? 48.0 : grace ? 40.0 : 10.0;
-      if (!(sp > 0.0 && width >= (grace || crossStaff ? 0.4 : 2.0) * sp && width < maxSpan * sp)
+      // Keep the guard for the specialized fitters. An ordinary slur can
+      // span multiple measures of the same system.
+      const qreal maxSpan = beamed || crossStaff ? 48.0 : grace ? 40.0 : 0.0;
+      if (!(sp > 0.0 && width >= (grace || crossStaff ? 0.4 : 2.0) * sp)
+          || (maxSpan > 0.0 && width >= maxSpan * sp)
           || !std::isfinite(first.y()) || !std::isfinite(last.y()))
             return false;
       std::vector<QRectF> obstacles;
@@ -980,9 +985,10 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
 
       const qreal rise = last.y() - first.y();
       const qreal length = std::hypot(width, rise);
-      // Keep the current limits for ordinary slurs. Grace tips may be close
-      // horizontally while their anchor notes are several staff spaces apart.
-      if (!(length < maxSpan * sp) || (!grace && !crossStaff && qAbs(rise) > width))
+      // Grace tips may be close horizontally while their anchor notes
+      // are several staff spaces apart.
+      if (!std::isfinite(length) || (maxSpan > 0.0 && length >= maxSpan * sp)
+          || (!grace && !crossStaff && qAbs(rise) > width))
             return false;
       const qreal cosine = width / length;
       const qreal sine = rise / length;

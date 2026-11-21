@@ -57,6 +57,7 @@ class TestSpanners : public QObject, public MTest
       void partialSlurHangingAngles();
       void nativeMultiVoiceSlurDirection();
       void nativeOrdinarySlurFit();
+      void nativeOrdinarySlurAcrossBarline();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
       void nativePreGraceSlurFit();
@@ -1332,6 +1333,58 @@ void TestSpanners::nativeOrdinarySlurFit()
       const SlurSegment* edited = editedSlur->frontSegment();
       QVERIFY(edited);
       QVERIFY(QLineF(edited->ups(Grip::START).pos(), editedTip).length() < 1e-6 * edited->spatium());
+      }
+
+void TestSpanners::nativeOrdinarySlurAcrossBarline()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-slur-across-barline.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up() && slur->startCR() && slur->endCR());
+      QVERIFY(slur->startCR()->measure()->nextMeasure() == slur->endCR()->measure());
+      QCOMPARE(slur->nsegments(), size_t(1));
+      const SlurSegment* segment = slur->frontSegment();
+      const qreal sp = segment->spatium();
+      const auto point = [&](Grip grip) { return segment->pagePos() + segment->ups(grip).pos(); };
+      const QPointF start = point(Grip::START);
+      const QPointF end = point(Grip::END);
+      const qreal width = end.x() - start.x();
+      const qreal len = QLineF(start, end).length();
+      QVERIFY(width > 54.0 * sp);
+      for (Grip grip : { Grip::BEZIER1, Grip::BEZIER2 }) {
+            const QPointF control = point(grip);
+            const qreal height = ((control.x() - start.x()) * (end.y() - start.y())
+                  - (control.y() - start.y()) * width) / len;
+            QVERIFY(height > 3.55 * sp); // Above the old 3.5sp shoulder cap.
+            }
+
+      const CubicBezier curve(start, point(Grip::BEZIER1), point(Grip::BEZIER2), end);
+      Measure* first = slur->startCR()->measure();
+      Measure* second = slur->endCR()->measure();
+      for (const Segment* at : { first->findSegmentR(SegmentType::ChordRest, Fraction(3, 4)),
+                                second->findSegmentR(SegmentType::ChordRest, Fraction(0, 1)) }) {
+            QVERIFY(at && at->element(0) && at->element(0)->isChord());
+            const Note* note = toChord(at->element(0))->upNote();
+            const QRectF ink = note->bbox().translated(note->pagePos());
+            const qreal x = ink.center().x();
+            qreal low = 0.0, high = 1.0;
+            for (int i = 0; i < 24; ++i) {
+                  const qreal mid = (low + high) * 0.5;
+                  if (curve.pointAtPercent(mid).x() < x)
+                        low = mid;
+                  else
+                        high = mid;
+                  }
+            QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.4 * sp);
+            }
       }
 
 void TestSpanners::nativeSlantedSlurFit()
