@@ -515,6 +515,29 @@ int Rest::getDotline(TDuration::DurationType durationType)
       return dl;
       }
 
+// Use Studio's one-line voice offset for an unedited pair of whole
+// rests. Their duration types still govern horizontal centering.
+bool Rest::hasNativePairedWholeRests() const
+      {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
+      const auto type = durationType().type();
+      if (!preview || (type != TDuration::DurationType::V_WHOLE
+                      && (!isFullMeasureRest() || ticks() >= Fraction(2, 1)))
+          || voice() > 1 || staffMove() || !segment() || !measure() || measure()->isMMRest()
+          || !staff() || !staff()->isPitchedStaff(tick()) || staff()->lines(tick()) != 5
+          || staff()->mergeMatchingRests() || !addToSkyline() || isGap()
+          || !offset().isNull() || durationType().dots() || !el().empty() || !lyrics().empty())
+            return false;
+      const int first = staffIdx() * VOICES;
+      const Element* other = segment()->element(first + 1 - voice());
+      if (!other || !other->isRest() || !other->addToSkyline() || !other->offset().isNull())
+            return false;
+      const Rest* rest = toRest(other);
+      return !rest->isGap() && !rest->staffMove() && rest->durationType() == durationType()
+            && rest->actualTicks() == actualTicks() && rest->el().empty() && rest->lyrics().empty()
+            && !measure()->hasVoice(first + 2) && !measure()->hasVoice(first + 3);
+      }
+
 // Start with the simple two-voice case on a five-line pitched staff.
 // Other rest groups and moved notes still use the legacy placement.
 int Rest::nativeMeasureRestOppositeTrack() const
@@ -637,7 +660,7 @@ bool Rest::layoutNativeFullMeasureRest()
 
 int Rest::computeLineOffset(int lines)
       {
-      if (nativeMeasureRestOppositeTrack() >= 0)
+      if (hasNativePairedWholeRests() || nativeMeasureRestOppositeTrack() >= 0)
             return voice() == 0 ? -2 : 4; // getSymbol adds one line for the whole-rest glyph
       Segment* s = segment();
       bool offsetVoices = s && measure() && (voice() > 0 || measure()->hasVoices(staffIdx(), tick(), actualTicks()));

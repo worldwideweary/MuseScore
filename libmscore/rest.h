@@ -35,6 +35,7 @@ class Rest : public ChordRest {
       bool _gap      { false };     // invisible and not selectable for user
       std::vector<NoteDot*> _dots;
 
+      bool hasNativePairedWholeRests() const;
       int nativeMeasureRestOppositeTrack() const;
       QRectF drag(EditData&) override;
       qreal upPos() const override;

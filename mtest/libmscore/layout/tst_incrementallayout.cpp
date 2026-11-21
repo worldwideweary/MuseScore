@@ -273,6 +273,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void annotatedFollowingSystems();
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
+      void pairedWholeRestsUseStaffLines();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -576,6 +577,34 @@ void TestIncrementalLayout::followingBeamSlopesSurviveEdit()
       system->setPos(position);
       beamLines(true);
       QVERIFY2(afterTranslation.isEmpty(), qPrintable(afterTranslation));
+      }
+
+void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-paired-whole-rests.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure();
+      for (bool fullMeasure : { false, true }) {
+            QVERIFY(measure);
+            const Segment* segment = measure->first(SegmentType::ChordRest);
+            QVERIFY(segment);
+            for (int voice : { 0, 1 }) {
+                  const Element* element = segment->element(voice);
+                  QVERIFY(element && element->isRest());
+                  const Rest* rest = toRest(element);
+                  QCOMPARE(rest->isFullMeasureRest(), fullMeasure);
+                  QVERIFY(rest->sym() == SymId::restWhole);
+                  const qreal sp = rest->spatium();
+                  QVERIFY(qAbs(rest->ipos().y() - (voice == 0 ? 0.0 : 3.0) * sp) < 1e-5 * sp);
+                  if (fullMeasure)
+                        QVERIFY(rest->ipos().x() > sp);
+                  else
+                        QVERIFY(qFuzzyIsNull(rest->ipos().x()));
+                  }
+            measure = measure->nextMeasure();
+            }
       }
 
 void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()

@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <Style>
+      <Spatium>1.75</Spatium>
+      <lastSystemFillLimit>0</lastSystemFillLimit>
+    </Style>
+    <Part>
+      <Staff id="1">
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <Instrument id="piano">
+        <trackName>Piano</trackName>
+        <Channel>
+          <program>0</program>
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>whole</durationType>
+          </Rest>
+        </voice>
+        <voice>
+          <Rest>
+            <durationType>whole</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+      <Measure>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+        <voice>
+          <Rest>
+            <durationType>measure</durationType>
+            <duration>4/4</duration>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>
