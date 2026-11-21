@@ -716,7 +716,7 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
             QVERIFY(measure);
             if (bar == 1 || bar == 3)
                   continue;
-            const Segment* first = measure->first(SegmentType::ChordRest);
+            const Segment* first = measure->findSegmentR(SegmentType::ChordRest, Fraction(0, 1));
             QVERIFY(first);
             const int voice = bar < 5 ? 1 : 0;
             const Element* item = first->element(voice);
@@ -729,7 +729,10 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
                   // in both bars, regardless of their pitch.
                   QVERIFY(qAbs(y - 4.0 * sp) < 1e-5 * sp);
                   QVERIFY(half->sym() == SymId::restHalf);
-                  for (const Segment* segment = first; segment; segment = segment->next(SegmentType::ChordRest)) {
+                  // Beat 2 has a bass note while the upper-staff half rests are still in progress.
+                  for (int beat : { 0, 2, 3 }) {
+                        const Segment* segment = measure->findSegmentR(SegmentType::ChordRest, Fraction(beat, 4));
+                        QVERIFY(segment);
                         for (int restVoice : { 0, 1 }) {
                               const Element* rest = segment->element(restVoice);
                               QVERIFY(rest && rest->isRest());
@@ -741,10 +744,9 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
                   QVERIFY(qAbs(y - sp) < 1e-5 * sp);
             else {
                   QVERIFY(y < 0.0 && half->sym() == SymId::restHalfLegerLine);
-                  const Segment* beatThree = first->next(SegmentType::ChordRest);
-                  const Segment* beatFour = beatThree ? beatThree->next(SegmentType::ChordRest) : nullptr;
-                  QVERIFY(beatThree && beatFour);
-                  for (const Segment* segment : { beatThree, beatFour }) {
+                  for (int beat : { 2, 3 }) {
+                        const Segment* segment = measure->findSegmentR(SegmentType::ChordRest, Fraction(beat, 4));
+                        QVERIFY(segment);
                         const Element* quarter = segment->element(0);
                         QVERIFY(quarter && quarter->isRest());
                         QCOMPARE(quarter->ipos().y(), y);
