@@ -1848,7 +1848,7 @@ void TestSpanners::nativeSystemBreakSlur()
                   }
             }
       QVERIFY(slur && slur->up());
-      QCOMPARE(slur->spannerSegments().size(), size_t(3));
+      QCOMPARE(slur->nsegments(), size_t(3));
       const SlurSegment* first = slur->frontSegment();
       const SlurSegment* middle = slur->segmentAt(1);
       const SlurSegment* last = slur->backSegment();
