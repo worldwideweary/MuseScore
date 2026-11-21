@@ -29,11 +29,13 @@ class SlurSegment final : public SlurTieSegment {
       // Automatic baseline only. The four user offsets remain independent.
       std::array<QPointF, 4> _ordinaryFit;
       bool _hasOrdinaryFit = false;
+      bool _ordinaryFitCrossStaff = false;
       void drawOrdinaryFit(const QPointF& shoulderDelta);
       static void appendNestedSlurObstacles(const SlurSegment*, const QPointF& first, const QPointF& last,
                                             std::vector<QRectF>&);
       static bool fitOrdinarySlur(const SlurSegment*, QPointF first, QPointF last,
-                                  std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr, bool crossStaff = false);
+                                  std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial = nullptr,
+                                  bool crossStaff = false, bool fixedTips = false);
 
    protected:
       qreal _extraHeight = 0.0;

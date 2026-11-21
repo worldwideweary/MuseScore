@@ -921,7 +921,8 @@ void SlurSegment::appendNestedSlurObstacles(const SlurSegment* outer, const QPoi
       }
 
 bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPointF last,
-                                 std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial, bool crossStaff)
+                                 std::array<QPointF, 4>& fit, std::array<QPointF, 4>* initial,
+                                 bool crossStaff, bool fixedTips)
       {
       const qreal sp = segment->spatium();
       const qreal width = last.x() - first.x();
@@ -952,6 +953,8 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
       const int lines = segment->staff()->lines(tick);
       const qreal margin = 0.175 + 0.5 * segment->score()->styleS(Sid::staffLineWidth).val() * sp / lineDistance;
       const auto snap = [&](QPointF point, const ChordRest* anchor) {
+            if (fixedTips)
+                  return point;
             if (crossStaff) {
                   const int index = anchor->vStaffIdx();
                   const Staff* staff = segment->score()->staff(index);
@@ -1051,14 +1054,18 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
                   }
             if (!collision[0] && !collision[1] && !collision[2]) {
                   // Snap only the tips so the cleared shoulders stay put.
-                  fit = {{ snap(first, start), toStaff(c1), toStaff(c2), snap(toStaff(p2), end) }};
+                  const QPointF fittedFirst = fixedTips ? first : snap(first, start);
+                  const QPointF fittedLast = fixedTips ? last : snap(toStaff(p2), end);
+                  fit = {{ fittedFirst, toStaff(c1), toStaff(c2), fittedLast }};
                   return true;
                   }
             if (pass == 30)
                   return false;
-            if (pass % 2 == 0) {
-                  const qreal leftStep = (1.0 - leftBalance) * step;
-                  const qreal rightStep = (1.0 - rightBalance) * step;
+            // With the tips locked, spend the collision correction on
+            // the shoulders rather than moving either anchor.
+            if (fixedTips || pass % 2 == 0) {
+                  const qreal leftStep = fixedTips ? step : (1.0 - leftBalance) * step;
+                  const qreal rightStep = fixedTips ? step : (1.0 - rightBalance) * step;
                   const QPointF left(-qAbs(leftStep) * 0.5, leftStep * 0.5);
                   const QPointF right(qAbs(rightStep) * 0.5, rightStep * 0.5);
                   if (collision[0]) {
@@ -1180,10 +1187,25 @@ void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       ups(Grip::END).p = _ordinaryFit[3];
       const auto first = ups(Grip::START).pos();
       const auto last = ups(Grip::END).pos();
-      // The fitted controls belong to the original tip-to-tip frame.
-      // Rotate them with the edited tips before adding the user's offsets.
-      ups(Grip::BEZIER1).p = rebaseSlurControl(_ordinaryFit[1], _ordinaryFit[0], _ordinaryFit[3], first, last);
-      ups(Grip::BEZIER2).p = rebaseSlurControl(_ordinaryFit[2], _ordinaryFit[0], _ordinaryFit[3], first, last);
+      if (ups(Grip::START).off.isNull() && ups(Grip::END).off.isNull()) {
+            ups(Grip::BEZIER1).p = _ordinaryFit[1];
+            ups(Grip::BEZIER2).p = _ordinaryFit[2];
+            }
+      else {
+            // Recompute the shoulders for the edited span and slope. A
+            // shoulder-only edit still uses the original automatic fit.
+            std::array<QPointF, 4> fit;
+            if (autoplace() && fitOrdinarySlur(this, first, last, fit, nullptr, _ordinaryFitCrossStaff, true)) {
+                  ups(Grip::BEZIER1).p = fit[1];
+                  ups(Grip::BEZIER2).p = fit[2];
+                  }
+            else {
+                  // Keep a usable curve if the locked tips can't clear the
+                  // obstacles (for example while dragging through a note).
+                  ups(Grip::BEZIER1).p = rebaseSlurControl(_ordinaryFit[1], _ordinaryFit[0], _ordinaryFit[3], first, last);
+                  ups(Grip::BEZIER2).p = rebaseSlurControl(_ordinaryFit[2], _ordinaryFit[0], _ordinaryFit[3], first, last);
+                  }
+            }
       ups(Grip::BEZIER1).off += shoulderDelta;
       ups(Grip::BEZIER2).off += shoulderDelta;
       const auto c1 = ups(Grip::BEZIER1).pos();
@@ -1425,6 +1447,7 @@ static qreal continuationChordEdge(const ChordRest* cr, const SlurSegment* segme
 void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool crossStaff)
       {
       _hasOrdinaryFit = false;
+      _ordinaryFitCrossStaff = crossStaff;
       setPos(QPointF());
       ups(Grip::START).p = p1;
       ups(Grip::END).p   = p2;

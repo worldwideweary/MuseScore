@@ -1668,7 +1668,7 @@ void TestSpanners::nativeCrossStaffSlurs()
             const ChordRest* end = slur->endCR();
             QVERIFY(start && end && start->vStaffIdx() != end->vStaffIdx());
             QCOMPARE(slur->spannerSegments().size(), size_t(1));
-            const SlurSegment* segment = slur->frontSegment();
+            SlurSegment* segment = slur->frontSegment();
             QVERIFY(segment && segment->system());
             QCOMPARE(segment->system(), start->measure()->system());
             QCOMPARE(segment->system(), end->measure()->system());
@@ -1707,6 +1707,32 @@ void TestSpanners::nativeCrossStaffSlurs()
                   const CubicBezier curve(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), tip);
                   for (int k = 0; k <= 64; ++k)
                         QVERIFY2(outsideBeam(curve.pointAtPercent(qreal(k) / 64)), "The cross-staff slur cuts through the beam");
+                  // Three one-space endpoint nudges should relax the right
+                  // shoulder while retaining both actual endpoint positions.
+                  const QPointF first = grip(Grip::START);
+                  const QPointF endOffset = segment->ups(Grip::END).off;
+                  const auto archHeight = [&]() {
+                        const CubicBezier edited(grip(Grip::START), grip(Grip::BEZIER1), grip(Grip::BEZIER2), grip(Grip::END));
+                        return (grip(Grip::START).y() + grip(Grip::END).y()) * 0.5 - edited.pointAtPercent(0.5).y();
+                        };
+                  const qreal originalArch = archHeight();
+                  qreal previousArch = originalArch;
+                  for (int k = 1; k <= 3; ++k) {
+                        const QPointF lift(0.0, -k * sp);
+                        segment->ups(Grip::END).off = endOffset + lift;
+                        segment->computeBezier();
+                        QCOMPARE(grip(Grip::START), first);
+                        QVERIFY(QLineF(grip(Grip::END), tip + lift).length() < 1e-6 * sp);
+                        const qreal height = archHeight();
+                        QVERIFY2(height < previousArch, "Raising the tip should flatten the arch");
+                        previousArch = height;
+                        }
+                  QVERIFY(originalArch - previousArch > 0.5 * sp);
+                  segment->computeBezier();
+                  QCOMPARE(archHeight(), previousArch);
+                  segment->ups(Grip::END).off = endOffset;
+                  segment->computeBezier();
+                  QCOMPARE(archHeight(), originalArch);
                   ++beamed;
                   }
             ++checked;
