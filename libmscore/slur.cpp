@@ -2628,6 +2628,31 @@ static bool isDirectionMixture(Chord* c1, Chord* c2)
       return false;
       }
 
+// Studio gives the voice assignment priority over mixed stem directions
+// across the whole slur, including the duration of the ending chord.
+bool Slur::applyNativeMultiVoiceDirection()
+      {
+      static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      if (!previewEnabled || partialDirection() >= 0 || isHammerOnPullOff())
+            return false;
+      const ChordRest* start = startCR();
+      const ChordRest* end = endCR();
+      if (!start || !end || !start->isChord() || start->isGrace() || end->isGrace()
+          || start->staffIdx() != end->staffIdx() || start->staffMove() || end->staffMove()
+          || !start->staff() || !start->staff()->isPitchedStaff(start->tick())
+          || (start->beam() && start->beam()->cross()))
+            return false;
+
+      const Fraction span = ticks() + end->ticks();
+      for (const Measure* m = start->measure(); m && m->tick() <= end->tick(); m = m->nextMeasure()) {
+            if (m->hasVoices(start->staffIdx(), tick(), span)) {
+                  _up = start->voice() == 0 && end->voice() == 0;
+                  return true;
+                  }
+            }
+      return false;
+      }
+
 //---------------------------------------------------------
 //   layoutSystem
 //    layout slurSegment for system
@@ -2682,6 +2707,9 @@ SpannerSegment* Slur::layoutSystem(System* system)
                               _up = true;
                               break;
                               }
+
+                        if (applyNativeMultiVoiceDirection())
+                              break;
 
                         _up = !(startCR()->up());
 
@@ -2803,6 +2831,9 @@ void Slur::layout()
                         _up = true;
                         break;
                         }
+                  if (applyNativeMultiVoiceDirection())
+                        break;
+
                   Measure* m1 = startCR()->measure();
 
                   Chord* c1 = startCR()->isChord() ? toChord(startCR()) : 0;

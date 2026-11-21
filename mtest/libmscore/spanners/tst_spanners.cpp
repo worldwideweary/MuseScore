@@ -55,6 +55,7 @@ class TestSpanners : public QObject, public MTest
       void initTestCase();
       void tieLayoutStylesRoundTrip();
       void partialSlurHangingAngles();
+      void nativeMultiVoiceSlurDirection();
       void nativeOrdinarySlurFit();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
@@ -1230,6 +1231,43 @@ void TestSpanners::laissezVibChordGeometry()
       score->style().set(Sid::tieDotsPlacement, 1); // before dots
       score->doLayout();
       QVERIFY(middle->x() < afterX);
+      }
+
+void TestSpanners::nativeMultiVoiceSlurDirection()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-multivoice-slur-direction.mscx"));
+      QVERIFY(score);
+
+      struct Case {
+            Fraction start;
+            Fraction end;
+            int voice;
+            bool up;
+            };
+      const Case cases[] = {
+            { Fraction(1, 2), Fraction(3, 2), 0, true },    // Voice 2 joins in the next measure.
+            { Fraction(2, 1), Fraction(11, 4), 1, false }, // Voice 2 takes priority over mixed stems.
+            { Fraction(3, 1), Fraction(13, 4), 0, false }, // Voice 2 enters after this phrase.
+            { Fraction(13, 4), Fraction(7, 2), 0, true },  // Voice 2 enters on the final chord.
+            };
+      for (const Case& expected : cases) {
+            Slur* slur = nullptr;
+            for (const auto& entry : score->spanner()) {
+                  if (entry.second->isSlur() && entry.second->tick() == expected.start) {
+                        QVERIFY(!slur);
+                        slur = toSlur(entry.second);
+                        }
+                  }
+            QVERIFY(slur && slur->startCR() && slur->endCR());
+            QVERIFY(slur->slurDirection() == Direction::AUTO);
+            QCOMPARE(slur->startCR()->voice(), expected.voice);
+            QVERIFY(slur->endCR()->tick() == expected.end);
+            QCOMPARE(slur->up(), expected.up);
+            slur->layout();
+            QCOMPARE(slur->up(), expected.up);
+            }
       }
 
 void TestSpanners::nativeOrdinarySlurFit()
