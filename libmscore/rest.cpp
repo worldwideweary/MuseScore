@@ -10,6 +10,7 @@
 //  the file LICENCE.GPL
 //=============================================================================
 
+#include "accidental.h"
 #include "articulation.h"
 #include "chord.h"
 #include "hook.h"
@@ -776,6 +777,115 @@ void Rest::alignNativeRestRuns(Measure* measure)
                         run.push_back(rest);
                         }
                   finish();
+                  }
+            }
+      }
+
+// Ordinary rests stay on their own staff, but a chord moved onto that
+// staff can occupy the same space. Work in the receiving staff's coordinates.
+void Rest::clearNativeCrossStaffRestCollisions(Measure* measure)
+      {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
+      if (!preview || measure->isMMRest())
+            return;
+
+      for (Segment* s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+            if (!s->enabled())
+                  continue;
+            std::vector<const Chord*> incoming;
+            for (const Element* e : s->elist()) {
+                  if (!e || !e->isChord() || !e->addToSkyline())
+                        continue;
+                  const Chord* chord = toChord(e);
+                  if (chord->staffMove() && !chord->beam() && !chord->slash()
+                      && chord->graceNotes().empty() && !chord->tremolo() && !chord->arpeggio())
+                        incoming.push_back(chord);
+                  }
+            if (incoming.empty())
+                  continue;
+
+            for (Element* e : s->elist()) {
+                  if (!e || !e->isRest() || !e->addToSkyline() || !e->offset().isNull())
+                        continue;
+                  Rest* rest = toRest(e);
+                  if (rest->isGap() || rest->staffMove() || rest->beam() || rest->isSmall()
+                      || rest->durationType().dots() || !rest->el().empty() || !rest->lyrics().empty())
+                        continue;
+                  const auto type = rest->durationType().type();
+                  const bool half = type == TDuration::DurationType::V_HALF;
+                  const bool whole = type == TDuration::DurationType::V_WHOLE;
+                  if (!half && !whole && type != TDuration::DurationType::V_QUARTER)
+                        continue;
+                  const Staff* staff = rest->staff();
+                  const Fraction tick = rest->tick();
+                  const int idx = rest->staffIdx();
+                  if (!staff->show() || !staff->isPitchedStaff(tick) || staff->lines(tick) != 5
+                      || staff->mergeMatchingRests())
+                        continue;
+                  const qreal sp = rest->spatium();
+                  const qreal line = staff->lineDistance(tick) * sp;
+                  if (line <= 0.0)
+                        continue;
+
+                  const SymId bodySymbol = half ? SymId::restHalf : whole ? SymId::restWhole : SymId::restQuarter;
+                  const QRectF body = rest->symBbox(bodySymbol).translated(rest->pos());
+                  const qreal padding = (half || whole ? 0.55 : 0.35) * sp;
+                  const bool above = rest->voice() % 2 == 0;
+                  std::vector<QRectF> obstacles;
+                  for (const Chord* chord : incoming) {
+                        if (chord->vStaffIdx() != idx)
+                              continue;
+                        const QPointF chordPos = chord->pos();
+                        const auto add = [&](const Element* item, const QPointF& origin) {
+                              if (!item || !item->addToSkyline() || item->bbox().isEmpty())
+                                    return;
+                              const QRectF ink = item->bbox().translated(origin + item->pos());
+                              if (ink.left() < body.right() && ink.right() > body.left())
+                                    obstacles.push_back(ink);
+                              };
+                        for (const Note* note : chord->notes()) {
+                              if (!note->visible())
+                                    continue;
+                              add(note, chordPos);
+                              add(note->accidental(), chordPos + note->pos());
+                              }
+                        add(chord->stem(), chordPos);
+                        add(chord->hook(), chordPos);
+                        for (const LedgerLine* ledger = chord->ledgerLines(); ledger; ledger = ledger->next())
+                              add(ledger, chordPos);
+                        }
+
+                  // Stay put when the chord is already clear on either side.
+                  // If it overlaps, move the rest out on its usual voice side.
+                  const qreal direction = above ? -1.0 : 1.0;
+                  qreal dy = 0.0;
+                  for (;;) {
+                        const QRectF placed = body.translated(0.0, dy);
+                        qreal needed = 0.0;
+                        for (const QRectF& ink : obstacles) {
+                              const qreal upperGap = ink.top() - placed.bottom();
+                              const qreal lowerGap = placed.top() - ink.bottom();
+                              if (qMax(upperGap, lowerGap) < padding - 1e-6 * sp)
+                                    needed = qMax(needed, padding - (above ? upperGap : lowerGap));
+                              }
+                        if (needed <= 0.0)
+                              break;
+                        const bool outside = above ? placed.bottom() - needed < padding
+                                                   : placed.top() + needed > 4.0 * line - padding;
+                        const qreal step = outside && !half && !whole ? 0.5 * line : line;
+                        dy += direction * std::ceil(needed / step) * step;
+                        }
+                  if (dy == 0.0)
+                        continue;
+
+                  rest->rypos() += dy;
+                  if (half || whole) {
+                        const int row = int(std::lround(rest->ipos().y() / line));
+                        const bool ledger = row < 0 || row >= 5;
+                        rest->_sym = !ledger ? bodySymbol : half ? SymId::restHalfLegerLine : SymId::restWholeLegerLine;
+                        rest->setbbox(rest->symBbox(rest->_sym));
+                        }
+                  s->createShape(idx);
                   }
             }
       }

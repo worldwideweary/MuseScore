@@ -275,6 +275,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void lastSystemFillUsesNaturalWidth();
       void pairedWholeRestsUseStaffLines();
       void mixedRestRunsUseCommonHeight();
+      void restsClearMovedChordsOnDestinationStaff();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -652,6 +653,48 @@ void TestIncrementalLayout::mixedRestRunsUseCommonHeight()
       QVERIFY(first->element(0) && first->element(0)->isRest());
       QVERIFY(last && last->element(0) && last->element(0)->isRest() && last != first);
       QVERIFY(last->element(0)->ipos().y() > first->element(0)->ipos().y() + 0.5 * score->spatium());
+      const Geometry initial = snapshot(score.get());
+      score->doLayout();
+      const QString diff = firstDifference(initial, snapshot(score.get()), 1e-4 * score->spatium());
+      QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::restsClearMovedChordsOnDestinationStaff()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-moved-chord-rest-clearance.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure();
+      for (bool above : { true, false }) {
+            QVERIFY(measure);
+            const Segment* s = measure->first(SegmentType::ChordRest);
+            QVERIFY(s);
+            const Element* r = s->element(above ? 0 : VOICES + 1);
+            const Element* c = s->element(above ? VOICES : 0);
+            QVERIFY(r && r->isRest() && c && c->isChord());
+            const Rest* rest = toRest(r);
+            const Chord* chord = toChord(c);
+            QCOMPARE(chord->staffMove(), above ? -1 : 1);
+            QCOMPARE(chord->vStaffIdx(), rest->staffIdx());
+            const qreal sp = rest->spatium();
+            QVERIFY(above ? rest->ipos().y() < 2.0 * sp : rest->ipos().y() > 3.0 * sp);
+            const Note* head = chord->notes().front();
+            const QRectF noteInk = head->bbox().translated(head->pagePos());
+            const QRectF restInk = rest->bbox().translated(rest->pagePos());
+            const qreal clearance = above ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
+            QVERIFY(clearance >= (above ? 0.35 : 0.55) * sp - 1e-5 * sp);
+
+            if (above) {
+                  const Segment* second = s->next(SegmentType::ChordRest);
+                  QVERIFY(second && second->element(0) && second->element(0)->isRest());
+                  const Element* manual = second->element(0);
+                  QVERIFY(!manual->offset().isNull());
+                  QVERIFY(qAbs(manual->ipos().y() - 2.0 * sp) < 1e-5 * sp);
+                  }
+            measure = measure->nextMeasure();
+            }
+
       const Geometry initial = snapshot(score.get());
       score->doLayout();
       const QString diff = firstDifference(initial, snapshot(score.get()), 1e-4 * score->spatium());

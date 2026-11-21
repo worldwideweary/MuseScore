@@ -67,6 +67,7 @@ class Rest : public ChordRest {
       void layoutForLookahead();
       bool layoutNativeFullMeasureRest();
       static void alignNativeRestRuns(Measure*);
+      static void clearNativeCrossStaffRestCollisions(Measure*);
 
       bool isGap() const               { return _gap;     }
       virtual void setGap(bool v)      { _gap = v;        }
