@@ -63,6 +63,7 @@ class Rest : public ChordRest {
       bool acceptDrop(EditData&) const override;
       Element* drop(EditData&) override;
       void layout() override;
+      void layoutForLookahead();
       bool layoutNativeFullMeasureRest();
 
       bool isGap() const               { return _gap;     }

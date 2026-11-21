@@ -332,16 +332,10 @@ static void layoutSegmentElements(Segment* segment, int startTrack, int endTrack
       {
       for (int track = startTrack; track < endTrack; ++track) {
             if (Element* e = segment->element(track)) {
-                  const bool preserveX = preserveMeasureRestX
-                        && e->isRest() && toRest(e)->isFullMeasureRest();
-                  const qreal oldX = e->rxpos();
-
-                  e->layout();
-
-                  // Later beam layout must retain the position already
-                  // assigned by Measure::stretchMeasure():
-                  if (preserveX)
-                        e->rxpos() = oldX;
+                  if (preserveMeasureRestX && e->isRest() && toRest(e)->isFullMeasureRest())
+                        toRest(e)->layoutForLookahead();
+                  else
+                        e->layout();
                   }
             }
       }
@@ -3652,10 +3646,9 @@ void Score::getNextMeasure(LayoutContext& lc)
             }
 
       // This measure may be an already-positioned lookahead from the following
-      // system. Rest::layout() clears a full-measure rest's horizontal offset,
-      // but collectSystem() can keep the following system unchanged without
-      // stretching this measure again. Preserve its existing centering until
-      // an actual measure stretch recomputes it.
+      // system. collectSystem() can retain that system without running its
+      // spacing and late rest placement again. Keep the assigned geometry
+      // until the measure actually participates in a reflow.
       const bool preserveLookaheadMeasureRestX = measure->system()
             && measure->tick() > lc.endTick;
       for (int staffIdx = 0; staffIdx < score()->nstaves(); ++staffIdx) {

@@ -10,6 +10,7 @@
 //=============================================================================
 
 #include <QtTest/QtTest>
+#include <QLineF>
 #include <QMap>
 #include <QVector>
 #include <cmath>
@@ -273,6 +274,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void fullMeasureRestUsesLocalClearance();
+      void fullMeasureRestKeepsClearanceOnLookahead();
       void crossStaffAutoStemsUseVoiceDirection();
       void afterGraceOctaveKeepsPreviousGracePosition();
       void afterGraceFitsBeforeEighthRest();
@@ -615,6 +617,43 @@ void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
       score->doLayout();
       const QString diff = firstDifference(first, snapshot(score.get()), 1e-4 * sp);
       QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::fullMeasureRestKeepsClearanceOnLookahead()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_REST_LAYOUT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
+      QVERIFY(score && score->firstMeasure());
+      Measure* second = score->firstMeasure()->nextMeasure();
+      QVERIFY(second);
+      Measure* third = second->nextMeasure();
+      QVERIFY(third);
+      Measure* fourth = third->nextMeasure();
+      QVERIFY(fourth);
+      // Make the displaced voice-2 rest the first rest of the next system.
+      third->setLineBreak(true);
+      score->doLayout();
+      QVERIFY(third->system() != fourth->system());
+      const Segment* segment = fourth->first(SegmentType::ChordRest);
+      QVERIFY(segment && segment->element(1) && segment->element(1)->isRest());
+      const Rest* rest = toRest(segment->element(1));
+      QVERIFY(rest->isFullMeasureRest());
+      const qreal sp = rest->spatium();
+      const QPointF pos = rest->ipos();
+      const QRectF ink = rest->bbox();
+      QVERIFY(pos.y() > 4.0 * sp);
+      QVERIFY(rest->sym() == SymId::restWholeLegerLine);
+
+      // Starting at the preceding boundary enters the third measure but
+      // allows the system starting at the fourth to be retained.
+      score->doLayoutRange(second->tick(), second->tick());
+      QVERIFY(QLineF(pos, rest->ipos()).length() < 1e-5 * sp);
+      QCOMPARE(rest->bbox(), ink);
+      QVERIFY(rest->sym() == SymId::restWholeLegerLine);
+      score->doLayout();
+      QVERIFY(QLineF(pos, rest->ipos()).length() < 1e-5 * sp);
+      QCOMPARE(rest->bbox(), ink);
       }
 
 void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()

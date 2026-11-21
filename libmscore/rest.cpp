@@ -551,6 +551,25 @@ int Rest::nativeMeasureRestOppositeTrack() const
       return hasChord ? opposite : -1;
       }
 
+void Rest::layoutForLookahead()
+      {
+      const QPointF oldPos = ipos();
+      const QRectF oldBounds = bbox();
+      const SymId oldSymbol = _sym;
+      const bool preserveClearance = oldBounds.isValid() && nativeMeasureRestOppositeTrack() >= 0;
+      layout();
+      // A following system may be retained without running its late rest
+      // clearance pass again. Keep the placed glyph in that case. If the
+      // measure takes part in the reflow, that pass will fit it anew.
+      if (preserveClearance) {
+            setPos(oldPos);
+            _sym = oldSymbol;
+            setbbox(oldBounds);
+            }
+      else
+            rxpos() = oldPos.x();
+      }
+
 bool Rest::layoutNativeFullMeasureRest()
       {
       const int opposite = nativeMeasureRestOppositeTrack();
