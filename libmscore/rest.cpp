@@ -690,7 +690,9 @@ void Rest::setNativeOrdinaryRestY(qreal y, qreal line)
       {
       rypos() = y;
       if (durationType().type() == TDuration::DurationType::V_HALF) {
-            const int row = int(std::lround(y / line));
+            // Alignment may leave a half rest on a half-space row.
+            // Use its staff line only to choose the glyph, without snapping Y.
+            const int row = int(std::floor(y / line + 1e-6));
             _sym = row < 0 || row >= 5 ? SymId::restHalfLegerLine : SymId::restHalf;
             setbbox(symBbox(_sym));
             }
@@ -726,11 +728,8 @@ void Rest::alignNativeRestRuns(Measure* measure)
                   qreal outerY = baseY;
                   const auto finish = [&]() {
                         if (run.size() > 1) {
-                              // The supported runs only have an opposite voice on the inward side.
-                              // Local clearance is already accounted for, so all rests can move out
-                              // to the same row, including a half rest whose starting row was clear.
-                              if (hasHalfRest)
-                                    outerY = direction * std::ceil(direction * outerY / line - 1e-6) * line;
+                              // Keep the outermost rest's fitted row, including any half-space
+                              // displacement from a quarter rest. Do not round the group again.
                               for (Rest* rest : run)
                                     rest->setNativeOrdinaryRestY(outerY, line);
                               }

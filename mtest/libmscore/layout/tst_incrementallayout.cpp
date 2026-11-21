@@ -712,7 +712,7 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-half-rest-runs.mscx"));
       QVERIFY(score);
       const Measure* measure = score->firstMeasure();
-      for (int bar = 1; bar <= 6; ++bar, measure = measure->nextMeasure()) {
+      for (int bar = 1; bar <= 7; ++bar, measure = measure->nextMeasure()) {
             QVERIFY(measure);
             if (bar == 1 || bar == 3)
                   continue;
@@ -747,8 +747,14 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
                         QVERIFY(qAbs(y) < 1e-5 * sp);
                         QVERIFY(half->sym() == SymId::restHalf);
                         }
-                  else
+                  else {
                         QVERIFY(y < 0.0 && half->sym() == SymId::restHalfLegerLine);
+                        if (bar == 7) {
+                              // The high quarter note sets the common row halfway
+                              // between two ledger-line heights.
+                              QVERIFY(qAbs(y + 5.5 * sp) < 1e-5 * sp);
+                              }
+                        }
                   for (int beat : { 2, 3 }) {
                         const Segment* segment = measure->findSegmentR(SegmentType::ChordRest, Fraction(beat, 4));
                         QVERIFY(segment);
