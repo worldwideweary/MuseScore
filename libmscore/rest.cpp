@@ -722,26 +722,22 @@ void Rest::alignNativeRestRuns(Measure* measure)
                   const qreal direction = above ? -1.0 : 1.0;
                   const qreal baseY = (above ? 1.0 : 3.0) * line;
                   std::vector<Rest*> run;
-                  Rest* halfRest = nullptr;
-                  bool halfAlreadyClearOfNote = false;
-                  qreal halfY = baseY;
+                  bool hasHalfRest = false;
                   qreal outerY = baseY;
                   const auto finish = [&]() {
                         if (run.size() > 1) {
-                              if (halfRest && !halfAlreadyClearOfNote)
+                              // The supported runs only have an opposite voice on the inward side.
+                              // Local clearance is already accounted for, so all rests can move out
+                              // to the same row, including a half rest whose starting row was clear.
+                              if (hasHalfRest)
                                     outerY = direction * std::ceil(direction * outerY / line - 1e-6) * line;
-                              for (Rest* rest : run) {
-                                    // Keep a half rest against a clear note on its own staff line.
-                                    // A displaced half rest, by contrast, sets the row for its run.
-                                    const qreal y = rest == halfRest && halfAlreadyClearOfNote ? halfY : outerY;
-                                    rest->setNativeOrdinaryRestY(y, line);
-                                    }
+                              for (Rest* rest : run)
+                                    rest->setNativeOrdinaryRestY(outerY, line);
                               }
-                        else if (halfRest)
-                              halfRest->setNativeOrdinaryRestY(halfY, line);
+                        else if (hasHalfRest)
+                              run.front()->setNativeOrdinaryRestY(outerY, line);
                         run.clear();
-                        halfRest = nullptr;
-                        halfAlreadyClearOfNote = false;
+                        hasHalfRest = false;
                         outerY = baseY;
                         };
 
@@ -780,7 +776,7 @@ void Rest::alignNativeRestRuns(Measure* measure)
                               finish();
                               continue;
                               }
-                        if (!run.empty() && (run.back()->tick() + run.back()->actualTicks() != rest->tick() || (half && halfRest)))
+                        if (!run.empty() && run.back()->tick() + run.back()->actualTicks() != rest->tick())
                               finish();
 
                         qreal localY = matchingPair && !half ? rest->ipos().y() : baseY;
@@ -808,11 +804,7 @@ void Rest::alignNativeRestRuns(Measure* measure)
                                     localY += direction * std::ceil(needed / step) * step;
                                     }
                               }
-                        if (half) {
-                              halfRest = rest;
-                              halfY = localY;
-                              halfAlreadyClearOfNote = note && localY == baseY;
-                              }
+                        hasHalfRest |= half;
                         outerY = above ? qMin(outerY, localY) : qMax(outerY, localY);
                         run.push_back(rest);
                         }

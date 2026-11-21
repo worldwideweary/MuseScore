@@ -740,10 +740,15 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
                               }
                         }
                   }
-            else if (bar == 5)
-                  QVERIFY(qAbs(y - sp) < 1e-5 * sp);
             else {
-                  QVERIFY(y < 0.0 && half->sym() == SymId::restHalfLegerLine);
+                  if (bar == 5) {
+                        // The half rest is already clear of the low note but
+                        // still follows the quarter rests to the top line.
+                        QVERIFY(qAbs(y) < 1e-5 * sp);
+                        QVERIFY(half->sym() == SymId::restHalf);
+                        }
+                  else
+                        QVERIFY(y < 0.0 && half->sym() == SymId::restHalfLegerLine);
                   for (int beat : { 2, 3 }) {
                         const Segment* segment = measure->findSegmentR(SegmentType::ChordRest, Fraction(beat, 4));
                         QVERIFY(segment);
