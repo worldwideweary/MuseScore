@@ -274,6 +274,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void tieDeletionUndoRedo();
       void lastSystemFillUsesNaturalWidth();
       void pairedWholeRestsUseStaffLines();
+      void quarterRestRunsUseCommonHeight();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -605,6 +606,47 @@ void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
                   }
             measure = measure->nextMeasure();
             }
+      }
+
+void TestIncrementalLayout::quarterRestRunsUseCommonHeight()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-quarter-rest-alignment.mscx"));
+      QVERIFY(score);
+      Measure* measure = score->firstMeasure();
+      for (int voice : { 0, 1 }) {
+            QVERIFY(measure);
+            const Segment* first = measure->first(SegmentType::ChordRest);
+            const Segment* beatThree = first ? first->next(SegmentType::ChordRest) : nullptr;
+            const Segment* beatFour = beatThree ? beatThree->next(SegmentType::ChordRest) : nullptr;
+            QVERIFY(beatThree && beatFour);
+            const Element* a = beatThree->element(voice);
+            const Element* b = beatFour->element(voice);
+            const Element* other = beatThree->element(1 - voice);
+            QVERIFY(a && b && a->isRest() && b->isRest() && other && other->isChord());
+            QCOMPARE(a->ipos().y(), b->ipos().y());
+            const Note* note = toChord(other)->notes().front();
+            const QRectF noteInk = note->bbox().translated(note->pagePos());
+            const QRectF restInk = a->bbox().translated(a->pagePos());
+            const qreal gap = voice == 0 ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
+            QVERIFY(gap >= 0.35 * a->spatium() - 1e-5 * a->spatium());
+            measure = measure->nextMeasure();
+            }
+
+      // A chord in the rest's own voice ends the group.
+      QVERIFY(measure && measure->first(SegmentType::ChordRest));
+      const Segment* first = measure->first(SegmentType::ChordRest);
+      const Segment* last = measure->last();
+      if (last && !last->isChordRestType())
+            last = last->prev(SegmentType::ChordRest);
+      QVERIFY(first->element(0) && first->element(0)->isRest());
+      QVERIFY(last && last->element(0) && last->element(0)->isRest() && last != first);
+      QVERIFY(last->element(0)->ipos().y() > first->element(0)->ipos().y() + 0.5 * score->spatium());
+      const Geometry initial = snapshot(score.get());
+      score->doLayout();
+      const QString diff = firstDifference(initial, snapshot(score.get()), 1e-4 * score->spatium());
+      QVERIFY2(diff.isEmpty(), qPrintable(diff));
       }
 
 void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()

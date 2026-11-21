@@ -16,6 +16,7 @@ include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
 add_test(NAME tst_incrementallayout_rest_preview
       COMMAND tst_incrementallayout -xunitxml -o result-rest-preview.xml
             pairedWholeRestsUseStaffLines
+            quarterRestRunsUseCommonHeight
             fullMeasureRestUsesLocalClearance
             fullMeasureRestClearsAtItsOffset
             fullMeasureRestKeepsClearanceOnLookahead

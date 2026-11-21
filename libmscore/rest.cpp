@@ -654,6 +654,104 @@ bool Rest::layoutNativeFullMeasureRest()
       return true;
       }
 
+// This subset of Studio rest alignment covers uninterrupted quarter-rest
+// runs in two voices against simultaneous, unbeamed quarter notes.
+void Rest::alignNativeQuarterRests(Measure* measure)
+      {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
+      if (!preview || measure->isMMRest())
+            return;
+      const Fraction quarter(1, 4);
+      for (int staffIdx = 0; staffIdx < measure->score()->nstaves(); ++staffIdx) {
+            const Staff* staff = measure->score()->staff(staffIdx);
+            const Fraction tick = measure->tick();
+            const int track = staffIdx * VOICES;
+            if (!staff->show() || !staff->isPitchedStaff(tick) || staff->lines(tick) != 5
+                || measure->hasVoice(track + 2) || measure->hasVoice(track + 3))
+                  continue;
+            const qreal sp = staff->spatium(tick);
+            const qreal line = staff->lineDistance(tick) * sp;
+            if (line <= 0.0)
+                  continue;
+
+            for (int voice : { 0, 1 }) {
+                  const bool above = voice == 0;
+                  const qreal baseY = (above ? 1.0 : 3.0) * line;
+                  const qreal padding = 0.35 * sp;
+                  std::vector<Rest*> run;
+                  qreal outerY = baseY;
+                  const auto finish = [&]() {
+                        if (run.size() > 1) {
+                              for (Rest* rest : run) {
+                                    rest->rypos() = outerY;
+                                    rest->segment()->createShape(staffIdx);
+                                    }
+                              }
+                        run.clear();
+                        outerY = baseY;
+                        };
+
+                  for (Segment* s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+                        if (!s->enabled())
+                              continue;
+                        Element* element = s->element(track + voice);
+                        if (!element)
+                              continue;
+                        const Element* other = s->element(track + 1 - voice);
+                        Rest* rest = element->isRest() ? toRest(element) : nullptr;
+                        const Chord* chord = other && other->isChord() ? toChord(other) : nullptr;
+                        if (!rest || rest->isGap() || !rest->addToSkyline() || !rest->offset().isNull()
+                            || rest->staffMove() || rest->beam() || rest->isSmall()
+                            || !rest->el().empty() || !rest->lyrics().empty()
+                            || rest->durationType().type() != TDuration::DurationType::V_QUARTER
+                            || rest->durationType().dots() || rest->actualTicks() != quarter
+                            || !chord || !chord->addToSkyline() || chord->staffMove() || chord->beam()
+                            || chord->durationType().type() != TDuration::DurationType::V_QUARTER
+                            || chord->durationType().dots() || chord->actualTicks() != quarter
+                            || chord->notes().size() != 1 || chord->slash() || chord->up() == above
+                            || !chord->graceNotes().empty() || chord->tremolo() || chord->arpeggio()
+                            || !chord->lyrics().empty() || !chord->articulations().empty()) {
+                              finish();
+                              continue;
+                              }
+                        const Note* note = chord->notes().front();
+                        bool extraVoice = false;
+                        for (const Element* e : s->elist()) {
+                              if (e && e != element && e != other && e->vStaffIdx() == staffIdx
+                                  && e->isChordRest() && e->addToSkyline() && (!e->isRest() || !toRest(e)->isGap())) {
+                                    extraVoice = true;
+                                    break;
+                                    }
+                              }
+                        if (extraVoice || !note->visible() || note->bbox().isEmpty() || note->accidental()
+                            || !note->el().empty() || rest->bbox().isEmpty()) {
+                              finish();
+                              continue;
+                              }
+                        if (!run.empty() && run.back()->tick() + quarter != rest->tick())
+                              finish();
+
+                        const QRectF restInk = rest->bbox().translated(rest->x(), baseY);
+                        const QRectF noteInk = note->bbox().translated(chord->pos() + note->pos());
+                        qreal localY = baseY;
+                        if (restInk.left() < noteInk.right() && restInk.right() > noteInk.left()) {
+                              const qreal gap = above ? noteInk.top() - restInk.bottom() : restInk.top() - noteInk.bottom();
+                              const qreal needed = padding - gap;
+                              if (needed > 0.0) {
+                                    const bool outside = above ? restInk.bottom() - needed < padding
+                                                               : restInk.top() + needed > 4.0 * line - padding;
+                                    const qreal step = outside ? 0.5 * line : line;
+                                    localY += (above ? -1.0 : 1.0) * std::ceil(needed / step) * step;
+                                    }
+                              }
+                        outerY = above ? qMin(outerY, localY) : qMax(outerY, localY);
+                        run.push_back(rest);
+                        }
+                  finish();
+                  }
+            }
+      }
+
 //---------------------------------------------------------
 //   computeLineOffset
 //---------------------------------------------------------
