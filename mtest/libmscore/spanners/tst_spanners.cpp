@@ -61,6 +61,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurFit();
       void nativeOrdinarySlurAcrossBarline();
       void nativeArticulatedSlurTips();
+      void nativeSlurOverInteriorStaccato();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
       void nativePreGraceSlurFit();
@@ -1454,6 +1455,47 @@ void TestSpanners::nativeArticulatedSlurTips()
             QVERIFY2(tip.y() < staffY - 0.17 * sp, "The tip must clear the top staff line.");
             QVERIFY2(ink.top() - tip.y() >= 0.49 * sp, "The tip must clear the articulation glyph.");
             }
+      }
+
+void TestSpanners::nativeSlurOverInteriorStaccato()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-staccato.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && entry.second->tick() == Fraction(1, 1)) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up() && slur->startCR() && slur->startCR()->isChord());
+      const SlurSegment* part = slur->frontSegment();
+      QVERIFY(part && part->isSingleType());
+      const qreal sp = part->spatium();
+      const auto point = [&](Grip grip) { return part->pagePos() + part->ups(grip).pos(); };
+      const Note* anchor = toChord(slur->startCR())->upNote();
+      const qreal gap = (anchor->pagePos().y() - point(Grip::START).y()) / sp;
+      QVERIFY2(gap > 0.7 && gap < 1.6, qPrintable(QString("Slur tip above first note: %1sp").arg(gap)));
+
+      const Segment* middle = slur->startCR()->measure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(middle && middle->element(0) && middle->element(0)->isChord());
+      const Chord* chord = toChord(middle->element(0));
+      QCOMPARE(chord->articulations().size(), 1);
+      const Articulation* dot = chord->articulations().front();
+      const QRectF ink = dot->bbox().translated(chord->pagePos() + dot->pos());
+      const CubicBezier curve(point(Grip::START), point(Grip::BEZIER1), point(Grip::BEZIER2), point(Grip::END));
+      qreal low = 0.0;
+      qreal high = 1.0;
+      for (int i = 0; i < 24; ++i) {
+            const qreal mid = (low + high) * 0.5;
+            if (curve.pointAtPercent(mid).x() < ink.center().x())
+                  low = mid;
+            else
+                  high = mid;
+            }
+      QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.2 * sp);
       }
 
 void TestSpanners::nativeSlantedSlurFit()

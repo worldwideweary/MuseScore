@@ -607,8 +607,15 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
             if (!chord->addToSkyline() || chord->staffMove() || chord->isNudged() || chord->isSmall()
                 || chord->isGrace() || chord->beam() || chord->tuplet() || chord->tremolo()
                 || chord->arpeggio() || chord->stemSlash() || !chord->graceNotes().empty()
-                || !chord->articulations().empty() || !chord->el().empty() || chord->notes().size() != 1)
+                || !chord->el().empty() || chord->notes().size() != 1)
                   return false;
+            // Close articulations inside the span are local obstacles.
+            // Keep existing tip placement for articulated anchors.
+            for (const Articulation* art : chord->articulations()) {
+                  if ((anchoredStart && chord == first) || (anchoredEnd && chord == last)
+                      || !art->layoutCloseToNote())
+                        return false;
+                  }
             const Note* note = chord->notes().front();
             if (!note->addToSkyline() || note->isSmall() || note->mirror() || note->isNudged()
                 || note->bbox().isEmpty() || note->accidental()
@@ -649,6 +656,10 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                         };
                   add(note, 0.4);
                   add(chord->stem(), 0.1);
+                  for (const Articulation* art : chord->articulations()) {
+                        if (art->visible() && art->up() == slur->up())
+                              add(art, 0.2);
+                        }
                   }
             if (chord == last)
                   return true;
