@@ -2125,6 +2125,10 @@ void TestSpanners::nativeContinuedSlurCurve()
             }
 
       QVERIFY(middle->system() && middle->system()->firstMeasure());
+      // The open tip on D2 clears the top line on the outside of the staff.
+      const qreal staffY = middle->system()->staffYpage(middle->vStaffIdx());
+      const qreal tipY = (point(middle, Grip::START).y() - staffY) / sp;
+      QVERIFY2(tipY < -0.17, qPrintable(QString("Middle slur start: %1sp from the top line").arg(tipY)));
       const Measure* measure = middle->system()->firstMeasure();
       const Segment* peak = measure->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
       QVERIFY(peak && peak->element(0) && peak->element(0)->isChord());

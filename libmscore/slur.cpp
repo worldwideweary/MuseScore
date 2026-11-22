@@ -1057,7 +1057,9 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
             }
       if (initial)
             *initial = {{ first, toStaff(c1), toStaff(c2), last }};
-      const qreal step = direction * qMin(qreal(1.5), 0.30 * qMax(qreal(1.0), length / (16.0 * sp))) * sp;
+      // Studio caps the signed step: long downward corrections are capped,
+      // while long upward corrections still grow with the span.
+      const qreal step = qMin(direction * 0.30 * qMax(qreal(1.0), length / (16.0 * sp)), qreal(1.5)) * sp;
       // A slur from a beamed pre-grace to its parent starts at the beam.
       // Opposite stem directions alone don't make that tip float along
       // the stem. Put more of the collision correction into the curve.
