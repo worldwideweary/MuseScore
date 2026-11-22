@@ -57,6 +57,7 @@ class TestSpanners : public QObject, public MTest
       void tieLayoutStylesRoundTrip();
       void partialSlurHangingAngles();
       void nativeMultiVoiceSlurDirection();
+      void nativeMixedStemSlurAcrossMeasures();
       void nativeOrdinarySlurFit();
       void nativeOrdinarySlurAcrossBarline();
       void nativeArticulatedSlurTips();
@@ -1293,6 +1294,32 @@ void TestSpanners::nativeMultiVoiceSlurDirection()
                         }
                   }
             }
+      }
+
+void TestSpanners::nativeMixedStemSlurAcrossMeasures()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-mixed-stem-slur-across-measures.mscx"));
+      QVERIFY(score);
+
+      int cases = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->startCR() && slur->endCR());
+            const int measure = slur->startCR()->measure()->no() + 1;
+            QVERIFY(measure == 1 || measure == 3 || measure == 5 || measure == 7);
+            QVERIFY(slur->slurDirection() == Direction::AUTO);
+            const bool up = measure == 3 || measure == 5;
+            QCOMPARE(slur->nsegments(), measure == 5 ? size_t(2) : size_t(1));
+            QCOMPARE(slur->up(), up);
+            slur->layout();
+            QCOMPARE(slur->up(), up);
+            ++cases;
+            }
+      QCOMPARE(cases, 4);
       }
 
 void TestSpanners::nativeOrdinarySlurFit()

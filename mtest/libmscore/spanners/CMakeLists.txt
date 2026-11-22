@@ -19,6 +19,7 @@ include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
 add_test(NAME tst_spanners_slur_preview
       COMMAND tst_spanners -xunitxml -o result-slur-preview.xml
             nativeMultiVoiceSlurDirection
+            nativeMixedStemSlurAcrossMeasures
             nativeOrdinarySlurFit
             nativeOrdinarySlurAcrossBarline
             nativeArticulatedSlurTips

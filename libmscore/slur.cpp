@@ -2711,12 +2711,25 @@ static bool chordsHaveTie(Chord* c1, Chord* c2)
 
 static bool isDirectionMixture(Chord* c1, Chord* c2)
       {
-      bool up = c1->up();
-      for (Segment* seg = c1->segment(); seg; seg = seg->next(SegmentType::ChordRest)) {
+      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool acrossBars = preview && c1->track() == c2->track() && c1->staff()
+            && c1->staff()->isPitchedStaff(c1->tick()) && !c1->isGrace() && !c2->isGrace()
+            && !c1->staffMove() && !c2->staffMove();
+      const bool up = c1->up();
+      for (Segment* seg = c1->segment(); seg && (!acrossBars || seg->tick() <= c2->tick());
+            seg = acrossBars ? seg->next1(SegmentType::ChordRest) : seg->next(SegmentType::ChordRest)) {
             Element* e = seg->element(c1->track());
             if (!e || !e->isChord())
                   continue;
             Chord* c = toChord(e);
+            if (acrossBars && c->measure()->system() != c1->measure()->system()
+                && !c->beam() && !c->tremolo() && !c->staffMove()) {
+                  // The next system may not have resolved this plain chord's
+                  // stem yet. Beams and tremolos have their own direction pass.
+                  for (Note* note : c->notes())
+                        note->updateLine();
+                  c->computeUp();
+                  }
             if (c->up() != up)
                   return true;
             if (seg == c2->segment())
