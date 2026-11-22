@@ -19,6 +19,7 @@ add_test(NAME tst_incrementallayout_rest_preview
             mixedRestRunsUseCommonHeight
             movedChordsDoNotDisplaceOrdinaryRests
             halfRestRunsFitSameStaffAndMovedChords
+            revealedRestsClearOppositeStems
             fullMeasureRestUsesLocalClearance
             fullMeasureRestClearsAtItsOffset
             fullMeasureRestKeepsClearanceOnLookahead

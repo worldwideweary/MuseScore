@@ -724,7 +724,7 @@ void Rest::alignNativeRestRuns(Measure* measure)
                   const qreal direction = above ? -1.0 : 1.0;
                   const qreal baseY = (above ? 1.0 : 3.0) * line;
                   std::vector<Rest*> run;
-                  bool hasHalfRest = false;
+                  bool fitSingleRest = false;
                   qreal outerY = baseY;
                   const auto finish = [&]() {
                         if (run.size() > 1) {
@@ -733,10 +733,10 @@ void Rest::alignNativeRestRuns(Measure* measure)
                               for (Rest* rest : run)
                                     rest->setNativeOrdinaryRestY(outerY, line);
                               }
-                        else if (hasHalfRest)
+                        else if (fitSingleRest)
                               run.front()->setNativeOrdinaryRestY(outerY, line);
                         run.clear();
-                        hasHalfRest = false;
+                        fitSingleRest = false;
                         outerY = baseY;
                         };
 
@@ -762,12 +762,21 @@ void Rest::alignNativeRestRuns(Measure* measure)
                         const Element* other = s->element(track + 1 - voice);
                         const Rest* paired = other && other->isRest() ? toRest(other) : nullptr;
                         const Chord* chord = other && other->isChord() ? toChord(other) : nullptr;
+                        const bool stemTowardsRest = chord && chord->up() == above && chord->stem()
+                              && chord->stem()->addToSkyline() && !chord->stem()->bbox().isEmpty();
+                        // A note at the same tick can collide with the rest even
+                        // when their durations differ (e.g. a half rest under a quarter note).
+                        const auto chordType = chord ? chord->durationType().type() : type;
+                        const bool matchingChordDuration = chord && chordType == type && chord->actualTicks() == duration;
+                        const bool mixedChordDuration = stemTowardsRest && chordType != type
+                              && (chordType == TDuration::DurationType::V_HALF || chordType == TDuration::DurationType::V_QUARTER)
+                              && chord->actualTicks() == Fraction(1, chordType == TDuration::DurationType::V_HALF ? 2 : 4);
                         const bool matchingPair = nativePlainRest(paired) && paired->durationType() == rest->durationType()
                               && paired->actualTicks() == duration;
                         const bool simpleChord = chord && chord->addToSkyline() && !chord->staffMove() && !chord->beam()
-                              && chord->durationType().type() == type && !chord->durationType().dots()
-                              && chord->actualTicks() == duration && chord->notes().size() == 1
-                              && !chord->slash() && chord->up() != above && chord->graceNotes().empty()
+                              && (matchingChordDuration || mixedChordDuration) && !chord->durationType().dots()
+                              && chord->notes().size() == 1 && !chord->slash()
+                              && (chord->up() != above || stemTowardsRest) && chord->graceNotes().empty()
                               && !chord->tremolo() && !chord->arpeggio() && chord->lyrics().empty() && chord->articulations().empty();
                         const Note* note = simpleChord ? chord->notes().front() : nullptr;
                         if (!matchingPair && (!note || !note->visible() || note->bbox().isEmpty() || note->accidental()
@@ -783,7 +792,7 @@ void Rest::alignNativeRestRuns(Measure* measure)
                               const QRectF restInk = rest->symBbox(half ? SymId::restHalf : SymId::restQuarter)
                                     .translated(rest->x(), baseY);
                               std::vector<QRectF> obstacles;
-                              if (half)
+                              if (half || stemTowardsRest)
                                     addNativeRestChordInk(obstacles, chord, restInk);
                               else {
                                     const QRectF noteInk = note->bbox().translated(chord->pos() + note->pos());
@@ -803,7 +812,7 @@ void Rest::alignNativeRestRuns(Measure* measure)
                                     localY += direction * std::ceil(needed / step) * step;
                                     }
                               }
-                        hasHalfRest |= half;
+                        fitSingleRest |= half || stemTowardsRest;
                         outerY = above ? qMin(outerY, localY) : qMax(outerY, localY);
                         run.push_back(rest);
                         }

@@ -29,6 +29,7 @@
 #include "libmscore/articulation.h"
 #include "libmscore/note.h"
 #include "libmscore/rest.h"
+#include "libmscore/stem.h"
 #include "libmscore/beam.h"
 #include "libmscore/tie.h"
 #include "libmscore/shape.h"
@@ -277,6 +278,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void mixedRestRunsUseCommonHeight();
       void movedChordsDoNotDisplaceOrdinaryRests();
       void halfRestRunsFitSameStaffAndMovedChords();
+      void revealedRestsClearOppositeStems();
       void fullMeasureRestUsesLocalClearance();
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
@@ -769,6 +771,71 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
       score->doLayout();
       const QString diff = firstDifference(initial, snapshot(score.get()), 1e-4 * score->spatium());
       QVERIFY2(diff.isEmpty(), qPrintable(diff));
+      }
+
+void TestIncrementalLayout::revealedRestsClearOppositeStems()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+            QSKIP("The rest layout switch must be enabled.");
+      std::unique_ptr<MasterScore> score(readScore("libmscore/spanners/native-slur-rest-and-voice-clearance.mscx"));
+      QVERIFY(score);
+      struct Case {
+            Rest* rest;
+            const Chord* chord;
+            qreal hiddenY;
+            };
+      QVector<Case> cases;
+      Measure* measure = score->firstMeasure();
+      for (int bar = 0; bar < 4; ++bar, measure = measure->nextMeasure()) {
+            QVERIFY(measure);
+            if (bar < 2)
+                  continue;
+            // F4 and F5: a half rest on beat one and a quarter rest on
+            // beat four. Both must clear the same-tick voice-1 downstem.
+            for (int beat : { 0, 3 }) {
+                  const Segment* seg = measure->findSegmentR(SegmentType::ChordRest, Fraction(beat, 4));
+                  QVERIFY(seg && seg->element(0) && seg->element(0)->isChord());
+                  QVERIFY(seg->element(1) && seg->element(1)->isRest());
+                  const Chord* chord = toChord(seg->element(0));
+                  QVERIFY(chord->stem() && !chord->up());
+                  Rest* rest = toRest(seg->element(1));
+                  QVERIFY(!rest->visible());
+                  cases.push_back({rest, chord, rest->ipos().y()});
+                  }
+            }
+
+      score->startCmd();
+      for (const Case& c : cases)
+            c.rest->undoChangeProperty(Pid::VISIBLE, true);
+      score->endCmd();
+      for (const Case& c : cases) {
+            QVERIFY(c.rest->visible());
+            const qreal sp = c.rest->spatium();
+            const bool half = c.rest->durationType().type() == TDuration::DurationType::V_HALF;
+            const QRectF restInk = c.rest->bbox().translated(c.rest->pagePos());
+            const Stem* stem = c.chord->stem();
+            QVERIFY(stem);
+            const QRectF stemInk = stem->bbox().translated(stem->pagePos());
+            const qreal gap = (restInk.top() - stemInk.bottom()) / sp;
+            QVERIFY2(gap >= (half ? 0.55 : 0.35) - 0.05,
+                     qPrintable(QString("Rest clearance from the downstem: %1sp").arg(gap)));
+            QVERIFY(c.rest->ipos().y() > c.hiddenY + sp);
+            if (half)
+                  QCOMPARE(c.rest->sym(), SymId::restHalfLegerLine);
+            }
+      const Geometry incremental = snapshot(score.get());
+      score->doLayout();
+      const QString diff = firstDifference(incremental, snapshot(score.get()), 1e-4 * score->spatium());
+      QVERIFY2(diff.isEmpty(), qPrintable(diff));
+
+      score->startCmd();
+      for (const Case& c : cases)
+            c.rest->undoChangeProperty(Pid::VISIBLE, false);
+      score->endCmd();
+      for (const Case& c : cases) {
+            QVERIFY(!c.rest->visible());
+            QVERIFY(qAbs(c.rest->ipos().y() - c.hiddenY) < 1e-4 * c.rest->spatium());
+            }
       }
 
 void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
