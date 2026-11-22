@@ -585,41 +585,105 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
       const bool anchoredEnd = segment->isSingleEndType();
       const ChordRest* first = anchoredStart ? start : continuationBoundaryChord(system, start->track(), true);
       const ChordRest* last = anchoredEnd ? end : continuationBoundaryChord(system, end->track(), false);
+      const bool up = slur->up();
+      const bool stemSide = start->up() == up && end->up() == up
+            && toChord(start)->stem() && toChord(end)->stem();
       if (!first || !last || !first->isChord() || !last->isChord() || !first->segment() || !last->segment()
           || first->segment()->system() != system || last->segment()->system() != system
           || first->tick() >= last->tick() || !staff->isPitchedStaff(first->tick()) || staff->lines(first->tick()) < 2
-          || (anchoredStart && first->up() == slur->up()) || (anchoredEnd && last->up() == slur->up()))
+          || (!stemSide && ((anchoredStart && first->up() == up) || (anchoredEnd && last->up() == up))))
             return false;
 
-      // Collect the note ink on both sides of a barline in the same system.
-      for (const Segment* s = first->segment(); s && s->system() == segment->system(); s = s->next1()) {
+      const auto add = [&](const Element* item, const QPointF& origin, qreal clearance) {
+            if (!item || !item->visible() || !item->addToSkyline() || item->bbox().isEmpty())
+                  return;
+            const qreal gap = clearance * segment->spatium();
+            const QRectF rect = item->bbox().translated(origin + item->pos());
+            obstacles.push_back(rect.adjusted(0.0, up ? -gap : 0.0, 0.0, up ? 0.0 : gap));
+            };
+      const auto addRest = [&](const Element* rest, const QPointF& origin) {
+            if (!toChordRest(rest)->durationType().isMeasure())
+                  add(rest, origin, 0.1);
+            };
+
+      // Collect the visible geometry on each side of the barline. The slur
+      // keeps its own endpoints; notes in other voices there are excluded.
+      for (const Segment* s = first->segment(); s && s->system() == system; s = s->next1()) {
             if (!s->enabled() || s->isBreathType() || (s->segmentType() & SegmentType::BarLineType))
                   continue;
             if (!s->isChordRestType())
                   return false;
+            const bool atStart = anchoredStart && s == first->segment();
+            const bool atEnd = anchoredEnd && s == last->segment();
             const Element* e = s->element(first->track());
-            if (!e || !e->isChord())
+            if (!e || !e->isChordRest())
                   return false;
+            const QPointF segmentOrigin = s->measure()->pos() + s->pos();
             for (const Element* other : s->elist()) {
-                  if (other && other != e && other->vStaffIdx() == segment->vStaffIdx() && other->addToSkyline())
+                  if (!other || other == e || other->vStaffIdx() != segment->vStaffIdx()
+                      || !other->visible() || !other->addToSkyline())
+                        continue;
+                  if (stemSide || other->staffIdx() != first->staffIdx())
                         return false;
+                  if (atStart || atEnd || (up ? other->track() < first->track() : other->track() > first->track()))
+                        continue;
+                  if (other->isRest()) {
+                        addRest(other, segmentOrigin);
+                        continue;
+                        }
+                  if (!other->isChord())
+                        return false;
+                  const Chord* chord = toChord(other);
+                  if (chord->staffMove() || chord->beam() || chord->tuplet() || chord->tremolo()
+                      || chord->arpeggio() || !chord->graceNotes().empty() || !chord->articulations().empty()
+                      || !chord->el().empty())
+                        return false;
+                  const QPointF chordOrigin = segmentOrigin + chord->pos();
+                  for (const Note* note : chord->notes()) {
+                        if (note->tieFor() || note->tieBack() || note->partialTie(true) || note->partialTie(false)
+                            || !note->el().empty() || !note->dots().empty())
+                              return false;
+                        add(note, chordOrigin, 0.4);
+                        add(note->accidental(), chordOrigin, 0.1);
+                        }
+                  add(chord->stem(), chordOrigin, 0.1);
+                  add(chord->hook(), chordOrigin, 0.1);
                   }
+            if (e->isRest()) {
+                  if (toChordRest(e)->staffMove())
+                        return false;
+                  addRest(e, segmentOrigin);
+                  continue;
+                  }
+            if (!e->isChord())
+                  return false;
             const Chord* chord = toChord(e);
+            const Tremolo* tremolo = chord->tremolo();
             if (!chord->addToSkyline() || chord->staffMove() || chord->isNudged() || chord->isSmall()
-                || chord->isGrace() || chord->beam() || chord->tuplet() || chord->tremolo()
+                || chord->isGrace() || chord->beam() || chord->tuplet()
                 || chord->arpeggio() || chord->stemSlash() || !chord->graceNotes().empty()
                 || !chord->el().empty() || chord->notes().size() != 1)
                   return false;
+            if (tremolo) {
+                  if (!stemSide || !tremolo->twoNotes() || !tremolo->chord1() || !tremolo->chord2()
+                      || tremolo->chord1()->staffMove() || tremolo->chord2()->staffMove()
+                      || tremolo->chord1()->measure()->system() != system || tremolo->chord2()->measure()->system() != system
+                      || tremolo->chord1()->up() != up || tremolo->chord2()->up() != up || tremolo->bbox().isEmpty())
+                        return false;
+                  if (tremolo->chord1() == chord || tremolo->chord1()->tick() < first->tick()) {
+                        const QPointF origin = tremolo->pagePos() - tremolo->pos() - nativeSlurStaffOrigin(segment);
+                        add(tremolo, origin, 0.1);
+                        }
+                  }
             // Close articulations inside the span are local obstacles.
             // Keep existing tip placement for articulated anchors.
             for (const Articulation* art : chord->articulations()) {
-                  if ((anchoredStart && chord == first) || (anchoredEnd && chord == last)
-                      || !art->layoutCloseToNote())
+                  if (atStart || atEnd || !art->layoutCloseToNote())
                         return false;
                   }
             const Note* note = chord->notes().front();
             if (!note->addToSkyline() || note->isSmall() || note->mirror() || note->isNudged()
-                || note->bbox().isEmpty() || note->accidental()
+                || note->bbox().isEmpty() || ((atStart || atEnd) && note->accidental())
                 || note->partialTie(true) || note->partialTie(false) || !note->dots().empty()
                 || !note->el().empty() || !note->spannerFor().empty() || !note->spannerBack().empty())
                   return false;
@@ -645,21 +709,15 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                         appendOrdinarySlurTie(segment, incomingPart, obstacles);
                   }
 
-            if (chord != first || !anchoredStart) {
-                  const QPointF origin = s->measure()->pos() + s->pos() + chord->pos();
-                  const auto add = [&](const Element* item, qreal clearance) {
-                        if (!item || !item->addToSkyline() || item->bbox().isEmpty())
-                              return;
-                        const qreal gap = anchoredEnd && chord == last ? 0.0 : clearance * segment->spatium();
-                        QRectF rect = item->bbox().translated(origin + item->pos());
-                        rect.adjust(0.0, slur->up() ? -gap : 0.0, 0.0, slur->up() ? 0.0 : gap);
-                        obstacles.push_back(rect);
-                        };
-                  add(note, 0.4);
-                  add(chord->stem(), 0.1);
+            if (!atStart) {
+                  const QPointF origin = segmentOrigin + chord->pos();
+                  add(note, origin, atEnd ? 0.0 : 0.4);
+                  add(note->accidental(), origin, 0.1);
+                  add(chord->stem(), origin, atEnd ? 0.0 : 0.1);
+                  add(chord->hook(), origin, atEnd ? 0.0 : 0.1);
                   for (const Articulation* art : chord->articulations()) {
-                        if (art->visible() && art->up() == slur->up())
-                              add(art, 0.2);
+                        if (art->up() == up)
+                              add(art, origin, 0.2);
                         }
                   }
             if (chord == last)
@@ -2312,15 +2370,17 @@ void Slur::slurPos(SlurPos* sp)
 
       qreal __up = _up ? -1.0 : 1.0;
       static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool sameSystem = sp->system1 == sp->system2;
       const bool standardStemTips = previewGraceTips && sc && ec
-            && sp->system1 == sp->system2 && partialDirection() < 0 && !isHammerOnPullOff()
+            && partialDirection() < 0 && !isHammerOnPullOff()
             && lineType() == 0 && staff() && staff()->isPitchedStaff(tick())
             && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
             && !sc->isGrace() && !ec->isGrace() && !sc->isSmall() && !ec->isSmall()
             && !sc->beam() && !ec->beam()
+            && (sameSystem || (!sc->hook() && !ec->hook() && !sc->tremolo() && !ec->tremolo()))
             && (!sc->tremolo() || sc->tremolo()->twoNotes())
             && (!ec->tremolo() || ec->tremolo()->twoNotes());
-      const bool plainSlurTips = standardStemTips && !sc->hook() && !ec->hook()
+      const bool plainSlurTips = standardStemTips && sameSystem && !sc->hook() && !ec->hook()
             && !sc->tremolo() && !ec->tremolo();
       const bool tremoloStart = standardStemTips && stem1 && sc->up() == _up && sc->tremolo()
             && sc->tremolo()->chord1() == sc;

@@ -62,6 +62,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurAcrossBarline();
       void nativeArticulatedSlurTips();
       void nativeSlurOverInteriorStaccato();
+      void nativeSlurRestAndVoiceClearance();
       void nativeFlagAndTremoloSlurTips();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
@@ -1320,6 +1321,17 @@ void TestSpanners::nativeMixedStemSlurAcrossMeasures()
             QCOMPARE(slur->up(), up);
             slur->layout();
             QCOMPARE(slur->up(), up);
+            if (measure == 5) {
+                  const Chord* chord = toChord(slur->endCR());
+                  QVERIFY(chord->stem() && chord->up());
+                  SlurPos anchors;
+                  slur->slurPos(&anchors);
+                  QVERIFY(anchors.system2 && anchors.system1 != anchors.system2);
+                  const qreal staffY = anchors.system2->staffYpage(slur->vStaffIdx());
+                  const qreal stemY = chord->stemPos().y() + chord->stem()->p2().y() - staffY;
+                  const qreal inset = (anchors.p2.y() - stemY) / slur->spatium();
+                  QVERIFY2(qAbs(inset - 0.5) < 0.02, qPrintable(QString("Stem inset after break: %1sp").arg(inset)));
+                  }
             ++cases;
             }
       QCOMPARE(cases, 4);
@@ -1499,6 +1511,55 @@ void TestSpanners::nativeSlurOverInteriorStaccato()
       QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.2 * sp);
       }
 
+void TestSpanners::nativeSlurRestAndVoiceClearance()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-rest-and-voice-clearance.mscx"));
+      QVERIFY(score);
+      std::array<const SlurSegment*, 4> parts {};
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->startCR());
+            const int i = slur->startCR()->measure()->no();
+            QVERIFY(i >= 0 && i < int(parts.size()) && !parts[i]);
+            parts[i] = slur->frontSegment();
+            QVERIFY(parts[i] && parts[i]->isSingleType() && parts[i]->system());
+            }
+      const auto tipY = [](const SlurSegment* part, Grip grip) {
+            const qreal row = part->system()->staffYpage(part->vStaffIdx());
+            return (part->pagePos().y() + part->ups(grip).pos().y() - row) / part->spatium();
+            };
+      QVERIFY(parts[0] && parts[1] && parts[2] && parts[3]);
+      // F1 and F5 have no new obstacle at the high point of F0's arc.
+      // The rest and the lower voice should not lift both anchors.
+      for (int i : { 1, 3 }) {
+            for (Grip grip : { Grip::START, Grip::END }) {
+                  const qreal diff = tipY(parts[i], grip) - tipY(parts[0], grip);
+                  QVERIFY2(qAbs(diff) < 0.35, qPrintable(QString("Slur tip vs control: %1sp").arg(diff)));
+                  }
+            }
+      // F4's high note in voice 2 is an obstacle even though the slur is in voice 1.
+      const SlurSegment* part = parts[2];
+      const Segment* beat = part->slur()->startCR()->measure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(beat && beat->element(1) && beat->element(1)->isChord());
+      const Note* note = toChord(beat->element(1))->upNote();
+      const QRectF ink = note->bbox().translated(note->pagePos());
+      const auto point = [&](Grip grip) { return part->pagePos() + part->ups(grip).pos(); };
+      const CubicBezier curve(point(Grip::START), point(Grip::BEZIER1), point(Grip::BEZIER2), point(Grip::END));
+      qreal lo = 0, hi = 1;
+      for (int i = 0; i < 24; ++i) {
+            const qreal mid = (lo + hi) * 0.5;
+            if (curve.pointAtPercent(mid).x() < ink.center().x())
+                  lo = mid;
+            else
+                  hi = mid;
+            }
+      QVERIFY(ink.top() - curve.pointAtPercent((lo + hi) * 0.5).y() >= 0.3 * part->spatium());
+      }
+
 void TestSpanners::nativeFlagAndTremoloSlurTips()
       {
       if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
@@ -1512,6 +1573,16 @@ void TestSpanners::nativeFlagAndTremoloSlurTips()
             Slur* slur = toSlur(entry.second);
             QVERIFY(slur->startCR() && slur->endCR());
             const int measure = slur->startCR()->measure()->no() + 1;
+            if (measure == 1 || measure == 2 || measure == 5 || measure == 6) {
+                  // The fitted tips clear the staff lines at the starts
+                  // of H1, H2, H5 and H6, as well as clearing the stems.
+                  const SlurSegment* part = slur->frontSegment();
+                  QVERIFY(part && part->system());
+                  const qreal top = part->system()->staffYpage(part->vStaffIdx());
+                  const qreal row = (part->pagePos().y() + part->ups(Grip::START).pos().y() - top) / part->spatium();
+                  const qreal line = measure == 1 ? 1.0 : 2.0;
+                  QVERIFY2(row < line - 0.17, qPrintable(QString("Start tip near staff line: %1sp").arg(row)));
+                  }
             if (measure != 1 && measure != 2 && measure != 4 && measure != 6)
                   continue;
             QVERIFY(slur->up());
