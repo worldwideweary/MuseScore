@@ -283,6 +283,7 @@ class TestIncrementalLayout : public QObject, public MTest {
       void fullMeasureRestClearsAtItsOffset();
       void fullMeasureRestKeepsClearanceOnLookahead();
       void crossStaffAutoStemsUseVoiceDirection();
+      void ordinaryStemLengthsUseStudioSteps();
       void afterGraceOctaveKeepsPreviousGracePosition();
       void afterGraceFitsBeforeEighthRest();
       void followingBeamSlopesSurviveEdit();
@@ -980,6 +981,39 @@ void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()
                   // Visible full-measure rest, hidden rest, and four visible
                   // notes in voice 2, respectively. Manual Down still wins.
                   QCOMPARE(chord->up(), bar != 1 && !manual);
+                  ++beat;
+                  }
+            QCOMPARE(beat, 4);
+            measure = measure->nextMeasure();
+            }
+      }
+
+void TestIncrementalLayout::ordinaryStemLengthsUseStudioSteps()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_STEM_LAYOUT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-stem-lengths.mscx"));
+      QVERIFY(score);
+      // E3 and G2 first, then outward and inward ledger-note cases.
+      // All values are stem endpoints in staff spaces below the top line.
+      const qreal expected[][4] = {
+            { -0.75, 5.0, -1.25, -0.5 },
+            { 4.0, 4.5, 5.25, 5.5 },
+            { -2.5, 6.5, 2.0, 2.0 },
+            };
+      const Measure* measure = score->firstMeasure();
+      for (const auto& row : expected) {
+            QVERIFY(measure && measure->system());
+            int beat = 0;
+            for (const Segment* seg = measure->first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+                  QVERIFY(beat < 4 && seg->element(0) && seg->element(0)->isChord());
+                  const Chord* chord = toChord(seg->element(0));
+                  const Stem* stem = chord->stem();
+                  QVERIFY(stem && !chord->beam() && !chord->hook());
+                  const qreal top = measure->system()->staffYpage(chord->vStaffIdx());
+                  const qreal y = (stem->pagePos().y() + stem->p2().y() - top) / chord->spatium();
+                  QVERIFY2(qAbs(y - row[beat]) < 1e-4,
+                           qPrintable(QString("Stem end: %1sp; expected %2sp").arg(y).arg(row[beat])));
                   ++beat;
                   }
             QCOMPARE(beat, 4);

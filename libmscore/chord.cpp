@@ -1503,6 +1503,34 @@ qreal Chord::defaultStemLength() const
             }
 
       qreal normalStemLen = isSmall() ? 2.5 : 3.5;
+      static const bool nativeStemPreview = qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") == 1;
+      if (nativeStemPreview && shortenStem && qFuzzyCompare(progression.val(), qreal(0.25))
+          && st && st->isPitchedStaff(tick()) && st->lines(tick()) == 5 && qFuzzyCompare(lineDistance, qreal(1.0))
+          && !isGrace() && !isSmall() && !staffMove() && !beam() && !hookIdx && !_tremolo && !slash()
+          && notes().size() == 1 && !downnote->fixed() && downnote->headGroup() == NoteHead::Group::HEAD_NORMAL
+          && (!_stem || qFuzzyIsNull(_stem->userLen()))) {
+            // Studio shortens an unbeamed stem in quarter-space steps.
+            // The first reduction starts 0.75sp outside the staff; the
+            // maximum reduction grows by 0.25sp every half space thereafter.
+            constexpr int staffBottom = 16;
+            constexpr int middle = 8;
+            constexpr int normal = 14;
+            constexpr int shortStart = 3;
+            const int noteRow = ul * 2;
+            const int nominalEnd = up() ? noteRow - normal : noteRow + normal;
+            const int outside = up() ? -nominalEnd : nominalEnd - staffBottom;
+            int length = normal;
+            if (outside >= shortStart) {
+                  const int reduction = qMin(4, 1 + (outside - shortStart) / 2);
+                  const qreal anchorY = up() ? downnote->stemUpSE().y() : downnote->stemDownNW().y();
+                  const qreal minimum = qFuzzyCompare(shortest, qreal(2.25)) ? 2.5 : shortest;
+                  const int minimumLength = int(4.0 * (minimum + qAbs(anchorY) / _spatium));
+                  length = qMax(normal - reduction, minimumLength);
+                  }
+            // An inward stem on a ledger note still reaches the middle line.
+            length = qMax(length, up() ? noteRow - middle : middle - noteRow);
+            return (up() ? -length : length) * _spatium / 4.0;
+            }
 #if 0 // We no longer need to adjust stem hight for dot-hook collisions (Issue #9095)
       if (hookIdx && tab == 0) {
             if (up() && durationType().dots()) {
