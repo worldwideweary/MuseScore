@@ -67,6 +67,7 @@ class TestSpanners : public QObject, public MTest
       void nativeCrossStaffSlurs();
       void nativeReturningCrossStaffSlurs();
       void nativeSlursOverTies();
+      void nativeSlurOverInteriorTie();
       void nativeSystemBreakSlur();
       void partialTieAttachments();
       void laissezVibChordGeometry();
@@ -2013,6 +2014,51 @@ void TestSpanners::nativeSlursOverTies()
             ++checked;
             }
       QCOMPARE(checked, 2);
+      }
+
+void TestSpanners::nativeSlurOverInteriorTie()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-tie.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up() && slur->startCR());
+      const SlurSegment* segment = slur->frontSegment();
+      const Segment* secondBeat = slur->startCR()->measure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 4));
+      QVERIFY(segment && secondBeat && secondBeat->element(0) && secondBeat->element(0)->isChord());
+      const Tie* tie = toChord(secondBeat->element(0))->upNote()->tieFor();
+      QVERIFY(tie && tie->up() && !tie->segmentsEmpty());
+      const TieSegment* part = tie->frontSegment();
+      QVERIFY(part && part->system() == segment->system());
+
+      const auto curve = [](const SlurTieSegment* s) {
+            const QPointF origin = s->pagePos();
+            return CubicBezier(origin + s->ups(Grip::START).pos(), origin + s->ups(Grip::BEZIER1).pos(),
+                               origin + s->ups(Grip::BEZIER2).pos(), origin + s->ups(Grip::END).pos());
+            };
+      const CubicBezier outer = curve(segment);
+      const CubicBezier inner = curve(part);
+      for (qreal t : { 0.25, 0.5, 0.75 }) {
+            const QPointF p = inner.pointAtPercent(t);
+            qreal low = 0.0;
+            qreal high = 1.0;
+            for (int i = 0; i < 24; ++i) {
+                  const qreal mid = (low + high) * 0.5;
+                  if (outer.pointAtPercent(mid).x() < p.x())
+                        low = mid;
+                  else
+                        high = mid;
+                  }
+            const qreal gap = (p.y() - outer.pointAtPercent((low + high) * 0.5).y()) / segment->spatium();
+            QVERIFY2(gap >= 0.45, qPrintable(QString("Interior tie clearance: %1sp").arg(gap)));
+            }
       }
 
 void TestSpanners::nativeSystemBreakSlur()

@@ -534,6 +534,26 @@ static qreal clearSlurTip(qreal y, qreal lineDistance, int lines, qreal margin, 
       return y;
       }
 
+// Ties are laid out before slurs, but their shapes are not in the
+// rhythmic segment's staff shape. Add the drawn curve in slur coordinates.
+static void appendOrdinarySlurTie(const SlurSegment* segment, const Tie* tie, std::vector<QRectF>& obstacles)
+      {
+      const bool up = segment->slur()->up();
+      if (!tie || tie->up() != up || !tie->visible() || tie->segmentsEmpty())
+            return;
+      const TieSegment* part = tie->frontSegment();
+      const System* system = segment->system();
+      if (!part || !part->isSingleType() || part->system() != system || !part->visible())
+            return;
+      const QPointF origin(system->pagePos().x(), system->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
+      const QPointF offset = part->pagePos() - origin;
+      const qreal gap = 0.1 * segment->spatium();
+      for (const QRectF& band : part->shape()) {
+            if (band.width() > 0.0)
+                  obstacles.push_back(band.translated(offset).adjusted(0.0, up ? -gap : 0.0, 0.0, up ? 0.0 : gap));
+            }
+      }
+
 static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF>& obstacles)
       {
       Slur* slur = segment->slur();
@@ -573,10 +593,19 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                   return false;
             const Note* note = chord->notes().front();
             if (!note->addToSkyline() || note->isSmall() || note->mirror() || note->isNudged()
-                || note->bbox().isEmpty() || note->accidental() || note->tieFor() || note->tieBack()
+                || note->bbox().isEmpty() || note->accidental()
                 || note->partialTie(true) || note->partialTie(false) || !note->dots().empty()
                 || !note->el().empty() || !note->spannerFor().empty() || !note->spannerBack().empty())
                   return false;
+
+            const Tie* outgoing = note->tieFor();
+            const Tie* incoming = note->tieBack();
+            // Tip-to-tie spacing is handled separately. Here only admit
+            // ties between interior chords in the current system.
+            if ((outgoing && (chord == first || !outgoing->endNote() || outgoing->endNote()->tick() >= last->tick()))
+                || (incoming && (chord == last || !incoming->startNote() || incoming->startNote()->tick() <= first->tick())))
+                  return false;
+            appendOrdinarySlurTie(segment, outgoing, obstacles);
 
             if (chord != first) {
                   const QPointF origin = s->measure()->pos() + s->pos() + chord->pos();

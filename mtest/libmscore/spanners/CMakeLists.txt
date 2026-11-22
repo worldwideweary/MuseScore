@@ -29,6 +29,7 @@ add_test(NAME tst_spanners_slur_preview
             nativeCrossStaffSlurs
             nativeReturningCrossStaffSlurs
             nativeSlursOverTies
+            nativeSlurOverInteriorTie
             nativeSystemBreakSlur
       )
 set_tests_properties(tst_spanners_slur_preview PROPERTIES
