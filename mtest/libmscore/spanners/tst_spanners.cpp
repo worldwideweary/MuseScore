@@ -1396,7 +1396,7 @@ void TestSpanners::nativeArticulatedSlurTips()
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-articulated-slur-tips.mscx"));
       QVERIFY(score);
 
-      const Slur* slur = nullptr;
+      Slur* slur = nullptr;
       for (const auto& entry : score->spanner()) {
             if (entry.second->isSlur()) {
                   QVERIFY(!slur);
