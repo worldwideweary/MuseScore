@@ -554,22 +554,32 @@ static void appendOrdinarySlurTie(const SlurSegment* segment, const Tie* tie, st
             }
       }
 
+static const ChordRest* continuationBoundaryChord(const System*, int track, bool first);
+
 static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF>& obstacles)
       {
       Slur* slur = segment->slur();
       const Staff* staff = segment->staff();
-      const ChordRest* first = slur->startCR();
-      const ChordRest* last = slur->endCR();
-      if (!segment->system() || !staff || !first || !last || !first->isChord() || !last->isChord()
-          || !first->segment() || !last->segment()
-          || first->segment()->system() != segment->system() || last->segment()->system() != segment->system()
-          || first->track() != last->track() || first->track() != slur->track()
-          || last->track() != slur->effectiveTrack2()
-          || !staff->isPitchedStaff(first->tick()) || staff->lines(first->tick()) < 2
+      const System* system = segment->system();
+      const ChordRest* start = slur->startCR();
+      const ChordRest* end = slur->endCR();
+      if (!system || !staff || !start || !end || !start->isChord() || !end->isChord()
+          || start->isGrace() || end->isGrace()
+          || start->track() != slur->track() || end->track() != start->track()
+          || end->track() != slur->effectiveTrack2()
+          || start->vStaffIdx() != segment->vStaffIdx() || end->vStaffIdx() != segment->vStaffIdx()
           || slur->partialDirection() >= 0 || slur->isHammerOnPullOff() || slur->lineType() != 0)
             return false;
-      if (first->vStaffIdx() != segment->vStaffIdx() || last->vStaffIdx() != segment->vStaffIdx()
-          || first->up() == slur->up() || last->up() == slur->up())
+
+      // For a continued slur, collect only the music in this system.
+      const bool anchoredStart = segment->isSingleBeginType();
+      const bool anchoredEnd = segment->isSingleEndType();
+      const ChordRest* first = anchoredStart ? start : continuationBoundaryChord(system, start->track(), true);
+      const ChordRest* last = anchoredEnd ? end : continuationBoundaryChord(system, end->track(), false);
+      if (!first || !last || !first->isChord() || !last->isChord() || !first->segment() || !last->segment()
+          || first->segment()->system() != system || last->segment()->system() != system
+          || first->tick() >= last->tick() || !staff->isPitchedStaff(first->tick()) || staff->lines(first->tick()) < 2
+          || (anchoredStart && first->up() == slur->up()) || (anchoredEnd && last->up() == slur->up()))
             return false;
 
       // Collect the note ink on both sides of a barline in the same system.
@@ -607,12 +617,12 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                   return false;
             appendOrdinarySlurTie(segment, outgoing, obstacles);
 
-            if (chord != first) {
+            if (chord != first || !anchoredStart) {
                   const QPointF origin = s->measure()->pos() + s->pos() + chord->pos();
                   const auto add = [&](const Element* item, qreal clearance) {
                         if (!item || !item->addToSkyline() || item->bbox().isEmpty())
                               return;
-                        const qreal gap = chord == last ? 0.0 : clearance * segment->spatium();
+                        const qreal gap = anchoredEnd && chord == last ? 0.0 : clearance * segment->spatium();
                         QRectF rect = item->bbox().translated(origin + item->pos());
                         rect.adjust(0.0, slur->up() ? -gap : 0.0, 0.0, slur->up() ? 0.0 : gap);
                         obstacles.push_back(rect);
@@ -962,8 +972,9 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
       const qreal width = last.x() - first.x();
       const ChordRest* start = segment->slur()->startCR();
       const ChordRest* end = segment->slur()->endCR();
-      const bool grace = start && end && (start->isGrace() || end->isGrace());
-      const bool beamed = !crossStaff && !grace && start && end && start->beam() && end->beam();
+      const bool continued = !segment->isSingleType();
+      const bool grace = !continued && start && end && (start->isGrace() || end->isGrace());
+      const bool beamed = !continued && !crossStaff && !grace && start && end && start->beam() && end->beam();
       // Keep the guard for the specialized fitters. An ordinary slur can
       // span multiple measures of the same system.
       const qreal maxSpan = beamed || crossStaff ? 48.0 : grace ? 40.0 : 0.0;
@@ -983,7 +994,7 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
             appendNestedSlurObstacles(segment, first, last, nestedSlurs);
       const bool up = segment->slur()->up();
       const qreal direction = up ? -1.0 : 1.0;
-      const Fraction tick = segment->slur()->tick();
+      const Fraction tick = continued ? segment->system()->firstMeasure()->tick() : segment->slur()->tick();
       const qreal lineDistance = segment->staff()->lineDistance(tick) * sp;
       if (!(lineDistance > 0.0))
             return false;
@@ -1060,8 +1071,10 @@ bool SlurSegment::fitOrdinarySlur(const SlurSegment* segment, QPointF first, QPo
       const auto crossBalance = [&](const ChordRest* cr) {
             return mixedStems && !cr->beam() && cr->up() == up ? 0.9 : 0.1;
             };
-      const qreal leftBalance = crossStaff ? crossBalance(start) : beamed ? 0.2 : leftFloats ? 0.9 : 0.4;
-      const qreal rightBalance = crossStaff ? crossBalance(end) : beamed ? 0.2 : grace && end->up() == up && mixedStems ? 0.9 : 0.4;
+      const qreal leftBalance = continued ? (segment->isBeginType() ? 0.1 : 0.9)
+            : crossStaff ? crossBalance(start) : beamed ? 0.2 : leftFloats ? 0.9 : 0.4;
+      const qreal rightBalance = continued ? (segment->isEndType() ? 0.1 : 0.9)
+            : crossStaff ? crossBalance(end) : beamed ? 0.2 : grace && end->up() == up && mixedStems ? 0.9 : 0.4;
       const qreal shallowSlope = 0.0872664626; // Studio's five-degree slant threshold
       const QPointF arcClearance(0.0, -direction * qBound(qreal(0.1),
             qreal(0.04 * length / sp * cosine * cosine), qreal(0.5)) * sp);
@@ -1639,6 +1652,9 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
                   }
             _hasOrdinaryFit = fitOrdinarySlur(this, first, last, _ordinaryFit, trace ? &initialFit : nullptr, crossStaff);
             }
+
+      if (continued && autoplace())
+            _hasOrdinaryFit = fitOrdinarySlur(this, ups(Grip::START).p, ups(Grip::END).p, _ordinaryFit);
 
       computeBezier();
 

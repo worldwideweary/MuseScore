@@ -31,6 +31,7 @@ add_test(NAME tst_spanners_slur_preview
             nativeSlursOverTies
             nativeSlurOverInteriorTie
             nativeSystemBreakSlur
+            nativeContinuedSlurCurve
       )
 set_tests_properties(tst_spanners_slur_preview PROPERTIES
       ENVIRONMENT "MSCORE_NATIVE_SLUR_FIT=1"

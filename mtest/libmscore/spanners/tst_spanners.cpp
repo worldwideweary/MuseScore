@@ -69,6 +69,7 @@ class TestSpanners : public QObject, public MTest
       void nativeSlursOverTies();
       void nativeSlurOverInteriorTie();
       void nativeSystemBreakSlur();
+      void nativeContinuedSlurCurve();
       void partialTieAttachments();
       void laissezVibChordGeometry();
       void laissezVibRangeSelection();
@@ -2088,6 +2089,60 @@ void TestSpanners::nativeSystemBreakSlur()
       QVERIFY(qAbs(y(first, Grip::START) - y(first, Grip::END) - 0.25 * sp) < 1e-6 * sp);
       QVERIFY(qAbs(y(last, Grip::END) - y(last, Grip::START) - 0.25 * sp) < 1e-6 * sp);
       QVERIFY(y(middle, Grip::START) > y(middle, Grip::END));
+      }
+
+void TestSpanners::nativeContinuedSlurCurve()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-continued-slur-curve.mscx"));
+      QVERIFY(score);
+      const Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up());
+      QCOMPARE(slur->nsegments(), size_t(3));
+      const SlurSegment* first = slur->frontSegment();
+      const SlurSegment* middle = slur->segmentAt(1);
+      const SlurSegment* last = slur->backSegment();
+      QVERIFY(first && first->isBeginType() && middle && middle->isMiddleType() && last && last->isEndType());
+      const qreal sp = middle->spatium();
+      const auto point = [](const SlurSegment* s, Grip g) { return s->pagePos() + s->ups(g).pos(); };
+      for (const SlurSegment* s : { first, middle }) {
+            const QPointF a = point(s, Grip::START);
+            const QPointF axis = point(s, Grip::END) - a;
+            const qreal length = std::hypot(axis.x(), axis.y());
+            QVERIFY(length > 60.0 * sp);
+            for (Grip g : { Grip::BEZIER1, Grip::BEZIER2 }) {
+                  const QPointF d = point(s, g) - a;
+                  const qreal height = (d.x() * axis.y() - d.y() * axis.x()) / length / sp;
+                  QVERIFY2(height > 3.7, qPrintable(QString("Continued slur shoulder: %1sp").arg(height)));
+                  }
+            }
+
+      QVERIFY(middle->system() && middle->system()->firstMeasure());
+      const Measure* measure = middle->system()->firstMeasure();
+      const Segment* peak = measure->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(peak && peak->element(0) && peak->element(0)->isChord());
+      const Note* note = toChord(peak->element(0))->upNote();
+      QCOMPARE(note->pitch(), 83);
+      const QRectF ink = note->bbox().translated(note->pagePos());
+      const CubicBezier curve(point(middle, Grip::START), point(middle, Grip::BEZIER1),
+                              point(middle, Grip::BEZIER2), point(middle, Grip::END));
+      qreal low = 0.0;
+      qreal high = 1.0;
+      for (int i = 0; i < 24; ++i) {
+            const qreal mid = (low + high) * 0.5;
+            if (curve.pointAtPercent(mid).x() < ink.center().x())
+                  low = mid;
+            else
+                  high = mid;
+            }
+      QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.4 * sp);
       }
 
 QTEST_MAIN(TestSpanners)
