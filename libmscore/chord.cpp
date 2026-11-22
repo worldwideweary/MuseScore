@@ -51,16 +51,11 @@
 #include "tremolo.h"
 #include "tuplet.h"
 #include "undo.h"
+#include "nativelayout.h"
 #include "utils.h"
 #include "xml.h"
 
 namespace Ms {
-
-static bool useStudioStemLayout()
-      {
-      static const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_STEM_LAYOUT") == 1;
-      return !legacy;
-      }
 
 //---------------------------------------------------------
 //   LedgerLineData
@@ -1553,8 +1548,7 @@ qreal Chord::defaultStemLength() const
             // stem rules
             const qreal graceMag = score()->styleD(Sid::graceNoteMag);
             stemLen = qAbs(ul - dl) * .5 + normalStemLen * graceMag;
-            static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-            if (preview && st && st->isPitchedStaff(tick()) && st->lines(tick()) == 5
+            if (useNativeSlurFit() && st && st->isPitchedStaff(tick()) && st->lines(tick()) == 5
                 && qFuzzyCompare(lineDistance, qreal(1.0)) && hookIdx == 1 && !beam()
                 && !staffMove() && !isSmall() && !_tremolo) {
                   // Use the shorter nominal stem for isolated flagged
@@ -2495,7 +2489,7 @@ void Chord::layoutPitched()
       _spaceLw = lll;
       _spaceRw = rrr;
 
-      static const bool fitGraceSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool fitGraceSlurs = useNativeSlurFit();
       if (gnb) {
               qreal xl = -(_spaceLw + minNoteDistance) - chordX;
               for (int i = gnb-1; i >= 0; --i) {

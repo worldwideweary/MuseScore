@@ -28,6 +28,7 @@
 #include "style.h"
 #include "sym.h"
 #include "undo.h"
+#include "nativelayout.h"
 #include "utils.h"
 #include "xml.h"
 
@@ -520,9 +521,8 @@ int Rest::getDotline(TDuration::DurationType durationType)
 // whole rests. Their duration types still govern horizontal centering.
 bool Rest::hasNativePairedStaffLineRests() const
       {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       const auto type = durationType().type();
-      if (!preview || (type != TDuration::DurationType::V_HALF && type != TDuration::DurationType::V_WHOLE
+      if (!useNativeRestLayout() || (type != TDuration::DurationType::V_HALF && type != TDuration::DurationType::V_WHOLE
                       && (!isFullMeasureRest() || ticks() >= Fraction(2, 1)))
           || voice() > 1 || staffMove() || !segment() || !measure() || measure()->isMMRest()
           || !staff() || !staff()->isPitchedStaff(tick()) || staff()->lines(tick()) != 5
@@ -545,8 +545,7 @@ bool Rest::hasNativePairedStaffLineRests() const
 // Other rest groups and moved notes still use the legacy placement.
 int Rest::nativeMeasureRestOppositeTrack() const
       {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
-      if (!preview || !isFullMeasureRest() || isGap() || !addToSkyline() || !qFuzzyIsNull(offset().y())
+      if (!useNativeRestLayout() || !isFullMeasureRest() || isGap() || !addToSkyline() || !qFuzzyIsNull(offset().y())
           || staffMove() || voice() > 1 || !staff() || !staff()->isPitchedStaff(tick())
           || staff()->lines(tick()) != 5 || !segment() || !measure() || measure()->isMMRest()
           || ticks() >= Fraction(2, 1) || !el().empty() || !lyrics().empty())
@@ -704,8 +703,7 @@ void Rest::setNativeOrdinaryRestY(qreal y, qreal line)
 // between staves don't affect this ordinary rest placement.
 void Rest::alignNativeRestRuns(Measure* measure)
       {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
-      if (!preview || measure->isMMRest())
+      if (!useNativeRestLayout() || measure->isMMRest())
             return;
       for (int staffIdx = 0; staffIdx < measure->score()->nstaves(); ++staffIdx) {
             const Staff* staff = measure->score()->staff(staffIdx);
@@ -827,7 +825,6 @@ void Rest::alignNativeRestRuns(Measure* measure)
 
 int Rest::computeLineOffset(int lines)
       {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1;
       if (hasNativePairedStaffLineRests()) {
             if (durationType().type() == TDuration::DurationType::V_HALF)
                   return voice() == 0 ? -2 : 2; // getSymbol adds two lines for a half rest
@@ -916,7 +913,7 @@ int Rest::computeLineOffset(int lines)
                               if (e && e->isChord()) {
                                     Chord* chord = toChord(e);
                                     // A moved note's line belongs to the destination staff.
-                                    if (preview && !isMeasureRest && chord->staffMove())
+                                    if (useNativeRestLayout() && !isMeasureRest && chord->staffMove())
                                           continue;
                                     StaffGroup staffGroup = staff()->staffType(chord->tick())->group();
                                     for (Note* note : chord->notes()) {

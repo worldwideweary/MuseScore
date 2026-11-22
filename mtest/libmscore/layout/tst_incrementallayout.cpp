@@ -424,7 +424,8 @@ void TestIncrementalLayout::tieDeletionUndoRedo()
 
 void TestIncrementalLayout::lastSystemFillUsesNaturalWidth()
       {
-      if (qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_NATURAL_SPACING") == 1
+          || qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
             QSKIP("Native natural spacing explicitly disabled");
 
       // H18 fills 21.04% at natural width versus 24.54% by the old estimate.
@@ -459,7 +460,8 @@ void TestIncrementalLayout::lastSystemFillUsesNaturalWidth()
 
 void TestIncrementalLayout::afterGraceOctaveKeepsPreviousGracePosition()
       {
-      if (qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_NATURAL_SPACING") == 1
+          || qgetenv("MSCORE_NATIVE_NATURAL_SPACING") == "0")
             QSKIP("Native natural spacing explicitly disabled");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-after-grace-spacing.mscx"));
       QVERIFY(score);
@@ -587,8 +589,7 @@ void TestIncrementalLayout::followingBeamSlopesSurviveEdit()
 
 void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("The rest layout switch must be enabled.");
+      const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1;
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-paired-whole-rests.mscx"));
       QVERIFY(score);
       Measure* measure = score->firstMeasure();
@@ -601,9 +602,10 @@ void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
                   QVERIFY(element && element->isRest());
                   const Rest* rest = toRest(element);
                   QCOMPARE(rest->isFullMeasureRest(), fullMeasure);
-                  QVERIFY(rest->sym() == SymId::restWhole);
+                  QCOMPARE(rest->sym(), legacy && voice == 0 ? SymId::restWholeLegerLine : SymId::restWhole);
                   const qreal sp = rest->spatium();
-                  QVERIFY(qAbs(rest->ipos().y() - (voice == 0 ? 0.0 : 3.0) * sp) < 1e-5 * sp);
+                  const qreal row = (voice == 0 ? 0.0 : 3.0) + (legacy ? (voice == 0 ? -1.0 : 1.0) : 0.0);
+                  QVERIFY(qAbs(rest->ipos().y() - row * sp) < 1e-5 * sp);
                   if (fullMeasure)
                         QVERIFY(rest->ipos().x() > sp);
                   else
@@ -615,8 +617,8 @@ void TestIncrementalLayout::pairedWholeRestsUseStaffLines()
 
 void TestIncrementalLayout::mixedRestRunsUseCommonHeight()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("The rest layout switch must be enabled.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-quarter-rest-alignment.mscx"));
       QVERIFY(score);
       Measure* measure = score->firstMeasure();
@@ -665,8 +667,8 @@ void TestIncrementalLayout::mixedRestRunsUseCommonHeight()
 
 void TestIncrementalLayout::movedChordsDoNotDisplaceOrdinaryRests()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("The rest layout switch must be enabled.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-rest-placement-with-moved-chords.mscx"));
       QVERIFY(score);
       Measure* measure = score->firstMeasure();
@@ -710,8 +712,8 @@ void TestIncrementalLayout::movedChordsDoNotDisplaceOrdinaryRests()
 
 void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("The rest layout switch must be enabled.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-half-rest-runs.mscx"));
       QVERIFY(score);
       const Measure* measure = score->firstMeasure();
@@ -776,8 +778,8 @@ void TestIncrementalLayout::halfRestRunsFitSameStaffAndMovedChords()
 
 void TestIncrementalLayout::revealedRestsClearOppositeStems()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("The rest layout switch must be enabled.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore("libmscore/spanners/native-slur-rest-and-voice-clearance.mscx"));
       QVERIFY(score);
       struct Case {
@@ -841,8 +843,8 @@ void TestIncrementalLayout::revealedRestsClearOppositeStems()
 
 void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_REST_LAYOUT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
       QVERIFY(score);
       const qreal sp = score->spatium();
@@ -883,7 +885,7 @@ void TestIncrementalLayout::fullMeasureRestUsesLocalClearance()
 
 void TestIncrementalLayout::fullMeasureRestClearsAtItsOffset()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
             QSKIP("The full-measure rest layout switch must be enabled.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
       QVERIFY(score && score->firstMeasure());
@@ -925,8 +927,8 @@ void TestIncrementalLayout::fullMeasureRestClearsAtItsOffset()
 
 void TestIncrementalLayout::fullMeasureRestKeepsClearanceOnLookahead()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_REST_LAYOUT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_REST_LAYOUT") == 1)
+            QSKIP("This case tests the updated rest layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-full-measure-rest-clearance.mscx"));
       QVERIFY(score && score->firstMeasure());
       Measure* second = score->firstMeasure()->nextMeasure();

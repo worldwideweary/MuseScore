@@ -33,6 +33,7 @@
 #include "tie.h"
 #include "tremolo.h"
 #include "undo.h"
+#include "nativelayout.h"
 #include "utils.h"
 
 namespace Ms {
@@ -520,7 +521,7 @@ void SlurSegment::computeBezier(QPointF p6o)
             }
       }
 
-// The ordinary-slur preview uses the same-staff subset of Studio v4.7.5
+// The ordinary slur fitter uses the same-staff subset of Studio v4.7.5
 // SlurTieLayout's endpoint and collision rules.
 static qreal clearSlurTip(qreal y, qreal lineDistance, int lines, qreal margin, bool up)
       {
@@ -1638,10 +1639,10 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
       const bool traceGrace = trace && (traceStart->isGrace() || traceEnd->isGrace());
       const bool incoming = slur()->isIncoming() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::BEGIN);
       const bool outgoing = slur()->isOutgoing() && (type == SpannerSegmentType::SINGLE || type == SpannerSegmentType::END);
-      static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool fitSlurs = useNativeSlurFit();
       const ChordRest* startCR = slur()->startCR();
       const ChordRest* endCR = slur()->endCR();
-      const bool continued = previewEnabled && type != SpannerSegmentType::SINGLE
+      const bool continued = fitSlurs && type != SpannerSegmentType::SINGLE
             && slur()->partialDirection() < 0 && !slur()->isHammerOnPullOff()
             && system() && staff() && staff()->isPitchedStaff(tick())
             && startCR && endCR && !startCR->isGrace() && !endCR->isGrace()
@@ -1762,7 +1763,7 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
             };
 
       std::array<QPointF, 4> initialFit;
-      if (previewEnabled && autoplace() && type == SpannerSegmentType::SINGLE) {
+      if (fitSlurs && autoplace() && type == SpannerSegmentType::SINGLE) {
             QPointF first = p1;
             QPointF last = p2;
             if (!crossStaff && system() && staff() && slur()->partialDirection() < 0
@@ -2381,9 +2382,9 @@ void Slur::slurPos(SlurPos* sp)
             }
 
       qreal __up = _up ? -1.0 : 1.0;
-      static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool fitGraceTips = useNativeSlurFit();
       const bool sameSystem = sp->system1 == sp->system2;
-      const bool standardStemTips = previewGraceTips && sc && ec
+      const bool standardStemTips = fitGraceTips && sc && ec
             && partialDirection() < 0 && !isHammerOnPullOff()
             && lineType() == 0 && staff() && staff()->isPitchedStaff(tick())
             && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
@@ -2407,7 +2408,7 @@ void Slur::slurPos(SlurPos* sp)
             };
       const qreal stemSideInset = standardStemTips ? 0.5 : 0.25;
       const bool localGrace = scr->segment() == ecr->segment();
-      const bool scaleGraceTips = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
+      const bool scaleGraceTips = fitGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
             && sp->system1 == sp->system2
             && (localGrace || (sc->isGrace() && !sc->isGraceAfter()) || (ec->isGrace() && !ec->isGraceAfter()))
             && scr->track() == track() && ecr->track() == track()
@@ -2540,7 +2541,7 @@ void Slur::slurPos(SlurPos* sp)
                         // in these cases, layout start of slur to stem
 
                         qreal sh = stem1->height() + _spatium;
-                        if (beam1 && qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1)
+                        if (beam1 && useNativeSlurFit())
                               sh = stem1->height() + score()->styleP(Sid::beamWidth) * beam1->mag() * 0.5
                                     + qMax(0.20, 0.35 * (sc->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0)) * _spatium;
                         if (_up)
@@ -2555,7 +2556,7 @@ void Slur::slurPos(SlurPos* sp)
                               yo = nativeGraceBeamTipY(sc, _up, xo, yo);
                               xo += sc->pageX() - sp->system1->pagePos().x() - sp->p1.x();
                               }
-                        else if (previewGraceTips)
+                        else if (fitGraceTips)
                               yo = nativeGraceBeamTipY(sc, _up, xo + (note1 && !note1->mirror() ? note1->x() : 0.0), yo);
 
                         // account for articulations
@@ -2667,7 +2668,7 @@ void Slur::slurPos(SlurPos* sp)
                               // in these cases, layout end of slur to stem
 
                               qreal sh = stem2->height() + _spatium;
-                              if (beam2 && qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1)
+                              if (beam2 && useNativeSlurFit())
                                     sh = stem2->height() + score()->styleP(Sid::beamWidth) * beam2->mag() * 0.5
                                           + qMax(0.20, 0.35 * (ec->isGrace() ? score()->styleD(Sid::graceNoteMag) : 1.0)) * _spatium;
                               if (_up)
@@ -2682,7 +2683,7 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = nativeGraceBeamTipY(ec, _up, xo, yo);
                                     xo += ec->pageX() - sp->system2->pagePos().x() - sp->p2.x();
                                     }
-                              else if (previewGraceTips)
+                              else if (fitGraceTips)
                                     yo = nativeGraceBeamTipY(ec, _up, xo + (note2 && !note2->mirror() ? note2->x() : 0.0), yo);
 
                               // account for articulations
@@ -2868,8 +2869,7 @@ static bool chordsHaveTie(Chord* c1, Chord* c2)
 
 static bool isDirectionMixture(Chord* c1, Chord* c2)
       {
-      static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      const bool acrossBars = preview && c1->track() == c2->track() && c1->staff()
+      const bool acrossBars = useNativeSlurFit() && c1->track() == c2->track() && c1->staff()
             && c1->staff()->isPitchedStaff(c1->tick()) && !c1->isGrace() && !c2->isGrace()
             && !c1->staffMove() && !c2->staffMove();
       const bool up = c1->up();
@@ -2899,8 +2899,8 @@ static bool isDirectionMixture(Chord* c1, Chord* c2)
 // across the whole slur, including the duration of the ending chord.
 bool Slur::applyNativeMultiVoiceDirection()
       {
-      static const bool previewEnabled = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      if (!previewEnabled || partialDirection() >= 0 || isHammerOnPullOff())
+      const bool fitSlurs = useNativeSlurFit();
+      if (!fitSlurs || partialDirection() >= 0 || isHammerOnPullOff())
             return false;
       const ChordRest* start = startCR();
       const ChordRest* end = endCR();

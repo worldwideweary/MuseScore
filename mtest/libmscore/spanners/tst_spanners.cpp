@@ -1247,8 +1247,7 @@ void TestSpanners::laissezVibChordGeometry()
 
 void TestSpanners::nativeMultiVoiceSlurDirection()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1;
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-multivoice-slur-direction.mscx"));
       QVERIFY(score);
 
@@ -1265,6 +1264,10 @@ void TestSpanners::nativeMultiVoiceSlurDirection()
             { Fraction(13, 4), Fraction(7, 2), 0, true },  // Voice 2 enters on the final chord.
             };
       for (const Case& expected : cases) {
+            // The historical rule only checks for multiple voices in the
+            // starting measure, so A1 points down when voice 2 joins later.
+            if (legacy && expected.start != Fraction(1, 2))
+                  continue;
             Slur* slur = nullptr;
             for (const auto& entry : score->spanner()) {
                   if (entry.second->isSlur() && entry.second->tick() == expected.start) {
@@ -1276,11 +1279,11 @@ void TestSpanners::nativeMultiVoiceSlurDirection()
             QVERIFY(slur->slurDirection() == Direction::AUTO);
             QCOMPARE(slur->startCR()->voice(), expected.voice);
             QVERIFY(slur->endCR()->tick() == expected.end);
-            QCOMPARE(slur->up(), expected.up);
+            QCOMPARE(slur->up(), !legacy && expected.up);
             slur->layout();
-            QCOMPARE(slur->up(), expected.up);
+            QCOMPARE(slur->up(), !legacy && expected.up);
 
-            if (expected.start < Fraction(3, 1)) {
+            if (!legacy && expected.start < Fraction(3, 1)) {
                   // A1 and A2: compare the plain stem-side anchors, before
                   // fitting the curve, against the actual ends of the stems.
                   SlurPos pos;
@@ -1304,8 +1307,8 @@ void TestSpanners::nativeMultiVoiceSlurDirection()
 
 void TestSpanners::nativeMixedStemSlurAcrossMeasures()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-mixed-stem-slur-across-measures.mscx"));
       QVERIFY(score);
 
@@ -1341,8 +1344,8 @@ void TestSpanners::nativeMixedStemSlurAcrossMeasures()
 
 void TestSpanners::nativeOrdinarySlurFit()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-slur-fit.mscx"));
       QVERIFY(score);
 
@@ -1385,8 +1388,8 @@ void TestSpanners::nativeOrdinarySlurFit()
 
 void TestSpanners::nativeOrdinarySlurAcrossBarline()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-slur-across-barline.mscx"));
       QVERIFY(score);
       Slur* slur = nullptr;
@@ -1437,8 +1440,8 @@ void TestSpanners::nativeOrdinarySlurAcrossBarline()
 
 void TestSpanners::nativeArticulatedSlurTips()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-articulated-slur-tips.mscx"));
       QVERIFY(score);
 
@@ -1474,8 +1477,8 @@ void TestSpanners::nativeArticulatedSlurTips()
 
 void TestSpanners::nativeSlurOverInteriorAccidental()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-staccato.mscx"));
       QVERIFY(score);
       Slur* slur = nullptr;
@@ -1514,8 +1517,8 @@ void TestSpanners::nativeSlurOverInteriorAccidental()
 
 void TestSpanners::nativeSlurOverInteriorStaccato()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-staccato.mscx"));
       QVERIFY(score);
       Slur* slur = nullptr;
@@ -1555,8 +1558,8 @@ void TestSpanners::nativeSlurOverInteriorStaccato()
 
 void TestSpanners::nativeSlurRestAndVoiceClearance()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-rest-and-voice-clearance.mscx"));
       QVERIFY(score);
       std::array<const SlurSegment*, 4> parts {};
@@ -1604,8 +1607,8 @@ void TestSpanners::nativeSlurRestAndVoiceClearance()
 
 void TestSpanners::nativeFlagAndTremoloSlurTips()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-flag-and-tremolo-slur-tips.mscx"));
       QVERIFY(score);
       int cases = 0;
@@ -1660,8 +1663,8 @@ void TestSpanners::nativeFlagAndTremoloSlurTips()
 
 void TestSpanners::nativeSlantedSlurFit()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "Native-Spacing-09-Slanted-Slurs.mscx"));
       QVERIFY(score);
 
@@ -1717,8 +1720,8 @@ void TestSpanners::nativeSlantedSlurFit()
 
 void TestSpanners::nativeAfterGraceSlurFit()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "../layout/native-after-grace-rest-clearance.mscx"));
       QVERIFY(score);
       int lowEnds = 0;
@@ -1773,8 +1776,8 @@ void TestSpanners::nativeAfterGraceSlurFit()
 
 void TestSpanners::nativePreGraceSlurFit()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-pre-grace-slurs.mscx"));
       QVERIFY(score && score->styleB(Sid::beamLayout4));
       int beamedPairs = 0;
@@ -1945,8 +1948,8 @@ void TestSpanners::nativePreGraceSlurFit()
 
 void TestSpanners::nativeNestedBeamedSlurFit()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-nested-beamed-slurs.mscx"));
       QVERIFY(score && score->styleB(Sid::beamLayout4));
       Slur* outer = nullptr;
@@ -2035,8 +2038,8 @@ void TestSpanners::nativeNestedBeamedSlurFit()
 
 void TestSpanners::nativeCrossStaffSlurs()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-slurs.mscx"));
       QVERIFY(score);
       score->doLayout();
@@ -2155,8 +2158,8 @@ void TestSpanners::nativeCrossStaffSlurs()
 
 void TestSpanners::nativeReturningCrossStaffSlurs()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-return-slurs.mscx"));
       QVERIFY(score);
       score->doLayout();
@@ -2214,8 +2217,8 @@ void TestSpanners::nativeReturningCrossStaffSlurs()
 
 void TestSpanners::nativeSlursOverTies()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-slurs-over-ties.mscx"));
       QVERIFY(score);
       int checked = 0;
@@ -2249,8 +2252,8 @@ void TestSpanners::nativeSlursOverTies()
 
 void TestSpanners::nativeSlurOverInteriorTie()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-tie.mscx"));
       QVERIFY(score);
       Slur* slur = nullptr;
@@ -2294,8 +2297,8 @@ void TestSpanners::nativeSlurOverInteriorTie()
 
 void TestSpanners::nativeContinuedSlurOverTie()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-continued-slur-over-tie.mscx"));
       QVERIFY(score);
       Slur* slur = nullptr;
@@ -2347,8 +2350,8 @@ void TestSpanners::nativeContinuedSlurOverTie()
 
 void TestSpanners::nativeSystemBreakSlur()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-system-break-slur.mscx"));
       QVERIFY(score && !score->styleB(Sid::angleHangingSlursAwayFromStaff));
       const Slur* slur = nullptr;
@@ -2376,8 +2379,8 @@ void TestSpanners::nativeSystemBreakSlur()
 
 void TestSpanners::nativeContinuedSlurCurve()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      if (qEnvironmentVariableIntValue("MSCORE_LEGACY_SLUR_FIT") == 1)
+            QSKIP("This case tests the updated slur layout.");
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-continued-slur-curve.mscx"));
       QVERIFY(score);
       const Slur* slur = nullptr;

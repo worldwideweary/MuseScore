@@ -14,31 +14,10 @@ set(TARGET tst_spanners)
 
 include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)
 
-# Run the preview cases in a separate process; keep the normal suite's
-# engraving and reference scores on the default path.
-add_test(NAME tst_spanners_slur_preview
-      COMMAND tst_spanners -xunitxml -o result-slur-preview.xml
+add_test(NAME tst_spanners_legacy_slurs
+      COMMAND tst_spanners -xunitxml -o result-legacy-slurs.xml
             nativeMultiVoiceSlurDirection
-            nativeMixedStemSlurAcrossMeasures
-            nativeOrdinarySlurFit
-            nativeOrdinarySlurAcrossBarline
-            nativeArticulatedSlurTips
-            nativeSlurOverInteriorStaccato
-            nativeSlurRestAndVoiceClearance
-            nativeFlagAndTremoloSlurTips
-            nativeSlantedSlurFit
-            nativeAfterGraceSlurFit
-            nativePreGraceSlurFit
-            nativeNestedBeamedSlurFit
-            nativeCrossStaffSlurs
-            nativeReturningCrossStaffSlurs
-            nativeSlursOverTies
-            nativeSlurOverInteriorTie
-            nativeContinuedSlurOverTie
-            nativeSystemBreakSlur
-            nativeContinuedSlurCurve
       )
-set_tests_properties(tst_spanners_slur_preview PROPERTIES
-      ENVIRONMENT "MSCORE_NATIVE_SLUR_FIT=1"
-      LABELS "native-layout-preview"
+set_tests_properties(tst_spanners_legacy_slurs PROPERTIES
+      ENVIRONMENT "MSCORE_LEGACY_SLUR_FIT=1"
       )

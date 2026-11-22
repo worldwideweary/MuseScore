@@ -66,6 +66,7 @@
 #include "beamlayout4.h"
 #include "tuplet.h"
 #include "undo.h"
+#include "nativelayout.h"
 #include "utils.h"
 #include "volta.h"
 
@@ -4880,7 +4881,7 @@ System* Score::collectSystem(LayoutContext& lc)
             std::vector<NativeNaturalMeasureSpacing> naturalPlan;
             const qreal fillLimit = styleD(Sid::lastSystemFillLimit);
             // Temporary opt-out for comparing the old width decision.
-            const bool useNaturalSpacing = qgetenv("MSCORE_NATIVE_NATURAL_SPACING") != "0";
+            const bool useNaturalSpacing = useNativeNaturalSpacing();
             // A later measure or horizontal frame in the same section still
             // calls for justification. Only terminal systems need a width test.
             if (systemWidth > 0.0 && (minWidth / systemWidth < fillLimit || (useNaturalSpacing && fillLimit > 0.0))) {
@@ -5007,7 +5008,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
       //  may change.
       //-------------------------------------------------------------
 
-      static const bool fitGraceSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool fitGraceSlurs = useNativeSlurFit();
       for (Segment* s : sl) {
             for (Element* e : s->elist()) {
                   if (!e || !e->isChordRest() || !score()->staff(e->staffIdx())->show()) {
@@ -5043,7 +5044,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   }
             }
 
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_REST_LAYOUT") == 1) {
+      if (useNativeRestLayout()) {
             for (Segment* s : sl) {
                   for (Element* e : s->elist()) {
                         if (e && e->isRest() && toRest(e)->layoutNativeFullMeasureRest())
@@ -5376,7 +5377,7 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
                   layoutTies(chord, system, stick);
                   }
             };
-      const bool fitSlurs = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
+      const bool fitSlurs = useNativeSlurFit();
       if (fitSlurs) {
             // Slur tips need the rendered outside ties on the first layout.
             for (const Segment* segment : sl)
@@ -5926,7 +5927,7 @@ void LayoutContext::collectPage()
                         }
                   m->layout2();
                   }
-            if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1) {
+            if (useNativeSlurFit()) {
                   // Use the existing segments; laying out a spanner again
                   // here would consume another system segment.
                   for (SpannerSegment* segment : qAsConst(s->spannerSegments())) {
