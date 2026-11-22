@@ -31,6 +31,7 @@ add_test(NAME tst_spanners_slur_preview
             nativeReturningCrossStaffSlurs
             nativeSlursOverTies
             nativeSlurOverInteriorTie
+            nativeContinuedSlurOverTie
             nativeSystemBreakSlur
             nativeContinuedSlurCurve
       )

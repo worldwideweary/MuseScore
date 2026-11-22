@@ -534,18 +534,26 @@ static qreal clearSlurTip(qreal y, qreal lineDistance, int lines, qreal margin, 
       return y;
       }
 
+static const TieSegment* nativeSlurTiePart(const SlurSegment* slur, const Tie* tie, bool first)
+      {
+      if (!tie || tie->up() != slur->slur()->up() || !tie->visible() || tie->segmentsEmpty())
+            return nullptr;
+      const TieSegment* part = first ? tie->frontSegment() : tie->backSegment();
+      return part && part->system() == slur->system() && part->visible() ? part : nullptr;
+      }
+
+static QPointF nativeSlurStaffOrigin(const SlurSegment* segment)
+      {
+      const System* system = segment->system();
+      return QPointF(system->pagePos().x(), system->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
+      }
+
 // Ties are laid out before slurs, but their shapes are not in the
 // rhythmic segment's staff shape. Add the drawn curve in slur coordinates.
-static void appendOrdinarySlurTie(const SlurSegment* segment, const Tie* tie, std::vector<QRectF>& obstacles)
+static void appendOrdinarySlurTie(const SlurSegment* segment, const TieSegment* part, std::vector<QRectF>& obstacles)
       {
       const bool up = segment->slur()->up();
-      if (!tie || tie->up() != up || !tie->visible() || tie->segmentsEmpty())
-            return;
-      const TieSegment* part = tie->frontSegment();
-      const System* system = segment->system();
-      if (!part || !part->isSingleType() || part->system() != system || !part->visible())
-            return;
-      const QPointF origin(system->pagePos().x(), system->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
+      const QPointF origin = nativeSlurStaffOrigin(segment);
       const QPointF offset = part->pagePos() - origin;
       const qreal gap = 0.1 * segment->spatium();
       for (const QRectF& band : part->shape()) {
@@ -610,12 +618,24 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
 
             const Tie* outgoing = note->tieFor();
             const Tie* incoming = note->tieBack();
-            // Tip-to-tie spacing is handled separately. Here only admit
-            // ties between interior chords in the current system.
-            if ((outgoing && (chord == first || !outgoing->endNote() || outgoing->endNote()->tick() >= last->tick()))
-                || (incoming && (chord == last || !incoming->startNote() || incoming->startNote()->tick() <= first->tick())))
+            const bool atOpenEnd = !anchoredEnd && chord == last && outgoing && outgoing->endNote()
+                  && outgoing->endNote()->tick() >= system->lastMeasure()->endTick();
+            const bool atOpenStart = !anchoredStart && chord == first && incoming && incoming->startNote()
+                  && incoming->startNote()->tick() < system->firstMeasure()->tick();
+            // Collect ties between interior chords and the local halves
+            // of ties that continue with the slur over the system break.
+            if (outgoing && !atOpenEnd && (chord == first || !outgoing->endNote() || outgoing->endNote()->tick() >= last->tick()))
                   return false;
-            appendOrdinarySlurTie(segment, outgoing, obstacles);
+            if (incoming && !atOpenStart && (chord == last || !incoming->startNote() || incoming->startNote()->tick() <= first->tick()))
+                  return false;
+            const TieSegment* outgoingPart = nativeSlurTiePart(segment, outgoing, true);
+            if (outgoingPart && (outgoingPart->isSingleType() || (atOpenEnd && outgoingPart->isBeginType())))
+                  appendOrdinarySlurTie(segment, outgoingPart, obstacles);
+            if (atOpenStart) {
+                  const TieSegment* incomingPart = nativeSlurTiePart(segment, incoming, false);
+                  if (incomingPart && incomingPart->isEndType())
+                        appendOrdinarySlurTie(segment, incomingPart, obstacles);
+                  }
 
             if (chord != first || !anchoredStart) {
                   const QPointF origin = s->measure()->pos() + s->pos() + chord->pos();
@@ -1428,12 +1448,12 @@ static void clearSlurTipFromTie(const SlurSegment* segment, const ChordRest* anc
       const Note* note = up ? chord->upNote() : chord->downNote();
       const qreal clearance = 0.65 * segment->spatium();
       const qreal sign = up ? -1.0 : 1.0;
-      const QPointF origin(segment->system()->pagePos().x(), segment->system()->staffYpage(segment->vStaffIdx()) + segment->ipos().y());
+      const QPointF origin = nativeSlurStaffOrigin(segment);
       const auto tieTip = [&](const Tie* tie, bool isStart, QPointF& position) {
-            if (!tie || tie->segmentsEmpty() || tie->isPartial() || tie->isInside() || tie->up() != up || !tie->visible())
+            if (!tie || tie->isPartial() || tie->isInside())
                   return false;
-            const TieSegment* part = isStart ? tie->frontSegment() : tie->backSegment();
-            if (!part || !part->visible() || part->system() != segment->system())
+            const TieSegment* part = nativeSlurTiePart(segment, tie, isStart);
+            if (!part)
                   return false;
             position = part->pagePos() + part->ups(isStart ? Grip::START : Grip::END).pos() - origin;
             return true;
@@ -1450,6 +1470,26 @@ static void clearSlurTipFromTie(const SlurSegment* segment, const ChordRest* anc
       if (tieTip(atStart ? note->tieBack() : note->tieFor(), !atStart, tiePosition)
           && qAbs(tip.y() - tiePosition.y()) < clearance)
             tip.rx() += (atStart ? 0.35 : -0.35) * segment->spatium();
+      }
+
+static void clearOpenSlurTipFromTie(const SlurSegment* segment, const ChordRest* boundary,
+                                    bool atStart, QPointF& tip)
+      {
+      if (!boundary || !boundary->isChord() || boundary->vStaffIdx() != segment->vStaffIdx())
+            return;
+      const Chord* chord = toChord(boundary);
+      const bool up = segment->slur()->up();
+      const Note* note = up ? chord->upNote() : chord->downNote();
+      const Tie* tie = atStart ? note->tieBack() : note->tieFor();
+      if (!tie || tie->isInside() || tie->isPartial())
+            return;
+      const TieSegment* part = nativeSlurTiePart(segment, tie, !atStart);
+      if (!part || (atStart ? !part->isEndType() : !part->isBeginType()))
+            return;
+      const Grip open = atStart ? Grip::START : Grip::END;
+      const qreal tieY = (part->pagePos() + part->ups(open).pos() - nativeSlurStaffOrigin(segment)).y();
+      const qreal gap = 0.65 * segment->spatium();
+      tip.setY(up ? qMin(tip.y(), tieY - gap) : qMax(tip.y(), tieY + gap));
       }
 
 static const ChordRest* continuationBoundaryChord(const System* system, int track, bool first)
@@ -1524,6 +1564,12 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
             && system() && staff() && staff()->isPitchedStaff(tick())
             && startCR && endCR && !startCR->isGrace() && !endCR->isGrace()
             && startCR->vStaffIdx() == vStaffIdx() && endCR->vStaffIdx() == vStaffIdx();
+      _extraHeight = 0.0;
+
+      // Adjust Y for staff type before converting tie geometry to this frame.
+      if (staffType())
+            rypos() += staffType()->yoffset().val() * spatium();
+
       if (continued) {
             const qreal sp = spatium();
             const qreal sign = slur()->up() ? -1.0 : 1.0;
@@ -1533,6 +1579,8 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
                   if (type == SpannerSegmentType::END && first == endCR)
                         y = p2.y() + sign * 0.25 * sp;
                   ups(Grip::START).p = QPointF(system()->firstNoteRestSegmentX(true), y);
+                  if (autoplace() && slur()->lineType() == 0 && first != endCR)
+                        clearOpenSlurTipFromTie(this, first, true, ups(Grip::START).p);
                   }
             if (type == SpannerSegmentType::BEGIN || type == SpannerSegmentType::MIDDLE) {
                   const ChordRest* last = continuationBoundaryChord(system(), slur()->track(), false);
@@ -1545,8 +1593,11 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
                   if (sign * (y - startY) < -2.5 * sp)
                         y = startY - sign * 2.5 * sp;
                   const qreal x = system()->lastMeasure()->endingXForOpenEndedLines();
-                  if (x > ups(Grip::START).p.x())
+                  if (x > ups(Grip::START).p.x()) {
                         ups(Grip::END).p = QPointF(x, y);
+                        if (autoplace() && slur()->lineType() == 0)
+                              clearOpenSlurTipFromTie(this, last, false, ups(Grip::END).p);
+                        }
                   }
             }
       // Partial slurs already receive repeat-aware contours from slurPosChord().
@@ -1591,12 +1642,6 @@ void SlurSegment::layoutSegment(const QPointF& p1, const QPointF& p2, bool cross
             if (startIsHanging)
                   ups(Grip::START).p.ry() = up ? qMin(ups(Grip::START).p.y(), ups(Grip::END).p.y() - height) : qMax(ups(Grip::START).p.y(), ups(Grip::END).p.y() + height);
             }
-      _extraHeight = 0.0;
-
-      //Adjust Y pos to staff type yOffset before other calculations
-      if (staffType())
-            rypos() += staffType()->yoffset().val() * spatium();
-
       if (autoplace() && slur()->partialDirection() >= 0
           && ups(Grip::START).off.isNull() && ups(Grip::END).off.isNull()) {
             // Studio keeps partial-slur endpoints away from staff lines.

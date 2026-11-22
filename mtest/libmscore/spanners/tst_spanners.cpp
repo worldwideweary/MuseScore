@@ -69,6 +69,7 @@ class TestSpanners : public QObject, public MTest
       void nativeReturningCrossStaffSlurs();
       void nativeSlursOverTies();
       void nativeSlurOverInteriorTie();
+      void nativeContinuedSlurOverTie();
       void nativeSystemBreakSlur();
       void nativeContinuedSlurCurve();
       void partialTieAttachments();
@@ -2086,6 +2087,40 @@ void TestSpanners::nativeSlurOverInteriorTie()
                   }
             const qreal gap = (p.y() - outer.pointAtPercent((low + high) * 0.5).y()) / segment->spatium();
             QVERIFY2(gap >= 0.45, qPrintable(QString("Interior tie clearance: %1sp").arg(gap)));
+            }
+      }
+
+void TestSpanners::nativeContinuedSlurOverTie()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-continued-slur-over-tie.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up());
+      QCOMPARE(slur->nsegments(), size_t(2));
+      QVERIFY(slur->startCR());
+      const Measure* measure = slur->startCR()->measure();
+      const Segment* tiedBeat = measure->findSegmentR(SegmentType::ChordRest, Fraction(3, 4));
+      QVERIFY(tiedBeat && tiedBeat->element(0) && tiedBeat->element(0)->isChord());
+      const Tie* tie = toChord(tiedBeat->element(0))->upNote()->tieFor();
+      QVERIFY(tie && tie->up() && !tie->isInside());
+      QCOMPARE(tie->nsegments(), size_t(2));
+      for (bool incoming : { false, true }) {
+            const SlurSegment* slurPart = incoming ? slur->backSegment() : slur->frontSegment();
+            const TieSegment* tiePart = incoming ? tie->backSegment() : tie->frontSegment();
+            QVERIFY(slurPart && tiePart && slurPart->system() == tiePart->system());
+            const Grip open = incoming ? Grip::START : Grip::END;
+            const qreal tieY = tiePart->pagePos().y() + tiePart->ups(open).pos().y();
+            const qreal slurY = slurPart->pagePos().y() + slurPart->ups(open).pos().y();
+            const qreal gap = (tieY - slurY) / slurPart->spatium();
+            QVERIFY2(gap >= 0.64, qPrintable(QString("Tie clearance at the system break: %1sp").arg(gap)));
             }
       }
 
