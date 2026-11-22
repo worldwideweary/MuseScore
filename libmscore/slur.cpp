@@ -1909,6 +1909,33 @@ static qreal fixArticulations(qreal yo, Chord* c, qreal _up, bool stemSide = fal
 #endif
       }
 
+// 37E draws close articulations with a centered glyph box. Use that
+// box to apply Studio's inward inset and clearance on the slur side.
+static void placeArticulatedSlurTip(QPointF& tip, const Chord* chord, bool up, bool start, qreal slurSp)
+      {
+      const QPointF origin = chord->pos() + chord->segment()->pos() + chord->measure()->pos();
+      QRectF ink;
+      for (const Articulation* art : chord->articulations()) {
+            if (!art->layoutCloseToNote() || !art->addToSkyline() || art->up() != up || art->bbox().isEmpty())
+                  continue;
+            const QRectF bounds = art->bbox().translated(origin + art->pos());
+            if (ink.isEmpty() || (up ? bounds.top() < ink.top() : bounds.bottom() > ink.bottom()))
+                  ink = bounds;
+            }
+      if (ink.isEmpty())
+            return;
+
+      tip.setX(ink.center().x() + (start ? 0.1 : -0.1) * slurSp);
+      const qreal gap = 0.5 * chord->spatium();
+      tip.setY(up ? qMin(tip.y(), ink.top() - gap) : qMax(tip.y(), ink.bottom() + gap));
+      const Staff* staff = chord->staff();
+      const qreal step = staff->lineDistance(chord->tick()) * slurSp;
+      if (step > 0.0) {
+            const qreal margin = 0.175 + 0.5 * chord->score()->styleS(Sid::staffLineWidth).val() * slurSp / step;
+            tip.setY(clearSlurTip(tip.y(), step, staff->lines(chord->tick()), margin, up));
+            }
+      }
+
 //---------------------------------------------------------
 //   slurPos
 //    Calculate position of start- and endpoint of slur
@@ -2181,16 +2208,19 @@ void Slur::slurPos(SlurPos* sp)
 
       qreal __up = _up ? -1.0 : 1.0;
       static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      // Match Studio's plain stem-side inset. Flags, beams, grace notes,
+      // Match Studio's plain stem and articulation tips. Flags, beams, grace notes,
       // and open ends have separate attachment rules.
-      const bool plainStemSide = previewGraceTips && sc && ec
+      const bool plainSlurTips = previewGraceTips && sc && ec
             && sp->system1 == sp->system2 && partialDirection() < 0 && !isHammerOnPullOff()
             && lineType() == 0 && staff() && staff()->isPitchedStaff(tick())
             && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
             && !sc->isGrace() && !ec->isGrace() && !sc->isSmall() && !ec->isSmall()
             && !sc->beam() && !ec->beam() && !sc->hook() && !ec->hook()
             && !sc->tremolo() && !ec->tremolo();
-      const qreal stemSideInset = plainStemSide ? 0.5 : 0.25;
+      const auto legacyArticulationY = [&](qreal y, Chord* chord, bool stemSide) {
+            return plainSlurTips ? y : fixArticulations(y, chord, __up, stemSide);
+            };
+      const qreal stemSideInset = plainSlurTips ? 0.5 : 0.25;
       const bool localGrace = scr->segment() == ecr->segment();
       const bool scaleGraceTips = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
             && sp->system1 == sp->system2
@@ -2230,7 +2260,7 @@ void Slur::slurPos(SlurPos* sp)
                   yadj *= _spatium * __up;
                   pt += QPointF(qMax(0.20, 0.35 * graceMag) * _spatium, yadj);
                   // account for articulations
-                  pt.ry() = fixArticulations(pt.y(), sc, __up, true);
+                  pt.ry() = legacyArticulationY(pt.y(), sc, true);
                   if (flagGrace) {
                         const Hook* flag = sc->hook();
                         const QRectF bounds = flag->bbox().translated(flag->pos());
@@ -2263,7 +2293,7 @@ void Slur::slurPos(SlurPos* sp)
                   yadj *= _spatium * __up;
                   pt += QPointF(-0.35 * _spatium, yadj);
                   // account for articulations
-                  pt.ry() = fixArticulations(pt.y(), ec, __up, true);
+                  pt.ry() = legacyArticulationY(pt.y(), ec, true);
                   sp->p2 += pt;
                   }
                   break;
@@ -2297,7 +2327,7 @@ void Slur::slurPos(SlurPos* sp)
                   Beam* beam1 = sc->beam();
                   if (beam1 && beam1->cross()) {
                         // TODO: stem direction is not finalized, so we cannot use it here
-                        yo = fixArticulations(yo, sc, __up, false);
+                        yo = legacyArticulationY(yo, sc, false);
                         }
                   else if (beam1 && (beam1->elements().back() != sc) && (sc->up() == _up)) {
                         // start chord is beamed but not the last chord of beam group
@@ -2325,7 +2355,7 @@ void Slur::slurPos(SlurPos* sp)
                               yo = nativeGraceBeamTipY(sc, _up, xo + (note1 && !note1->mirror() ? note1->x() : 0.0), yo);
 
                         // account for articulations
-                        yo = fixArticulations(yo, sc, __up, true);
+                        yo = legacyArticulationY(yo, sc, true);
 
                         // force end of slur to layout to stem as well,
                         // if start and end chords have same stem direction
@@ -2373,7 +2403,7 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = qMin(yo + yd, sc->upNote()->pos().y() + sh + _spatium);
 
                               // account for articulations
-                              yo = fixArticulations(yo, sc, __up, true);
+                              yo = legacyArticulationY(yo, sc, true);
 
                               // we may wish to force end to align to stem as well,
                               // if it is in same direction
@@ -2382,13 +2412,13 @@ void Slur::slurPos(SlurPos* sp)
                               }
                         else {
                               // avoid articulations
-                              yo = fixArticulations(yo, sc, __up, sc->up() == _up);
+                              yo = legacyArticulationY(yo, sc, sc->up() == _up);
                               }
                         }
                   }
             else if (sc) {
                   // avoid articulations
-                  yo = fixArticulations(yo, sc, __up, sc->up() == _up);
+                  yo = legacyArticulationY(yo, sc, sc->up() == _up);
                   }
 
             if (sa1 == SlurAnchor::NONE)
@@ -2413,7 +2443,7 @@ void Slur::slurPos(SlurPos* sp)
                         Beam* beam2 = ec->beam();
                         if (beam2 && beam2->cross()) {
                               // TODO: stem direction is not finalized, so we cannot use it here
-                              yo = fixArticulations(yo, ec, __up, false);
+                              yo = legacyArticulationY(yo, ec, false);
                               }
                         else if ((stemPos && (scr->up() == ec->up()))
                            || (beam2
@@ -2452,7 +2482,7 @@ void Slur::slurPos(SlurPos* sp)
                                     yo = nativeGraceBeamTipY(ec, _up, xo + (note2 && !note2->mirror() ? note2->x() : 0.0), yo);
 
                               // account for articulations
-                              yo = fixArticulations(yo, ec, __up, true);
+                              yo = legacyArticulationY(yo, ec, true);
                               }
                         else
                               {
@@ -2493,22 +2523,26 @@ void Slur::slurPos(SlurPos* sp)
                                           yo = qMin(yo - yd, ec->upNote()->pos().y() + mh + _spatium);
 
                                     // account for articulations
-                                    yo = fixArticulations(yo, ec, __up, true);
+                                    yo = legacyArticulationY(yo, ec, true);
                                     }
                               else {
                                     // avoid articulations
-                                    yo = fixArticulations(yo, ec, __up, ec->up() == _up);
+                                    yo = legacyArticulationY(yo, ec, ec->up() == _up);
                                     }
 
                               }
                         }
                   else if (ec) {
                         // avoid articulations
-                        yo = fixArticulations(yo, ec, __up, ec->up() == _up);
+                        yo = legacyArticulationY(yo, ec, ec->up() == _up);
                         }
 
                   sp->p2 += QPointF(xo, yo);
                   }
+            }
+      if (plainSlurTips) {
+            placeArticulatedSlurTip(sp->p1, sc, _up, true, _spatium);
+            placeArticulatedSlurTip(sp->p2, ec, _up, false, _spatium);
             }
       bool constrainLeftAnchor = false;
       if (isIncoming() && sp->system1) {

@@ -14,6 +14,7 @@
 #include <QFileInfo>
 #include <cmath>
 #include "mtest/testutils.h"
+#include "libmscore/articulation.h"
 #include "libmscore/beam.h"
 #include "libmscore/chord.h"
 #include "libmscore/note.h"
@@ -58,6 +59,7 @@ class TestSpanners : public QObject, public MTest
       void nativeMultiVoiceSlurDirection();
       void nativeOrdinarySlurFit();
       void nativeOrdinarySlurAcrossBarline();
+      void nativeArticulatedSlurTips();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
       void nativePreGraceSlurFit();
@@ -1384,6 +1386,43 @@ void TestSpanners::nativeOrdinarySlurAcrossBarline()
                         high = mid;
                   }
             QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.4 * sp);
+            }
+      }
+
+void TestSpanners::nativeArticulatedSlurTips()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-articulated-slur-tips.mscx"));
+      QVERIFY(score);
+
+      const Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur()) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up());
+      const SlurSegment* segment = slur->frontSegment();
+      QVERIFY(segment && segment->system());
+      const qreal sp = segment->spatium();
+      const qreal staffY = segment->system()->staffYpage(segment->vStaffIdx());
+      for (Grip grip : { Grip::START, Grip::END }) {
+            const bool start = grip == Grip::START;
+            const ChordRest* cr = start ? slur->startCR() : slur->endCR();
+            QVERIFY(cr && cr->isChord());
+            const Chord* chord = toChord(cr);
+            QCOMPARE(chord->articulations().size(), 1);
+            const Articulation* art = chord->articulations().front();
+            QVERIFY(art->layoutCloseToNote() && art->up());
+            const QRectF ink = art->bbox().translated(chord->pagePos() + art->pos());
+            const QPointF tip = segment->pagePos() + segment->ups(grip).pos();
+
+            const qreal inset = (tip.x() - ink.center().x()) / sp * (start ? 1.0 : -1.0);
+            QVERIFY2(inset > 0.05 && inset < 0.15, qPrintable(QString("tip inset: %1sp").arg(inset)));
+            QVERIFY2(tip.y() < staffY - 0.17 * sp, "The tip must clear the top staff line.");
+            QVERIFY2(ink.top() - tip.y() >= 0.49 * sp, "The tip must clear the articulation glyph.");
             }
       }
 
