@@ -62,6 +62,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurAcrossBarline();
       void nativeArticulatedSlurTips();
       void nativeSlurOverInteriorStaccato();
+      void nativeFlagAndTremoloSlurTips();
       void nativeSlantedSlurFit();
       void nativeAfterGraceSlurFit();
       void nativePreGraceSlurFit();
@@ -1496,6 +1497,52 @@ void TestSpanners::nativeSlurOverInteriorStaccato()
                   high = mid;
             }
       QVERIFY(ink.top() - curve.pointAtPercent((low + high) * 0.5).y() >= 0.2 * sp);
+      }
+
+void TestSpanners::nativeFlagAndTremoloSlurTips()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-flag-and-tremolo-slur-tips.mscx"));
+      QVERIFY(score);
+      int cases = 0;
+      for (const auto& entry : score->spanner()) {
+            if (!entry.second->isSlur())
+                  continue;
+            Slur* slur = toSlur(entry.second);
+            QVERIFY(slur->startCR() && slur->endCR());
+            const int measure = slur->startCR()->measure()->no() + 1;
+            if (measure != 1 && measure != 2 && measure != 4 && measure != 6)
+                  continue;
+            QVERIFY(slur->up());
+            const bool start = measure == 1 || measure == 4;
+            const bool tremolo = measure == 4 || measure == 6;
+            const ChordRest* cr = start ? slur->startCR() : slur->endCR();
+            QVERIFY(cr->isChord());
+            const Chord* chord = toChord(cr);
+            QVERIFY(chord->up() && chord->stem());
+            QVERIFY(tremolo ? chord->tremolo() != nullptr : chord->hook() != nullptr);
+
+            SlurPos pos;
+            slur->slurPos(&pos);
+            QVERIFY(pos.system1 && pos.system1 == pos.system2);
+            const QPointF origin(pos.system1->pagePos().x(), pos.system1->staffYpage(slur->vStaffIdx()));
+            const Stem* stem = chord->stem();
+            const QPointF stemEnd = (tremolo ? stem->pagePos() : chord->stemPos()) + stem->p2() - origin;
+            const QPointF tip = start ? pos.p1 : pos.p2;
+            const qreal sp = slur->spatium();
+            const qreal deltaY = (tip.y() - stemEnd.y()) / sp;
+            if (tremolo) {
+                  QVERIFY2(qAbs(deltaY + 0.35) < 0.02, qPrintable(QString("Tremolo tip: %1sp").arg(deltaY)));
+                  QVERIFY(qAbs(tip.x() - stemEnd.x()) < 0.4 * sp);
+                  }
+            else {
+                  QVERIFY2(qAbs(deltaY - 0.50) < 0.02, qPrintable(QString("Flag tip: %1sp").arg(deltaY)));
+                  QVERIFY(start ? tip.x() > stemEnd.x() : tip.x() < stemEnd.x());
+                  }
+            ++cases;
+            }
+      QCOMPARE(cases, 4);
       }
 
 void TestSpanners::nativeSlantedSlurFit()

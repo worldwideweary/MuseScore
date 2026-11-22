@@ -24,6 +24,7 @@ add_test(NAME tst_spanners_slur_preview
             nativeOrdinarySlurAcrossBarline
             nativeArticulatedSlurTips
             nativeSlurOverInteriorStaccato
+            nativeFlagAndTremoloSlurTips
             nativeSlantedSlurFit
             nativeAfterGraceSlurFit
             nativePreGraceSlurFit

@@ -31,6 +31,7 @@
 #include "stem.h"
 #include "system.h"
 #include "tie.h"
+#include "tremolo.h"
 #include "undo.h"
 #include "utils.h"
 
@@ -2311,19 +2312,28 @@ void Slur::slurPos(SlurPos* sp)
 
       qreal __up = _up ? -1.0 : 1.0;
       static const bool previewGraceTips = qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") == 1;
-      // Match Studio's plain stem and articulation tips. Flags, beams, grace notes,
-      // and open ends have separate attachment rules.
-      const bool plainSlurTips = previewGraceTips && sc && ec
+      const bool standardStemTips = previewGraceTips && sc && ec
             && sp->system1 == sp->system2 && partialDirection() < 0 && !isHammerOnPullOff()
             && lineType() == 0 && staff() && staff()->isPitchedStaff(tick())
             && sc->vStaffIdx() == vStaffIdx() && ec->vStaffIdx() == vStaffIdx()
             && !sc->isGrace() && !ec->isGrace() && !sc->isSmall() && !ec->isSmall()
-            && !sc->beam() && !ec->beam() && !sc->hook() && !ec->hook()
+            && !sc->beam() && !ec->beam()
+            && (!sc->tremolo() || sc->tremolo()->twoNotes())
+            && (!ec->tremolo() || ec->tremolo()->twoNotes());
+      const bool plainSlurTips = standardStemTips && !sc->hook() && !ec->hook()
             && !sc->tremolo() && !ec->tremolo();
+      const bool tremoloStart = standardStemTips && stem1 && sc->up() == _up && sc->tremolo()
+            && sc->tremolo()->chord1() == sc;
+      const bool tremoloEnd = standardStemTips && stem2 && ec->up() == _up && ec->tremolo()
+            && ec->tremolo()->chord2() == ec;
+      if (tremoloStart)
+            sa1 = SlurAnchor::STEM;
+      if (tremoloEnd)
+            sa2 = SlurAnchor::STEM;
       const auto legacyArticulationY = [&](qreal y, Chord* chord, bool stemSide) {
             return plainSlurTips ? y : fixArticulations(y, chord, __up, stemSide);
             };
-      const qreal stemSideInset = plainSlurTips ? 0.5 : 0.25;
+      const qreal stemSideInset = standardStemTips ? 0.5 : 0.25;
       const bool localGrace = scr->segment() == ecr->segment();
       const bool scaleGraceTips = previewGraceTips && sc && ec && (sc->isGrace() || ec->isGrace())
             && sp->system1 == sp->system2
@@ -2347,6 +2357,16 @@ void Slur::slurPos(SlurPos* sp)
       switch (sa1) {
             case SlurAnchor::STEM:        //sc can't be null
                   {
+                  if (tremoloStart) {
+                        // Like a beam-side tip, start outside the tremolo.
+                        pt = stem1->pos() + stem1->p2();
+                        pt += QPointF(0.15 * _spatium + 0.5 * stem1->lineWidthMag() * __up,
+                                      0.35 * _spatium * __up);
+                        pt.ry() = legacyArticulationY(pt.y(), sc, true);
+                        pt.rx() -= note1 && !note1->mirror() ? note1->x() : 0.0;
+                        sp->p1 += pt;
+                        break;
+                        }
                   // place slur starting point at stem end point
                   pt = sc->stemPos() - sc->pagePos() + sc->stem()->p2();
                   if (useTablature)                   // in tabs, stems are centred on note:
@@ -2354,19 +2374,19 @@ void Slur::slurPos(SlurPos* sp)
                   // clear the stem (x)
                   // allow slight overlap (y) as per Gould
                   // don't allow overlap with hook if not disabling the autoplace checks against start/end segments in SlurSegment::layoutSegment()
-                  const bool flagGrace = scaleGraceTips && sc->isGraceBefore() && !sc->beam() && sc->hook()
-                        && sc->hook()->visible() && !sc->hook()->bbox().isEmpty();
-                  const qreal graceMag = flagGrace ? score()->styleD(Sid::graceNoteMag) : 1.0;
+                  const Hook* hook = sc->hook();
+                  const bool flagGrace = scaleGraceTips && sc->isGraceBefore() && !sc->beam();
+                  const bool clearFlag = (flagGrace || standardStemTips) && hook && hook->visible() && !hook->bbox().isEmpty();
+                  const qreal graceMag = clearFlag && flagGrace ? score()->styleD(Sid::graceNoteMag) : 1.0;
                   qreal yadj = isIncoming() || isOutgoing() ? -0.5 : -stemSideInset;
-                  if (flagGrace)
+                  if (clearFlag && flagGrace)
                         yadj = -0.5 * graceMag;
                   yadj *= _spatium * __up;
                   pt += QPointF(qMax(0.20, 0.35 * graceMag) * _spatium, yadj);
                   // account for articulations
                   pt.ry() = legacyArticulationY(pt.y(), sc, true);
-                  if (flagGrace) {
-                        const Hook* flag = sc->hook();
-                        const QRectF bounds = flag->bbox().translated(flag->pos());
+                  if (clearFlag) {
+                        const QRectF bounds = hook->bbox().translated(hook->pos());
                         if (bounds.contains(pt)) {
                               // As in Studio, approximate the open side of
                               // the curved flag; its bbox encloses empty ink.
@@ -2388,6 +2408,15 @@ void Slur::slurPos(SlurPos* sp)
       switch (sa2) {
             case SlurAnchor::STEM:        //ec can't be null
                   {
+                  if (tremoloEnd) {
+                        pt = stem2->pos() + stem2->p2();
+                        pt += QPointF(-0.15 * _spatium + 0.5 * stem2->lineWidthMag() * __up,
+                                      0.35 * _spatium * __up);
+                        pt.ry() = legacyArticulationY(pt.y(), ec, true);
+                        pt.rx() -= note2 && !note2->mirror() ? note2->x() : 0.0;
+                        sp->p2 += pt;
+                        break;
+                        }
                   pt = ec->stemPos() - ec->pagePos() + ec->stem()->p2();
                   if (useTablature)
                         pt.rx() = hw2 * 0.5;
