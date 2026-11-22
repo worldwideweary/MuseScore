@@ -14,6 +14,7 @@
 #include <QFileInfo>
 #include <cmath>
 #include "mtest/testutils.h"
+#include "libmscore/accidental.h"
 #include "libmscore/articulation.h"
 #include "libmscore/beam.h"
 #include "libmscore/chord.h"
@@ -61,6 +62,7 @@ class TestSpanners : public QObject, public MTest
       void nativeOrdinarySlurFit();
       void nativeOrdinarySlurAcrossBarline();
       void nativeArticulatedSlurTips();
+      void nativeSlurOverInteriorAccidental();
       void nativeSlurOverInteriorStaccato();
       void nativeSlurRestAndVoiceClearance();
       void nativeFlagAndTremoloSlurTips();
@@ -1467,6 +1469,46 @@ void TestSpanners::nativeArticulatedSlurTips()
             QVERIFY2(inset > 0.05 && inset < 0.15, qPrintable(QString("tip inset: %1sp").arg(inset)));
             QVERIFY2(tip.y() < staffY - 0.17 * sp, "The tip must clear the top staff line.");
             QVERIFY2(ink.top() - tip.y() >= 0.49 * sp, "The tip must clear the articulation glyph.");
+            }
+      }
+
+void TestSpanners::nativeSlurOverInteriorAccidental()
+      {
+      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_SLUR_FIT") != 1)
+            QSKIP("Run with MSCORE_NATIVE_SLUR_FIT=1 to exercise the preview.");
+      std::unique_ptr<MasterScore> score(readScore(DIR + "native-slur-over-interior-staccato.mscx"));
+      QVERIFY(score);
+      Slur* slur = nullptr;
+      for (const auto& entry : score->spanner()) {
+            if (entry.second->isSlur() && entry.second->tick() == Fraction(0, 1)) {
+                  QVERIFY(!slur);
+                  slur = toSlur(entry.second);
+                  }
+            }
+      QVERIFY(slur && slur->up() && slur->startCR());
+      const SlurSegment* part = slur->frontSegment();
+      QVERIFY(part && part->isSingleType());
+      const Segment* middle = slur->startCR()->measure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
+      QVERIFY(middle && middle->element(0) && middle->element(0)->isChord());
+      const Accidental* flat = toChord(middle->element(0))->upNote()->accidental();
+      QVERIFY(flat && flat->visible() && !flat->bbox().isEmpty());
+      const QRectF ink = flat->bbox().translated(flat->pagePos());
+      const auto point = [&](Grip grip) { return part->pagePos() + part->ups(grip).pos(); };
+      const QPointF start = point(Grip::START);
+      const QPointF end = point(Grip::END);
+      QVERIFY(start.x() < ink.left() && ink.right() < end.x());
+      const CubicBezier curve(start, point(Grip::BEZIER1), point(Grip::BEZIER2), end);
+      for (qreal x : { ink.left(), ink.center().x(), ink.right() }) {
+            qreal lo = 0.0, hi = 1.0;
+            for (int i = 0; i < 24; ++i) {
+                  const qreal mid = (lo + hi) * 0.5;
+                  if (curve.pointAtPercent(mid).x() < x)
+                        lo = mid;
+                  else
+                        hi = mid;
+                  }
+            const qreal gap = (ink.top() - curve.pointAtPercent((lo + hi) * 0.5).y()) / part->spatium();
+            QVERIFY2(gap >= 0.2, qPrintable(QString("Slur clearance over flat: %1sp").arg(gap)));
             }
       }
 

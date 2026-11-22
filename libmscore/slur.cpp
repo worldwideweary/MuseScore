@@ -605,6 +605,10 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
             if (!toChordRest(rest)->durationType().isMeasure())
                   add(rest, origin, 0.1);
             };
+      const auto addAccidental = [&](const Note* note, const QPointF& chordOrigin) {
+            // The accidental's position is relative to the note, not the chord.
+            add(note->accidental(), chordOrigin + note->pos(), 0.1);
+            };
 
       // Collect the visible geometry on each side of the barline. The slur
       // keeps its own endpoints; notes in other voices there are excluded.
@@ -644,7 +648,7 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                             || !note->el().empty() || !note->dots().empty())
                               return false;
                         add(note, chordOrigin, 0.4);
-                        add(note->accidental(), chordOrigin, 0.1);
+                        addAccidental(note, chordOrigin);
                         }
                   add(chord->stem(), chordOrigin, 0.1);
                   add(chord->hook(), chordOrigin, 0.1);
@@ -712,7 +716,7 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
             if (!atStart) {
                   const QPointF origin = segmentOrigin + chord->pos();
                   add(note, origin, atEnd ? 0.0 : 0.4);
-                  add(note->accidental(), origin, 0.1);
+                  addAccidental(note, origin);
                   add(chord->stem(), origin, atEnd ? 0.0 : 0.1);
                   add(chord->hook(), origin, atEnd ? 0.0 : 0.1);
                   for (const Articulation* art : chord->articulations()) {
