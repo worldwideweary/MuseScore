@@ -56,6 +56,12 @@
 
 namespace Ms {
 
+static bool useStudioStemLayout()
+      {
+      static const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_STEM_LAYOUT") == 1;
+      return !legacy;
+      }
+
 //---------------------------------------------------------
 //   LedgerLineData
 //---------------------------------------------------------
@@ -940,10 +946,9 @@ void Chord::computeUp()
                   _up = true;
             }
       else if (staffMove()) {
-            static const bool preview = qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") == 1;
             // Studio uses the voice rule before the staff move for plain
             // pitched chords. Beams and tremolos resolve direction separately.
-            if (preview && st && st->isPitchedStaff(tick()) && !beam() && !tremolo()
+            if (useStudioStemLayout() && st && st->isPitchedStaff(tick()) && !beam() && !tremolo()
                 && measure()->hasVoices(staffIdx(), tick(), actualTicks()))
                   _up = !(track() % 2);
             else
@@ -1503,8 +1508,7 @@ qreal Chord::defaultStemLength() const
             }
 
       qreal normalStemLen = isSmall() ? 2.5 : 3.5;
-      static const bool nativeStemPreview = qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") == 1;
-      if (nativeStemPreview && shortenStem && qFuzzyCompare(progression.val(), qreal(0.25))
+      if (useStudioStemLayout() && shortenStem && qFuzzyCompare(progression.val(), qreal(0.25))
           && st && st->isPitchedStaff(tick()) && st->lines(tick()) == 5 && qFuzzyCompare(lineDistance, qreal(1.0))
           && !isGrace() && !isSmall() && !staffMove() && !beam() && !hookIdx && !_tremolo && !slash()
           && notes().size() == 1 && !downnote->fixed() && downnote->headGroup() == NoteHead::Group::HEAD_NORMAL

@@ -29,6 +29,15 @@ set_tests_properties(tst_incrementallayout_rest_preview PROPERTIES
       LABELS "native-layout-preview"
       )
 
+add_test(NAME tst_incrementallayout_legacy_stems
+      COMMAND tst_incrementallayout -xunitxml -o result-legacy-stems.xml
+            crossStaffAutoStemsUseVoiceDirection
+            ordinaryStemLengthsUseStudioSteps
+      )
+set_tests_properties(tst_incrementallayout_legacy_stems PROPERTIES
+      ENVIRONMENT "MSCORE_LEGACY_STEM_LAYOUT=1"
+      )
+
 set(TARGET tst_benchmark)
 
 include(${PROJECT_SOURCE_DIR}/mtest/CreateMtestTarget.cmake)

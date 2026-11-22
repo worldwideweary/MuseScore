@@ -962,8 +962,7 @@ void TestIncrementalLayout::fullMeasureRestKeepsClearanceOnLookahead()
 
 void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_STEM_LAYOUT=1 to exercise the preview.");
+      const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_STEM_LAYOUT") == 1;
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-cross-staff-auto-stems.mscx"));
       QVERIFY(score);
       Measure* measure = score->firstMeasure();
@@ -980,7 +979,7 @@ void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()
                   QCOMPARE(chord->stemDirection() == Direction::DOWN, manual);
                   // Visible full-measure rest, hidden rest, and four visible
                   // notes in voice 2, respectively. Manual Down still wins.
-                  QCOMPARE(chord->up(), bar != 1 && !manual);
+                  QCOMPARE(chord->up(), !legacy && bar != 1 && !manual);
                   ++beat;
                   }
             QCOMPARE(beat, 4);
@@ -990,17 +989,22 @@ void TestIncrementalLayout::crossStaffAutoStemsUseVoiceDirection()
 
 void TestIncrementalLayout::ordinaryStemLengthsUseStudioSteps()
       {
-      if (qEnvironmentVariableIntValue("MSCORE_NATIVE_STEM_LAYOUT") != 1)
-            QSKIP("Run with MSCORE_NATIVE_STEM_LAYOUT=1 to exercise the preview.");
+      const bool legacy = qEnvironmentVariableIntValue("MSCORE_LEGACY_STEM_LAYOUT") == 1;
       std::unique_ptr<MasterScore> score(readScore(DIR + "native-ordinary-stem-lengths.mscx"));
       QVERIFY(score);
       // E3 and G2 first, then outward and inward ledger-note cases.
       // All values are stem endpoints in staff spaces below the top line.
-      const qreal expected[][4] = {
+      const qreal studioEnds[][4] = {
             { -0.75, 5.0, -1.25, -0.5 },
             { 4.0, 4.5, 5.25, 5.5 },
             { -2.5, 6.5, 2.0, 2.0 },
             };
+      const qreal legacyEnds[][4] = {
+            { -0.75, 5.125, -1.5, -0.375 },
+            { 4.0, 4.375, 5.5, 5.875 },
+            { -2.625, 6.625, 2.0, 2.0 },
+            };
+      const auto& expected = legacy ? legacyEnds : studioEnds;
       const Measure* measure = score->firstMeasure();
       for (const auto& row : expected) {
             QVERIFY(measure && measure->system());
