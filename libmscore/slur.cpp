@@ -1373,11 +1373,19 @@ void SlurSegment::drawOrdinaryFit(const QPointF& shoulderDelta)
       shapePath = outline(thickness * 3.0);
       _shape.clear();
       const CubicBezier center(first, c1, c2, last);
+      // Match Studio's tapered collision bands. A constant minimum height
+      // reserves extra space above the slur for staff text and other items.
+      const qreal length = QLineF(first, last).length() / spatium();
+      const int bands = int(std::lround(qBound(qreal(20.0), 5.0 * length, qreal(50.0))));
+      constexpr qreal halfPi = 1.5707963267948966;
       QPointF previous = first;
-      for (int i = 1; i <= 32; ++i) {
-            const QPointF point = center.pointAtPercent(i / qreal(32));
+      for (int i = 1; i <= bands; ++i) {
+            const qreal sample = std::sin(halfPi * i / bands);
+            const qreal t = sample * sample;
+            const QPointF point = center.pointAtPercent(t);
             QRectF rect = QRectF(previous, point).normalized();
-            const qreal pad = qMax(qreal(0.0), (3.0 * qAbs(w) - rect.height()) * 0.5);
+            const qreal height = 2.0 * w * (1.0 - 2.0 * qAbs(0.5 - t));
+            const qreal pad = qMax(qreal(0.0), (height - rect.height()) * 0.5);
             rect.adjust(0.0, -pad, 0.0, pad);
             _shape.add(rect);
             previous = point;

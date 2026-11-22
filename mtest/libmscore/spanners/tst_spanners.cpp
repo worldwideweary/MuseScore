@@ -2324,6 +2324,25 @@ void TestSpanners::nativeContinuedSlurOverTie()
             const qreal gap = (tieY - slurY) / slurPart->spatium();
             QVERIFY2(gap >= 0.64, qPrintable(QString("Tie clearance at the system break: %1sp").arg(gap)));
             }
+
+      // Staff text sits above the crown without inheriting the legacy
+      // collision band's extra padding. The tie under the slur is unchanged.
+      const Measure* next = measure->nextMeasure();
+      QVERIFY(next);
+      const Segment* first = next->first(SegmentType::ChordRest);
+      QVERIFY(first);
+      const Element* label = nullptr;
+      for (const Element* e : first->annotations()) {
+            if (e->isStaffText())
+                  label = e;
+            }
+      QVERIFY(label);
+      const SlurSegment* incoming = slur->backSegment();
+      const qreal sp = incoming->spatium();
+      const QRectF textInk = label->bbox().translated(label->pagePos());
+      const QRectF arcInk = incoming->bbox().translated(incoming->pagePos());
+      const qreal gap = (arcInk.top() - textInk.bottom()) / sp;
+      QVERIFY2(gap >= 0.43 && gap <= 0.565, qPrintable(QString("Staff text clearance over G2: %1sp").arg(gap)));
       }
 
 void TestSpanners::nativeSystemBreakSlur()

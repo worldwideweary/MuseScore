@@ -130,6 +130,9 @@
       </Measure>
       <Measure>
         <voice>
+          <StaffText>
+            <text>G2 cont.</text>
+          </StaffText>
           <Chord>
             <durationType>quarter</durationType>
             <StemDirection>down</StemDirection>
