@@ -324,6 +324,7 @@ EditStyle::EditStyle(Score* s, QWidget* parent)
       { Sid::dividerRight,            false, dividerRight,            0 },
       { Sid::dividerRightX,           false, dividerRightX,           0 },
       { Sid::dividerRightY,           false, dividerRightY,           0 },
+      { Sid::articulationMinDistance, false, articulationMinDistance, resetArticulationMinDistance },
       { Sid::propertyDistanceHead,    false, propertyDistanceHead,    resetPropertyDistanceHead },
       { Sid::propertyDistanceStem,    false, propertyDistanceStem,    resetPropertyDistanceStem },
       { Sid::propertyDistance,        false, propertyDistance,        resetPropertyDistance },
