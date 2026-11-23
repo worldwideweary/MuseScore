@@ -687,7 +687,13 @@ static bool ordinarySlurObstacles(const SlurSegment* segment, std::vector<QRectF
                         return false;
                   }
             const Note* note = chord->notes().front();
-            if (!note->addToSkyline() || note->isSmall() || note->mirror() || note->isNudged()
+            // An interior notehead can be shifted to the other side of its
+            // stem to clear an adjacent note in another voice. Its laid-out
+            // position already describes the obstacle; only the anchors
+            // and manually mirrored heads still need the legacy fit.
+            const bool unsupportedMirror = note->mirror()
+                  && (atStart || atEnd || note->userMirror() != MScore::DirectionH::AUTO);
+            if (!note->addToSkyline() || note->isSmall() || unsupportedMirror || note->isNudged()
                 || note->bbox().isEmpty() || ((atStart || atEnd) && note->accidental())
                 || note->partialTie(true) || note->partialTie(false) || !note->dots().empty()
                 || !note->el().empty() || !note->spannerFor().empty() || !note->spannerBack().empty())

@@ -1589,7 +1589,13 @@ void TestSpanners::nativeSlurRestAndVoiceClearance()
       // F4's high note in voice 2 is an obstacle even though the slur is in voice 1.
       const SlurSegment* part = parts[2];
       const Segment* beat = part->slur()->startCR()->measure()->findSegmentR(SegmentType::ChordRest, Fraction(1, 2));
-      QVERIFY(beat && beat->element(1) && beat->element(1)->isChord());
+      QVERIFY(beat && beat->element(0) && beat->element(0)->isChord());
+      QVERIFY(beat->element(1) && beat->element(1)->isChord());
+      QVERIFY(toChord(beat->element(0))->upNote()->mirror());
+      // Fit around that displaced head instead of translating the whole
+      // slur vertically. F5 has the same staff origin and sits at base Y.
+      const qreal shift = (part->ipos().y() - parts[3]->ipos().y()) / part->spatium();
+      QVERIFY2(qAbs(shift) < 1e-5, qPrintable(QString("F4 whole-slur shift: %1sp").arg(shift)));
       const Note* note = toChord(beat->element(1))->upNote();
       const QRectF ink = note->bbox().translated(note->pagePos());
       const auto point = [&](Grip grip) { return part->pagePos() + part->ups(grip).pos(); };
